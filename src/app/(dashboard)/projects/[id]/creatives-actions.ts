@@ -5,6 +5,7 @@ import { creatives, teamMembers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
+import { logChange } from "@/lib/changelog";
 
 const creativeSchema = z.object({
   projectId: z.number(),
@@ -14,7 +15,7 @@ const creativeSchema = z.object({
   copywriterId: z.number().nullable(),
   editorId: z.number().nullable(),
   videoLink: z.string().nullable(),
-  status: z.enum(["rascunho", "publicado", "pausado"]),
+  status: z.enum(["rascunho", "testando", "validado", "escalando", "publicado", "pausado"]),
 });
 
 export type CreativeFormData = z.infer<typeof creativeSchema>;
@@ -45,17 +46,20 @@ export async function getCreatives(projectId: number) {
 
 export async function createCreative(data: CreativeFormData) {
   const parsed = creativeSchema.parse(data);
-  await db.insert(creatives).values(parsed);
+  const [result] = await db.insert(creatives).values(parsed).returning({ id: creatives.id });
+  await logChange("creative", result.id, "create", parsed);
   revalidatePath(`/projects/${data.projectId}`);
 }
 
 export async function updateCreative(id: number, data: CreativeFormData) {
   const parsed = creativeSchema.parse(data);
   await db.update(creatives).set({ ...parsed, updatedAt: new Date() }).where(eq(creatives.id, id));
+  await logChange("creative", id, "update", parsed);
   revalidatePath(`/projects/${data.projectId}`);
 }
 
 export async function deleteCreative(id: number, projectId: number) {
   await db.delete(creatives).where(eq(creatives.id, id));
+  await logChange("creative", id, "delete");
   revalidatePath(`/projects/${projectId}`);
 }

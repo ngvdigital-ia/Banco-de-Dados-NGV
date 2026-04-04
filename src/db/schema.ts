@@ -48,6 +48,9 @@ export const creativeFormatEnum = pgEnum("creative_format", [
 
 export const creativeStatusEnum = pgEnum("creative_status", [
   "rascunho",
+  "testando",
+  "validado",
+  "escalando",
   "publicado",
   "pausado",
 ]);
@@ -179,6 +182,8 @@ export const funnelNodes = pgTable("funnel_nodes", {
   acceptDestinationId: integer("accept_destination_id").references((): AnyPgColumn => funnelNodes.id),
   declineDestinationId: integer("decline_destination_id").references((): AnyPgColumn => funnelNodes.id),
   position: integer("position").notNull().default(0),
+  acceptanceRate: numeric("acceptance_rate", { precision: 8, scale: 4 }),
+  revenuePerCustomer: numeric("revenue_per_customer", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -371,6 +376,7 @@ export const metricsSnapshots = pgTable("metrics_snapshots", {
   ltv: numeric("ltv", { precision: 10, scale: 2 }),
   margin: numeric("margin", { precision: 10, scale: 2 }),
   // Extra
+  videoRetentionJson: jsonb("video_retention_json"),
   extraData: jsonb("extra_data"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -386,4 +392,75 @@ export const externalMappings = pgTable("external_mappings", {
   platform: text("platform").notNull(),
   externalId: text("external_id").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ============================================================
+// 15. A/B TESTS
+// ============================================================
+
+export const abTestStatusEnum = pgEnum("ab_test_status", [
+  "running",
+  "completed",
+  "cancelled",
+]);
+
+export const abTests = pgTable("ab_tests", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: integer("entity_id"),
+  startDate: timestamp("start_date", { withTimezone: true }).notNull(),
+  endDate: timestamp("end_date", { withTimezone: true }),
+  status: abTestStatusEnum("status").notNull().default("running"),
+  winnerId: integer("winner_id"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const abTestVariants = pgTable("ab_test_variants", {
+  id: serial("id").primaryKey(),
+  abTestId: integer("ab_test_id").notNull().references(() => abTests.id),
+  variantName: text("variant_name").notNull(),
+  description: text("description"),
+  metricsJson: jsonb("metrics_json"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const abTestsRelations = relations(abTests, ({ many }) => ({
+  variants: many(abTestVariants),
+}));
+
+export const abTestVariantsRelations = relations(abTestVariants, ({ one }) => ({
+  abTest: one(abTests, { fields: [abTestVariants.abTestId], references: [abTests.id] }),
+}));
+
+// ============================================================
+// 16. ALERTS
+// ============================================================
+
+export const alertOperatorEnum = pgEnum("alert_operator", [
+  "gt",
+  "lt",
+  "eq",
+]);
+
+export const alerts = pgTable("alerts", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: integer("entity_id"),
+  metric: text("metric").notNull(),
+  operator: alertOperatorEnum("operator").notNull(),
+  threshold: numeric("threshold", { precision: 12, scale: 2 }).notNull(),
+  active: boolean("active").notNull().default(true),
+  lastTriggeredAt: timestamp("last_triggered_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const alertHistory = pgTable("alert_history", {
+  id: serial("id").primaryKey(),
+  alertId: integer("alert_id").notNull().references(() => alerts.id),
+  triggeredAt: timestamp("triggered_at", { withTimezone: true }).notNull().defaultNow(),
+  currentValue: numeric("current_value", { precision: 12, scale: 2 }),
+  message: text("message"),
 });

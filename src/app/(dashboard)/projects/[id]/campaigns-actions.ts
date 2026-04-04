@@ -5,6 +5,7 @@ import { campaigns, teamMembers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
+import { logChange } from "@/lib/changelog";
 
 const campaignSchema = z.object({
   projectId: z.number(),
@@ -40,17 +41,20 @@ export async function getCampaigns(projectId: number) {
 
 export async function createCampaign(data: CampaignFormData) {
   const parsed = campaignSchema.parse(data);
-  await db.insert(campaigns).values(parsed);
+  const [result] = await db.insert(campaigns).values(parsed).returning({ id: campaigns.id });
+  await logChange("campaign", result.id, "create", parsed);
   revalidatePath(`/projects/${data.projectId}`);
 }
 
 export async function updateCampaign(id: number, data: CampaignFormData) {
   const parsed = campaignSchema.parse(data);
   await db.update(campaigns).set({ ...parsed, updatedAt: new Date() }).where(eq(campaigns.id, id));
+  await logChange("campaign", id, "update", parsed);
   revalidatePath(`/projects/${data.projectId}`);
 }
 
 export async function deleteCampaign(id: number, projectId: number) {
   await db.delete(campaigns).where(eq(campaigns.id, id));
+  await logChange("campaign", id, "delete");
   revalidatePath(`/projects/${projectId}`);
 }

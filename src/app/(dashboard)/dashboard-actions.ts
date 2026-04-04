@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { projects, teamMembers, vsls, creatives, campaigns, metricsSnapshots } from "@/db/schema";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, gte } from "drizzle-orm";
 
 export async function getDashboardStats() {
   const [projectCount] = await db
@@ -61,4 +61,28 @@ export async function getProjectsSummary() {
     .from(projects)
     .orderBy(desc(projects.createdAt))
     .limit(10);
+}
+
+export async function getMetricsTrend(days: number) {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+
+  const rows = await db
+    .select({
+      date: sql<string>`to_char(${metricsSnapshots.date}, 'YYYY-MM-DD')`,
+      spend: sql<string>`coalesce(sum(${metricsSnapshots.spend}), 0)`,
+      revenue: sql<string>`coalesce(sum(${metricsSnapshots.revenue}), 0)`,
+      roas: sql<string>`case when coalesce(sum(${metricsSnapshots.spend}), 0) = 0 then 0 else coalesce(sum(${metricsSnapshots.revenue}), 0) / sum(${metricsSnapshots.spend}) end`,
+    })
+    .from(metricsSnapshots)
+    .where(gte(metricsSnapshots.date, since))
+    .groupBy(sql`to_char(${metricsSnapshots.date}, 'YYYY-MM-DD')`)
+    .orderBy(sql`to_char(${metricsSnapshots.date}, 'YYYY-MM-DD')`);
+
+  return rows.map((r) => ({
+    date: r.date,
+    spend: Number(r.spend),
+    revenue: Number(r.revenue),
+    roas: Number(r.roas),
+  }));
 }

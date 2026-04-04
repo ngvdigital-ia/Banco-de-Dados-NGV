@@ -18,7 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getDashboardStats, getProjectsSummary } from "./dashboard-actions";
+import { getDashboardStats, getProjectsSummary, getMetricsTrend } from "./dashboard-actions";
+import { SpendRevenueChart } from "@/components/charts/spend-revenue-chart";
+import { RoasChart } from "@/components/charts/roas-chart";
 
 const statusLabels: Record<string, string> = {
   em_teste: "Em Teste",
@@ -33,8 +35,11 @@ const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
 };
 
 export default async function DashboardPage() {
-  const stats = await getDashboardStats();
-  const recentProjects = await getProjectsSummary();
+  const [stats, recentProjects, metricsTrend] = await Promise.all([
+    getDashboardStats(),
+    getProjectsSummary(),
+    getMetricsTrend(30),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -171,17 +176,37 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Métricas</CardTitle>
+            <CardTitle>Gasto vs Receita (30 dias)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <BarChart3 className="mb-4 h-12 w-12 text-muted-foreground" />
-              <h3 className="font-semibold">Gráficos em breve</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Integre o UTMify ou cadastre métricas manualmente para ver
-                gráficos de gasto, receita e ROAS aqui.
-              </p>
-            </div>
+            {metricsTrend.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <BarChart3 className="mb-4 h-12 w-12 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Cadastre métricas para ver gráficos
+                </p>
+              </div>
+            ) : (
+              <SpendRevenueChart data={metricsTrend} />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>ROAS (30 dias)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {metricsTrend.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <BarChart3 className="mb-4 h-12 w-12 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Cadastre métricas para ver gráficos
+                </p>
+              </div>
+            ) : (
+              <RoasChart data={metricsTrend} />
+            )}
           </CardContent>
         </Card>
       </div>

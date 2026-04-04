@@ -7,7 +7,12 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { createMetricsSnapshot } from "./actions";
+import { createMetricsSnapshot, getCreativesForProject, getCampaignsForProject } from "./actions";
+
+type EntityType = "project" | "creative" | "campaign";
+
+type Creative = { id: number; format: string; platform: string; status: string };
+type Campaign = { id: number; name: string; platform: string; status: string };
 
 export function MetricsForm({
   projects,
@@ -16,16 +21,76 @@ export function MetricsForm({
 }) {
   const [isPending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
+  const [entityType, setEntityType] = useState<EntityType>("project");
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [creatives, setCreatives] = useState<Creative[]>([]);
+  const [campaignsList, setCampaignsList] = useState<Campaign[]>([]);
+  const [loadingEntities, setLoadingEntities] = useState(false);
+
+  async function handleProjectChange(projectId: string | null) {
+    if (!projectId) return;
+    setSelectedProjectId(projectId);
+
+    if (entityType === "creative") {
+      setLoadingEntities(true);
+      const data = await getCreativesForProject(Number(projectId));
+      setCreatives(data);
+      setLoadingEntities(false);
+    } else if (entityType === "campaign") {
+      setLoadingEntities(true);
+      const data = await getCampaignsForProject(Number(projectId));
+      setCampaignsList(data);
+      setLoadingEntities(false);
+    }
+  }
+
+  function handleEntityTypeChange(value: string | null) {
+    if (!value) return;
+    const newType = value as EntityType;
+    setEntityType(newType);
+    setCreatives([]);
+    setCampaignsList([]);
+    // Re-fetch entities if project is already selected
+    if (selectedProjectId && newType !== "project") {
+      if (newType === "creative") {
+        setLoadingEntities(true);
+        getCreativesForProject(Number(selectedProjectId)).then((data) => {
+          setCreatives(data);
+          setLoadingEntities(false);
+        });
+      } else if (newType === "campaign") {
+        setLoadingEntities(true);
+        getCampaignsForProject(Number(selectedProjectId)).then((data) => {
+          setCampaignsList(data);
+          setLoadingEntities(false);
+        });
+      }
+    }
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSuccess(false);
     const fd = new FormData(e.currentTarget);
 
+    let entityId: number;
+    if (entityType === "project") {
+      entityId = Number(fd.get("projectId"));
+    } else if (entityType === "creative") {
+      entityId = Number(fd.get("creativeId"));
+    } else {
+      entityId = Number(fd.get("campaignId"));
+    }
+
+    const retention1min = (fd.get("retention1min") as string) || null;
+    const retention5min = (fd.get("retention5min") as string) || null;
+    const retentionPriceReveal = (fd.get("retentionPriceReveal") as string) || null;
+    const hasRetention = retention1min || retention5min || retentionPriceReveal;
+
     const data = {
       date: fd.get("date") as string,
-      entityType: "project",
-      entityId: Number(fd.get("projectId")),
+      entityType,
+      entityId,
       source: "manual" as const,
       impressions: fd.get("impressions") ? Number(fd.get("impressions")) : null,
       clicks: fd.get("clicks") ? Number(fd.get("clicks")) : null,
@@ -39,12 +104,20 @@ export function MetricsForm({
       revenue: (fd.get("revenue") as string) || null,
       cpa: (fd.get("cpa") as string) || null,
       roas: (fd.get("roas") as string) || null,
+      ltv: (fd.get("ltv") as string) || null,
+      videoRetentionJson: hasRetention
+        ? { retention1min, retention5min, retentionPriceReveal }
+        : null,
     };
 
     startTransition(async () => {
       await createMetricsSnapshot(data);
       setSuccess(true);
       (e.target as HTMLFormElement).reset();
+      setSelectedProjectId("");
+      setCreatives([]);
+      setCampaignsList([]);
+      setEntityType("project");
     });
   }
 
@@ -52,15 +125,16 @@ export function MetricsForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Entity Type + Project + Sub-entity + Date */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Projeto</Label>
-          <Select name="projectId" required>
+          <Label>Tipo de Entidade</Label>
+          <Select value={entityType} onValueChange={handleEntityTypeChange}>
             <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
             <SelectContent>
-              {projects.map((p) => (
-                <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
-              ))}
+              <SelectItem value="project">Projeto</SelectItem>
+              <SelectItem value="creative">Criativo</SelectItem>
+              <SelectItem value="campaign">Campanha</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -68,6 +142,81 @@ export function MetricsForm({
           <Label>Data</Label>
           <Input name="date" type="date" defaultValue={today} required />
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Projeto</Label>
+          <Select
+            name={entityType === "project" ? "projectId" : undefined}
+            value={selectedProjectId}
+            onValueChange={handleProjectChange}
+            required
+          >
+            <SelectTrigger><SelectValue placeholder="Selecione o projeto" /></SelectTrigger>
+            <SelectContent>
+              {projects.map((p) => (
+                <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {/* Hidden input for project entityId when entityType is "project" */}
+          {entityType === "project" && (
+            <input type="hidden" name="projectId" value={selectedProjectId} />
+          )}
+        </div>
+
+        {entityType === "creative" && (
+          <div className="space-y-2">
+            <Label>Criativo</Label>
+            <Select name="creativeId" required disabled={loadingEntities || creatives.length === 0}>
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={
+                    loadingEntities
+                      ? "Carregando..."
+                      : creatives.length === 0
+                        ? "Selecione um projeto primeiro"
+                        : "Selecione o criativo"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {creatives.map((c) => (
+                  <SelectItem key={c.id} value={c.id.toString()}>
+                    {c.platform} - {c.format} (#{c.id})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {entityType === "campaign" && (
+          <div className="space-y-2">
+            <Label>Campanha</Label>
+            <Select name="campaignId" required disabled={loadingEntities || campaignsList.length === 0}>
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={
+                    loadingEntities
+                      ? "Carregando..."
+                      : campaignsList.length === 0
+                        ? "Selecione um projeto primeiro"
+                        : "Selecione a campanha"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {campaignsList.map((c) => (
+                  <SelectItem key={c.id} value={c.id.toString()}>
+                    {c.name} ({c.platform})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       <div>
@@ -107,6 +256,24 @@ export function MetricsForm({
       </div>
 
       <div>
+        <h3 className="text-sm font-semibold mb-3">Retenção do Vídeo</h3>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label>Retenção 1min (%)</Label>
+            <Input name="retention1min" type="number" step="0.01" placeholder="0.00" />
+          </div>
+          <div className="space-y-2">
+            <Label>Retenção 5min (%)</Label>
+            <Input name="retention5min" type="number" step="0.01" placeholder="0.00" />
+          </div>
+          <div className="space-y-2">
+            <Label>Retenção na Revelação do Preço (%)</Label>
+            <Input name="retentionPriceReveal" type="number" step="0.01" placeholder="0.00" />
+          </div>
+        </div>
+      </div>
+
+      <div>
         <h3 className="text-sm font-semibold mb-3">Checkout</h3>
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2">
@@ -126,7 +293,7 @@ export function MetricsForm({
 
       <div>
         <h3 className="text-sm font-semibold mb-3">Consolidados</h3>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <div className="space-y-2">
             <Label>Receita (R$)</Label>
             <Input name="revenue" type="number" step="0.01" placeholder="0.00" />
@@ -138,6 +305,10 @@ export function MetricsForm({
           <div className="space-y-2">
             <Label>ROAS</Label>
             <Input name="roas" type="number" step="0.01" placeholder="0.00" />
+          </div>
+          <div className="space-y-2">
+            <Label>LTV (R$)</Label>
+            <Input name="ltv" type="number" step="0.01" placeholder="0.00" />
           </div>
         </div>
       </div>

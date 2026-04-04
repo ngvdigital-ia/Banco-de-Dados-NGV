@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Plus, Pencil, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ProjectFormDialog } from "@/components/forms/project-form";
+import { DateRangeFilter } from "@/components/filters/date-range-filter";
+import { EntityFilters } from "@/components/filters/entity-filters";
 import { getProjects, deleteProject } from "./actions";
 
 const statusLabels: Record<string, string> = {
@@ -25,8 +28,24 @@ const statusVariant: Record<string, "default" | "secondary" | "outline" | "destr
   pausado: "secondary",
 };
 
-export default async function ProjectsPage() {
-  const allProjects = await getProjects();
+export default async function ProjectsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const niche = typeof params.niche === "string" ? params.niche : undefined;
+  const language = typeof params.language === "string" ? params.language : undefined;
+  const status = typeof params.status === "string" ? params.status : undefined;
+
+  // Get all projects (unfiltered) to extract unique filter options
+  const allProjectsUnfiltered = await getProjects();
+  const uniqueNiches = [...new Set(allProjectsUnfiltered.map((p) => p.niche))].sort();
+  const uniqueLanguages = [...new Set(allProjectsUnfiltered.map((p) => p.language))].sort();
+  const uniqueStatuses = [...new Set(allProjectsUnfiltered.map((p) => p.status))].sort();
+
+  // Get filtered projects
+  const allProjects = await getProjects({ niche, language, status });
 
   return (
     <div className="space-y-6">
@@ -42,11 +61,28 @@ export default async function ProjectsPage() {
         />
       </div>
 
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Suspense fallback={null}>
+          <DateRangeFilter />
+        </Suspense>
+        <Suspense fallback={null}>
+          <EntityFilters
+            filters={{
+              niches: uniqueNiches,
+              languages: uniqueLanguages,
+              statuses: uniqueStatuses,
+            }}
+          />
+        </Suspense>
+      </div>
+
       {allProjects.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
-          <h2 className="text-lg font-semibold">Nenhum projeto ainda</h2>
+          <h2 className="text-lg font-semibold">Nenhum projeto encontrado</h2>
           <p className="text-sm text-muted-foreground">
-            Crie seu primeiro projeto para começar a organizar seus dados.
+            {niche || language || status
+              ? "Tente ajustar os filtros para ver mais resultados."
+              : "Crie seu primeiro projeto para começar a organizar seus dados."}
           </p>
         </div>
       ) : (

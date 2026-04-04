@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { metricsSnapshots, projects } from "@/db/schema";
+import { metricsSnapshots, projects, creatives, campaigns } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
@@ -23,6 +23,15 @@ const metricsSchema = z.object({
   revenue: z.string().nullable().optional(),
   cpa: z.string().nullable().optional(),
   roas: z.string().nullable().optional(),
+  ltv: z.string().nullable().optional(),
+  videoRetentionJson: z
+    .object({
+      retention1min: z.string().nullable().optional(),
+      retention5min: z.string().nullable().optional(),
+      retentionPriceReveal: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export type MetricsFormData = z.infer<typeof metricsSchema>;
@@ -46,6 +55,8 @@ export async function createMetricsSnapshot(data: MetricsFormData) {
     revenue: parsed.revenue ?? null,
     cpa: parsed.cpa ?? null,
     roas: parsed.roas ?? null,
+    ltv: parsed.ltv ?? null,
+    videoRetentionJson: parsed.videoRetentionJson ?? null,
   });
   revalidatePath("/metrics");
   revalidatePath("/");
@@ -62,4 +73,20 @@ export async function getMetricsForProject(projectId: number) {
 
 export async function getAllProjects() {
   return db.select({ id: projects.id, name: projects.name }).from(projects).orderBy(projects.name);
+}
+
+export async function getCreativesForProject(projectId: number) {
+  return db
+    .select({ id: creatives.id, format: creatives.format, platform: creatives.platform, status: creatives.status })
+    .from(creatives)
+    .where(eq(creatives.projectId, projectId))
+    .orderBy(creatives.createdAt);
+}
+
+export async function getCampaignsForProject(projectId: number) {
+  return db
+    .select({ id: campaigns.id, name: campaigns.name, platform: campaigns.platform, status: campaigns.status })
+    .from(campaigns)
+    .where(eq(campaigns.projectId, projectId))
+    .orderBy(campaigns.createdAt);
 }

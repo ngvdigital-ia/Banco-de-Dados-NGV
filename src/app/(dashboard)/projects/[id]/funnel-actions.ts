@@ -5,6 +5,7 @@ import { funnels, funnelNodes, orderBumps } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
+import { logChange } from "@/lib/changelog";
 
 const funnelSchema = z.object({
   projectId: z.number(),
@@ -52,7 +53,8 @@ export async function getOrderBumps(funnelId: number) {
 
 export async function createFunnel(data: FunnelFormData) {
   const parsed = funnelSchema.parse(data);
-  await db.insert(funnels).values(parsed);
+  const [result] = await db.insert(funnels).values(parsed).returning({ id: funnels.id });
+  await logChange("funnel", result.id, "create", parsed);
   revalidatePath(`/projects/${data.projectId}`);
 }
 
@@ -66,6 +68,7 @@ export async function deleteFunnel(id: number, projectId: number) {
   await db.delete(funnelNodes).where(eq(funnelNodes.funnelId, id));
   await db.delete(orderBumps).where(eq(orderBumps.funnelId, id));
   await db.delete(funnels).where(eq(funnels.id, id));
+  await logChange("funnel", id, "delete");
   revalidatePath(`/projects/${projectId}`);
 }
 

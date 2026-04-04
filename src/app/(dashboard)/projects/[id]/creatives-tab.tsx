@@ -40,6 +40,9 @@ const platformLabels: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   rascunho: "Rascunho",
+  testando: "Testando",
+  validado: "Validado",
+  escalando: "Escalando",
   publicado: "Publicado",
   pausado: "Pausado",
 };
