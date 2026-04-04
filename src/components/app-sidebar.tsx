@@ -6,6 +6,7 @@ import {
   History,
   LayoutDashboard,
   LineChart,
+  PieChart,
   Tags,
   Users,
 } from "lucide-react";
@@ -30,6 +31,7 @@ const navItems = [
   { title: "Projetos", href: "/projects", icon: FolderOpen },
   { title: "Equipe", href: "/team", icon: Users },
   { title: "Métricas", href: "/metrics", icon: LineChart },
+  { title: "Análises", href: "/analytics", icon: PieChart },
   { title: "Tags", href: "/tags", icon: Tags },
   { title: "Changelog", href: "/changelog", icon: History },
 ];
