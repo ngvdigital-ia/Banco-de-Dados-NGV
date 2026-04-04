@@ -1,54 +1,190 @@
+import Link from "next/link";
+import {
+  FolderOpen,
+  Users,
+  Video,
+  Megaphone,
+  BarChart3,
+  ArrowRight,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { getDashboardStats, getProjectsSummary } from "./dashboard-actions";
 
-export default function DashboardPage() {
+const statusLabels: Record<string, string> = {
+  em_teste: "Em Teste",
+  rodando: "Rodando",
+  pausado: "Pausado",
+};
+
+const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
+  em_teste: "outline",
+  rodando: "default",
+  pausado: "secondary",
+};
+
+export default async function DashboardPage() {
+  const stats = await getDashboardStats();
+  const recentProjects = await getProjectsSummary();
+
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Projetos Ativos
+              Projetos
             </CardTitle>
+            <FolderOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
+            <div className="text-2xl font-bold">{stats.totalProjects}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.activeProjects} rodando
+            </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Gasto Total (Mês)
+              Equipe
             </CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
+            <div className="text-2xl font-bold">{stats.teamSize}</div>
+            <p className="text-xs text-muted-foreground">membros ativos</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Receita Total (Mês)
+              VSLs
             </CardTitle>
+            <Video className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
+            <div className="text-2xl font-bold">{stats.totalVsls}</div>
+            <p className="text-xs text-muted-foreground">cadastradas</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              ROAS Geral
+              Criativos
+            </CardTitle>
+            <Megaphone className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalCreatives}</div>
+            <p className="text-xs text-muted-foreground">cadastrados</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Campanhas
+            </CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalCampaigns}</div>
+            <p className="text-xs text-muted-foreground">ativas</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-muted/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Gasto / Receita
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
+            <div className="text-2xl font-bold text-muted-foreground">-</div>
+            <p className="text-xs text-muted-foreground">
+              Integre UTMify para ver
+            </p>
           </CardContent>
         </Card>
       </div>
-      <p className="text-muted-foreground">
-        Comece cadastrando seus projetos e equipe para ver os dados aqui.
-      </p>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Projetos Recentes</CardTitle>
+            <Button variant="ghost" size="sm" render={<Link href="/projects" />}>
+              Ver todos <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {recentProjects.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                Nenhum projeto cadastrado ainda
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Nicho</TableHead>
+                    <TableHead>Idioma</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentProjects.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell>
+                        <Link
+                          href={`/projects/${p.id}`}
+                          className="font-medium hover:underline"
+                        >
+                          {p.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell>{p.niche}</TableCell>
+                      <TableCell>{p.language}</TableCell>
+                      <TableCell>
+                        <Badge variant={statusVariant[p.status] ?? "outline"}>
+                          {statusLabels[p.status] ?? p.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Métricas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <BarChart3 className="mb-4 h-12 w-12 text-muted-foreground" />
+              <h3 className="font-semibold">Gráficos em breve</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Integre o UTMify ou cadastre métricas manualmente para ver
+                gráficos de gasto, receita e ROAS aqui.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

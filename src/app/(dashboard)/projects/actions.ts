@@ -5,6 +5,7 @@ import { projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
+import { logChange } from "@/lib/changelog";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -31,7 +32,8 @@ export async function getProject(id: number) {
 
 export async function createProject(data: ProjectFormData) {
   const parsed = projectSchema.parse(data);
-  await db.insert(projects).values(parsed);
+  const [result] = await db.insert(projects).values(parsed).returning({ id: projects.id });
+  await logChange("project", result.id, "create", parsed);
   revalidatePath("/projects");
 }
 
@@ -41,11 +43,13 @@ export async function updateProject(id: number, data: ProjectFormData) {
     .update(projects)
     .set({ ...parsed, updatedAt: new Date() })
     .where(eq(projects.id, id));
+  await logChange("project", id, "update", parsed);
   revalidatePath("/projects");
   revalidatePath(`/projects/${id}`);
 }
 
 export async function deleteProject(id: number) {
   await db.delete(projects).where(eq(projects.id, id));
+  await logChange("project", id, "delete");
   revalidatePath("/projects");
 }

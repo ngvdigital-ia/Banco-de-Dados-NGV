@@ -5,6 +5,7 @@ import {
   FolderOpen,
   History,
   LayoutDashboard,
+  LineChart,
   Tags,
   Users,
 } from "lucide-react";
@@ -28,6 +29,7 @@ const navItems = [
   { title: "Dashboard", href: "/", icon: LayoutDashboard },
   { title: "Projetos", href: "/projects", icon: FolderOpen },
   { title: "Equipe", href: "/team", icon: Users },
+  { title: "Métricas", href: "/metrics", icon: LineChart },
   { title: "Tags", href: "/tags", icon: Tags },
   { title: "Changelog", href: "/changelog", icon: History },
 ];
