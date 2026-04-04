@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --no-import-alias --turbopack)",
+      "Bash(npx --yes create-next-app@latest . --ts --tailwind --eslint --app --src-dir --turbopack)",
+      "Read(//c/tmp/**)",
+      "Bash(rm -rf ngv-temp)",
+      "Bash(npx --yes create-next-app@latest ngv-temp --ts --tailwind --eslint --app --src-dir --turbopack)",
+      "Bash(cp -r /tmp/ngv-temp/* .)",
+      "Bash(cp -r /tmp/ngv-temp/.eslintrc* .)",
+      "Bash(cp -r /tmp/ngv-temp/.gitignore .)",
+      "Bash(cp -r /tmp/ngv-temp/tsconfig.json .)",
+      "Bash(cp /tmp/ngv-temp/package.json /tmp/ngv-temp/package-lock.json /tmp/ngv-temp/postcss.config.mjs /tmp/ngv-temp/tsconfig.json /tmp/ngv-temp/.gitignore \"C:/Banco_de_dados_NGV/\")",
+      "Bash(cp -r /tmp/ngv-temp/src \"C:/Banco_de_dados_NGV/\")",
+      "Bash(cp -r /tmp/ngv-temp/public \"C:/Banco_de_dados_NGV/\")",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest init -y)",
+      "Bash(npx shadcn@latest init --defaults)"
+    ]
+  }
+}
