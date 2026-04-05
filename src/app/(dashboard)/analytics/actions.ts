@@ -42,7 +42,7 @@ export async function getFilterOptions() {
       .where(
         and(
           eq(teamMembers.active, true),
-          inArray(teamMembers.role, ["copywriter", "admin"])
+          sql`${teamMembers.role} IN ('copywriter', 'admin')`
         )
       )
       .orderBy(teamMembers.name),
@@ -52,7 +52,7 @@ export async function getFilterOptions() {
       .where(
         and(
           eq(teamMembers.active, true),
-          inArray(teamMembers.role, ["editor", "admin"])
+          sql`${teamMembers.role} IN ('editor', 'admin')`
         )
       )
       .orderBy(teamMembers.name),
@@ -89,8 +89,8 @@ function buildProjectConditions(filters?: AnalyticsFilters) {
   }
 
   if (filters?.statuses && filters.statuses.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    conditions.push(inArray(projects.status, filters.statuses as any));
+    const vals = filters.statuses.map((s) => `'${s}'`).join(",");
+    conditions.push(sql`${projects.status} IN (${sql.raw(vals)})`);
   }
 
   return conditions;
@@ -111,13 +111,13 @@ function buildCreativeConditions(filters?: AnalyticsFilters) {
   }
 
   if (filters?.formats && filters.formats.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    conditions.push(inArray(creatives.format, filters.formats as any));
+    const vals = filters.formats.map((f) => `'${f}'`).join(",");
+    conditions.push(sql`${creatives.format} IN (${sql.raw(vals)})`);
   }
 
   if (filters?.statuses && filters.statuses.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    conditions.push(inArray(creatives.status, filters.statuses as any));
+    const vals = filters.statuses.map((s) => `'${s}'`).join(",");
+    conditions.push(sql`${creatives.status} IN (${sql.raw(vals)})`);
   }
 
   return conditions;
