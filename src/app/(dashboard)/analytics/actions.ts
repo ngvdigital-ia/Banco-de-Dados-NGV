@@ -127,7 +127,7 @@ function buildCreativeConditions(filters?: AnalyticsFilters) {
  * Combine all conditions with `and()`, returning undefined if none.
  */
 function combineConditions(conditions: unknown[]) {
-  if (conditions.length === 0) return undefined;
+  if (conditions.length === 0) return sql`1=1`;
   if (conditions.length === 1) return conditions[0] as ReturnType<typeof eq>;
   return and(...(conditions as [ReturnType<typeof eq>, ...ReturnType<typeof eq>[]]));
 }
