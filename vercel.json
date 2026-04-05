@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/sync-utmify",
       "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/sync-clickup",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/sync-vturb",
+      "schedule": "0 */12 * * *"
     }
   ]
 }

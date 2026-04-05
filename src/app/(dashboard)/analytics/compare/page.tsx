@@ -11,9 +11,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ComparisonView, type ComparisonData } from "@/components/analytics/comparison-view";
-import { getFilterOptions, getComparisonData } from "../actions";
+import { getFilterOptions, getComparisonData, type AnalyticsFilters } from "../actions";
 
 type Dimension = "niche" | "language" | "copywriter" | "editor";
+
+type FilterOptions = Awaited<ReturnType<typeof getFilterOptions>>;
 
 const dimensionLabels: Record<Dimension, string> = {
   niche: "Nicho",
@@ -30,6 +32,13 @@ export default function ComparePage() {
   const [result, setResult] = useState<[ComparisonData, ComparisonData] | null>(null);
   const [isPending, startTransition] = useTransition();
   const [optionsLoaded, setOptionsLoaded] = useState(false);
+  const [filterOpts, setFilterOpts] = useState<FilterOptions | null>(null);
+
+  // Base filters state — filters that apply to BOTH sides of the comparison
+  const [baseFilterNiche, setBaseFilterNiche] = useState<string | null>(null);
+  const [baseFilterLanguage, setBaseFilterLanguage] = useState<string | null>(null);
+  const [baseFilterCopywriter, setBaseFilterCopywriter] = useState<string | null>(null);
+  const [baseFilterEditor, setBaseFilterEditor] = useState<string | null>(null);
 
   function handleDimensionChange(val: string | null) {
     if (!val) return;
@@ -39,27 +48,33 @@ export default function ComparePage() {
     setValueB(null);
     setResult(null);
     setOptionsLoaded(false);
+    // Reset base filters when dimension changes
+    setBaseFilterNiche(null);
+    setBaseFilterLanguage(null);
+    setBaseFilterCopywriter(null);
+    setBaseFilterEditor(null);
 
     // Load options for the selected dimension
     startTransition(async () => {
-      const filterOpts = await getFilterOptions();
+      const opts = await getFilterOptions();
+      setFilterOpts(opts);
       let items: { value: string; label: string }[] = [];
 
       switch (dim) {
         case "niche":
-          items = filterOpts.niches.map((n) => ({ value: n, label: n }));
+          items = opts.niches.map((n) => ({ value: n, label: n }));
           break;
         case "language":
-          items = filterOpts.languages.map((l) => ({ value: l, label: l }));
+          items = opts.languages.map((l) => ({ value: l, label: l }));
           break;
         case "copywriter":
-          items = filterOpts.copywriters.map((c) => ({
+          items = opts.copywriters.map((c) => ({
             value: String(c.id),
             label: c.name,
           }));
           break;
         case "editor":
-          items = filterOpts.editors.map((e) => ({
+          items = opts.editors.map((e) => ({
             value: String(e.id),
             label: e.name,
           }));
@@ -71,11 +86,34 @@ export default function ComparePage() {
     });
   }
 
+  function buildBaseFilters(): AnalyticsFilters {
+    const filters: AnalyticsFilters = {};
+    if (baseFilterNiche) {
+      filters.niches = [baseFilterNiche];
+    }
+    if (baseFilterLanguage) {
+      filters.languages = [baseFilterLanguage];
+    }
+    if (baseFilterCopywriter) {
+      filters.copywriterIds = [parseInt(baseFilterCopywriter, 10)];
+    }
+    if (baseFilterEditor) {
+      filters.editorIds = [parseInt(baseFilterEditor, 10)];
+    }
+    return filters;
+  }
+
   function handleCompare() {
     if (!dimension || !valueA || !valueB) return;
 
     startTransition(async () => {
-      const data = await getComparisonData(dimension, [valueA, valueB]);
+      const filters = buildBaseFilters();
+      const hasFilters = Object.keys(filters).length > 0;
+      const data = await getComparisonData(
+        dimension,
+        [valueA, valueB],
+        hasFilters ? filters : undefined
+      );
       if (data.length === 2) {
         setResult([data[0], data[1]]);
       }
@@ -112,6 +150,94 @@ export default function ComparePage() {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Step 1.5: Base filters (for OTHER dimensions) */}
+          {dimension && optionsLoaded && filterOpts && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Filtros base (aplicados aos dois lados)</label>
+              <div className="flex flex-wrap gap-3">
+                {dimension !== "niche" && (
+                  <Select
+                    value={baseFilterNiche ?? "__all__"}
+                    onValueChange={(val: string | null) => {
+                      setBaseFilterNiche(val === "__all__" ? null : val);
+                      setResult(null);
+                    }}
+                  >
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue placeholder="Nicho" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todos os Nichos</SelectItem>
+                      {filterOpts.niches.map((n) => (
+                        <SelectItem key={n} value={n}>{n}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {dimension !== "language" && (
+                  <Select
+                    value={baseFilterLanguage ?? "__all__"}
+                    onValueChange={(val: string | null) => {
+                      setBaseFilterLanguage(val === "__all__" ? null : val);
+                      setResult(null);
+                    }}
+                  >
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue placeholder="Idioma" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todos os Idiomas</SelectItem>
+                      {filterOpts.languages.map((l) => (
+                        <SelectItem key={l} value={l}>{l}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {dimension !== "copywriter" && (
+                  <Select
+                    value={baseFilterCopywriter ?? "__all__"}
+                    onValueChange={(val: string | null) => {
+                      setBaseFilterCopywriter(val === "__all__" ? null : val);
+                      setResult(null);
+                    }}
+                  >
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue placeholder="Copywriter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todos Copywriters</SelectItem>
+                      {filterOpts.copywriters.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {dimension !== "editor" && (
+                  <Select
+                    value={baseFilterEditor ?? "__all__"}
+                    onValueChange={(val: string | null) => {
+                      setBaseFilterEditor(val === "__all__" ? null : val);
+                      setResult(null);
+                    }}
+                  >
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue placeholder="Editor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todos Editores</SelectItem>
+                      {filterOpts.editors.map((e) => (
+                        <SelectItem key={e.id} value={String(e.id)}>{e.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Step 2: Select items */}
           {dimension && optionsLoaded && (

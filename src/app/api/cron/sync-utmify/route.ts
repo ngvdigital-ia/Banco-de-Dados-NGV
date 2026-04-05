@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
-import { DASHBOARDS, fetchDashboardSummary } from "@/lib/utmify";
+import { DASHBOARDS, fetchDashboardSummary, fetchMetaAdObjects } from "@/lib/utmify";
 
 export async function GET(request: Request) {
   // Verify cron secret
@@ -46,6 +46,28 @@ export async function GET(request: Request) {
           ordersRefunded: summary.ordersCount?.refunded ?? 0,
         },
       });
+
+      // After summary sync, get campaign-level data
+      try {
+        const metaData = await fetchMetaAdObjects(dashboard.id, dashboard.timeZone);
+        for (const campaign of metaData.results) {
+          await db.insert(metricsSnapshots).values({
+            date: yesterday,
+            entityType: "meta_campaign",
+            entityId: 0,
+            source: "utmify",
+            impressions: campaign.impressions ?? null,
+            clicks: campaign.clicks ?? null,
+            spend: campaign.spend ? String(campaign.spend / 100) : null,
+            revenue: campaign.revenue ? String(campaign.revenue / 100) : null,
+            cpa: campaign.cpa ? String(campaign.cpa / 100) : null,
+            roas: campaign.roas ? String(campaign.roas) : null,
+            extraData: { campaignName: campaign.name, campaignId: campaign.id, dashboardId: dashboard.id },
+          });
+        }
+      } catch (err) {
+        console.error("[UTMify] Meta campaign sync error:", err);
+      }
 
       results.push({ dashboard: dashboard.name, status: "ok" });
     } catch (err) {

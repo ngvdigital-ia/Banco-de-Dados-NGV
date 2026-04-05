@@ -103,15 +103,18 @@ function FunnelDetail({ funnel, onDelete }: { funnel: Funnel; onDelete: () => vo
   function addNode(type: "checkout" | "upsell" | "downsell") {
     const name = prompt(`Nome do ${nodeTypeLabels[type]}:`);
     if (!name) return;
-    const price = prompt("Preço (ex: 47.00):") ?? "0";
+    const price = prompt("Preço (ex: 47.00):");
+    if (price === null) return;
     let contentType: string | null = null;
     let textLength: string | null = null;
     const ctChoice = prompt("Tipo de conteúdo: 1 = Vídeo, 2 = Texto (digite 1 ou 2):");
+    if (ctChoice === null) return;
     if (ctChoice === "1") {
       contentType = "video";
     } else if (ctChoice === "2") {
       contentType = "texto";
       const tlChoice = prompt("Tamanho do texto: 1 = Longo, 2 = Curto (digite 1 ou 2):");
+      if (tlChoice === null) return;
       textLength = tlChoice === "1" ? "longo" : "curto";
     }
     startTransition(async () => {

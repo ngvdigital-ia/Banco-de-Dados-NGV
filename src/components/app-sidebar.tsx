@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LineChart,
   PieChart,
+  Settings,
   Tags,
   Upload,
   Users,
@@ -34,6 +35,7 @@ const navItems = [
   { title: "Métricas", href: "/metrics", icon: LineChart },
   { title: "Análises", href: "/analytics", icon: PieChart },
   { title: "Import CSV", href: "/import", icon: Upload },
+  { title: "Integrações", href: "/settings", icon: Settings },
   { title: "Tags", href: "/tags", icon: Tags },
   { title: "Changelog", href: "/changelog", icon: History },
 ];

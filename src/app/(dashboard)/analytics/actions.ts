@@ -191,7 +191,9 @@ export async function getVslsForComparison(filters?: AnalyticsFilters) {
   }
 
   return rows.map((row) => {
-    const stats = byProject.get(row.projectId)!;
+    const stats = byProject.get(row.projectId) ?? {
+      count: 0, totalDuration: 0, totalPriceReveal: 0, validDurations: 0, validPriceReveals: 0,
+    };
     return {
       ...row,
       projectVslCount: stats.count,
@@ -421,24 +423,50 @@ export async function getComparisonData(
     let creativesWhereConditions: unknown[] = [];
     let vslsWhereConditions: unknown[] = [];
 
-    // Base project-level filters
+    // Base project-level filters from baseFilters
     const projectConds = buildProjectConditions(filters);
+
+    // Base creative-level filters (copywriterIds, editorIds) from baseFilters
+    const baseCreativeConds = buildCreativeConditions(filters);
+
+    // Base VSL-level conditions from filters (copywriterIds apply to VSLs too)
+    const baseVslConds: unknown[] = [];
+    if (filters?.copywriterIds && filters.copywriterIds.length > 0) {
+      baseVslConds.push(inArray(vsls.copywriterId, filters.copywriterIds));
+    }
 
     switch (dimension) {
       case "niche": {
+        // Remove niche filter from projectConds since we override it with the specific value
+        const filteredProjectConds = filters?.niches?.length
+          ? projectConds.filter((c) => c !== inArray(projects.niche, filters.niches!))
+          : projectConds;
         creativesWhereConditions = [
-          ...projectConds.filter((c) => c !== inArray(projects.niche, filters?.niches ?? [])),
+          ...filteredProjectConds,
+          ...baseCreativeConds,
           eq(projects.niche, value),
         ];
-        vslsWhereConditions = [...creativesWhereConditions];
+        vslsWhereConditions = [
+          ...filteredProjectConds,
+          ...baseVslConds,
+          eq(projects.niche, value),
+        ];
         break;
       }
       case "language": {
+        const filteredProjectConds = filters?.languages?.length
+          ? projectConds.filter((c) => c !== inArray(projects.language, filters.languages!))
+          : projectConds;
         creativesWhereConditions = [
-          ...projectConds.filter((c) => c !== inArray(projects.language, filters?.languages ?? [])),
+          ...filteredProjectConds,
+          ...baseCreativeConds,
           eq(projects.language, value),
         ];
-        vslsWhereConditions = [...creativesWhereConditions];
+        vslsWhereConditions = [
+          ...filteredProjectConds,
+          ...baseVslConds,
+          eq(projects.language, value),
+        ];
         break;
       }
       case "copywriter": {
@@ -450,7 +478,12 @@ export async function getComparisonData(
           .where(eq(teamMembers.id, memberId));
         if (member) label = member.name;
 
-        creativesWhereConditions = [...projectConds, eq(creatives.copywriterId, memberId)];
+        // Remove copywriterIds from base creative conditions since we override it
+        const filteredCreativeConds = filters?.copywriterIds?.length
+          ? baseCreativeConds.filter((c) => c !== inArray(creatives.copywriterId, filters.copywriterIds!))
+          : baseCreativeConds;
+
+        creativesWhereConditions = [...projectConds, ...filteredCreativeConds, eq(creatives.copywriterId, memberId)];
         vslsWhereConditions = [...projectConds, eq(vsls.copywriterId, memberId)];
         break;
       }
@@ -462,8 +495,13 @@ export async function getComparisonData(
           .where(eq(teamMembers.id, memberId));
         if (member) label = member.name;
 
-        creativesWhereConditions = [...projectConds, eq(creatives.editorId, memberId)];
-        vslsWhereConditions = [...projectConds];
+        // Remove editorIds from base creative conditions since we override it
+        const filteredCreativeConds = filters?.editorIds?.length
+          ? baseCreativeConds.filter((c) => c !== inArray(creatives.editorId, filters.editorIds!))
+          : baseCreativeConds;
+
+        creativesWhereConditions = [...projectConds, ...filteredCreativeConds, eq(creatives.editorId, memberId)];
+        vslsWhereConditions = [...projectConds, ...baseVslConds];
         break;
       }
     }
