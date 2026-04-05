@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Video, Megaphone, Users, Trophy } from "lucide-react";
+import { ArrowRight, Video, Megaphone, Users, Trophy, ArrowLeftRight } from "lucide-react";
 
 const sections = [
   {
@@ -27,6 +27,12 @@ const sections = [
     description: "Quantas ofertas lançaram, quais validaram, quais estão escalando.",
     href: "/analytics/offers",
     icon: Trophy,
+  },
+  {
+    title: "Comparar",
+    description: "Compare métricas entre nichos, línguas ou copywriters lado a lado.",
+    href: "/analytics/compare",
+    icon: ArrowLeftRight,
   },
 ];
 

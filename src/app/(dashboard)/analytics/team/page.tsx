@@ -1,19 +1,40 @@
+import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { getTeamPerformance } from "../actions";
+import { AnalyticsFilters, parseMultiParam } from "@/components/filters/analytics-filters";
+import { getFilterOptions, getTeamPerformance } from "../actions";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
   copywriter: "Copywriter",
   editor: "Editor",
-  gestor_trafego: "Gestor de Tráfego",
+  gestor_trafego: "Gestor de Trafego",
 };
 
-export default async function TeamAnalyticsPage() {
-  const performance = await getTeamPerformance();
+export default async function TeamAnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const filters = {
+    niches: parseMultiParam(params.niche),
+    languages: parseMultiParam(params.language),
+    statuses: parseMultiParam(params.status),
+  };
+
+  const hasAnyFilter =
+    filters.niches.length > 0 ||
+    filters.languages.length > 0 ||
+    filters.statuses.length > 0;
+
+  const [options, performance] = await Promise.all([
+    getFilterOptions(),
+    getTeamPerformance(hasAnyFilter ? filters : undefined),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -21,6 +42,21 @@ export default async function TeamAnalyticsPage() {
       <p className="text-muted-foreground">
         Produtividade de cada membro: quantas VSLs, criativos e campanhas cada um produziu.
       </p>
+
+      <Suspense fallback={<div className="h-8" />}>
+        <AnalyticsFilters
+          options={{
+            niches: options.niches,
+            languages: options.languages,
+            copywriters: options.copywriters,
+            editors: options.editors,
+            formats: [],
+            statuses: ["escalou", "nao_escalou", "em_teste", "rodando", "pausado"],
+          }}
+          showFormats={false}
+          showEditors={false}
+        />
+      </Suspense>
 
       {performance.length === 0 ? (
         <p className="py-12 text-center text-muted-foreground">
@@ -38,12 +74,13 @@ export default async function TeamAnalyticsPage() {
                   <TableRow>
                     <TableHead>#</TableHead>
                     <TableHead>Nome</TableHead>
-                    <TableHead>Função</TableHead>
+                    <TableHead>Funcao</TableHead>
                     <TableHead className="text-center">VSLs (copy)</TableHead>
                     <TableHead className="text-center">Criativos (copy)</TableHead>
-                    <TableHead className="text-center">Criativos (edição)</TableHead>
+                    <TableHead className="text-center">Criativos (edicao)</TableHead>
                     <TableHead className="text-center">Campanhas</TableHead>
                     <TableHead className="text-center">Total</TableHead>
+                    <TableHead className="text-center">% Escalou</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -74,6 +111,18 @@ export default async function TeamAnalyticsPage() {
                         <Badge variant={member.totalOutput > 0 ? "default" : "secondary"}>
                           {member.totalOutput}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {member.pctEscalou > 0 ? (
+                          <Badge
+                            variant="default"
+                            className="bg-emerald-600 text-white"
+                          >
+                            {member.pctEscalou}%
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
