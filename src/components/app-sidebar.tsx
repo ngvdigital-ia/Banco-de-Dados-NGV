@@ -2,8 +2,6 @@
 
 import {
   BarChart3,
-  Bell,
-  FlaskConical,
   FolderOpen,
   History,
   LayoutDashboard,
@@ -35,8 +33,6 @@ const navItems = [
   { title: "Equipe", href: "/team", icon: Users },
   { title: "Métricas", href: "/metrics", icon: LineChart },
   { title: "Análises", href: "/analytics", icon: PieChart },
-  { title: "A/B Tests", href: "/ab-tests", icon: FlaskConical },
-  { title: "Alertas", href: "/alerts", icon: Bell },
   { title: "Import CSV", href: "/import", icon: Upload },
   { title: "Tags", href: "/tags", icon: Tags },
   { title: "Changelog", href: "/changelog", icon: History },

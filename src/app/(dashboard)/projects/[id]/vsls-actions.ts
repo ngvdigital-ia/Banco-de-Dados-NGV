@@ -14,7 +14,6 @@ const vslSchema = z.object({
   btubeLink: z.string().nullable(),
   duration: z.number().nullable(),
   priceRevealSecond: z.number().nullable(),
-  buttonAppearSecond: z.number().nullable(),
   backRedirectActive: z.boolean(),
   status: z.string().default("ativo"),
 });
@@ -31,7 +30,6 @@ export async function getVsls(projectId: number) {
       btubeLink: vsls.btubeLink,
       duration: vsls.duration,
       priceRevealSecond: vsls.priceRevealSecond,
-      buttonAppearSecond: vsls.buttonAppearSecond,
       backRedirectActive: vsls.backRedirectActive,
       status: vsls.status,
       projectId: vsls.projectId,

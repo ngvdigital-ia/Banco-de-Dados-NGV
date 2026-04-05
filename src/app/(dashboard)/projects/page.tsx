@@ -17,15 +17,24 @@ import { EntityFilters } from "@/components/filters/entity-filters";
 import { getProjects, deleteProject } from "./actions";
 
 const statusLabels: Record<string, string> = {
+  escalou: "Escalou",
+  nao_escalou: "Não Escalou",
   em_teste: "Em Teste",
   rodando: "Rodando",
   pausado: "Pausado",
 };
 
 const statusVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+  escalou: "default",
+  nao_escalou: "destructive",
   em_teste: "outline",
   rodando: "default",
   pausado: "secondary",
+};
+
+const typeLabels: Record<string, string> = {
+  vsl: "VSL",
+  tsl: "TSL",
 };
 
 export default async function ProjectsPage({
@@ -91,8 +100,8 @@ export default async function ProjectsPage({
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead>Nicho</TableHead>
-                <TableHead>Mercado</TableHead>
                 <TableHead>Idioma</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[120px]">Ações</TableHead>
@@ -102,8 +111,10 @@ export default async function ProjectsPage({
               {allProjects.map((project) => (
                 <TableRow key={project.id}>
                   <TableCell className="font-medium">{project.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{typeLabels[project.type] ?? project.type}</Badge>
+                  </TableCell>
                   <TableCell>{project.niche}</TableCell>
-                  <TableCell>{project.targetMarket}</TableCell>
                   <TableCell>{project.language}</TableCell>
                   <TableCell>
                     <Badge variant={statusVariant[project.status] ?? "default"}>

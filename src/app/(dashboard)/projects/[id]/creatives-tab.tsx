@@ -40,11 +40,10 @@ const platformLabels: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   rascunho: "Rascunho",
-  testando: "Testando",
-  validado: "Validado",
-  escalando: "Escalando",
-  publicado: "Publicado",
-  pausado: "Pausado",
+  validou: "Validou",
+  nao_validou: "Não Validou",
+  escalou: "Escalou",
+  nao_escalou: "Não Escalou",
 };
 
 function CreativeFormDialog({
@@ -69,11 +68,10 @@ function CreativeFormDialog({
       projectId,
       platform: fd.get("platform") as "meta" | "tiktok" | "google" | "kwai",
       format: fd.get("format") as "especialista" | "ugc_masc" | "ugc_fem" | "famoso" | "youtuber" | "autoridade" | "podcast",
-      copyScript: (fd.get("copyScript") as string) || null,
       copywriterId: cwVal && cwVal !== "none" ? Number(cwVal) : null,
       editorId: edVal && edVal !== "none" ? Number(edVal) : null,
       videoLink: (fd.get("videoLink") as string) || null,
-      status: fd.get("status") as "rascunho" | "publicado" | "pausado",
+      status: fd.get("status") as "rascunho" | "validou" | "nao_validou" | "escalou" | "nao_escalou",
     };
 
     startTransition(async () => {
@@ -143,10 +141,6 @@ function CreativeFormDialog({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Copy / Roteiro</Label>
-            <textarea name="copyScript" className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" defaultValue={creative?.copyScript ?? ""} />
           </div>
           <div className="space-y-2">
             <Label>Link do Vídeo</Label>

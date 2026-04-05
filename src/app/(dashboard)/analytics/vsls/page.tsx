@@ -5,11 +5,9 @@ import {
 } from "@/components/ui/table";
 import { getVslsForComparison } from "../actions";
 
-function formatSeconds(sec: number | null) {
-  if (sec == null) return "-";
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+function formatMinutes(val: number | null) {
+  if (val == null) return "-";
+  return `${val} min`;
 }
 
 export default async function VslComparisonPage() {
@@ -25,9 +23,9 @@ export default async function VslComparisonPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Comparação de VSLs</h1>
+      <h1 className="text-3xl font-bold">Performance de VSLs</h1>
       <p className="text-muted-foreground">
-        Compare versões de VSL dentro do mesmo projeto para identificar qual performa melhor.
+        Analise a performance das VSLs por projeto, copywriter e métricas de pit de vendas.
       </p>
 
       {Object.keys(grouped).length === 0 ? (
@@ -53,43 +51,24 @@ export default async function VslComparisonPage() {
                       <TableHead>Versão</TableHead>
                       <TableHead>Copywriter</TableHead>
                       <TableHead>Duração</TableHead>
-                      <TableHead>Revelação Preço</TableHead>
-                      <TableHead>Botão Aparece</TableHead>
-                      <TableHead>% até Preço</TableHead>
+                      <TableHead>Pit de Vendas (min)</TableHead>
                       <TableHead>Back Redirect</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {vsls.map((vsl) => {
-                      const pctToPrice =
-                        vsl.duration && vsl.priceRevealSecond
-                          ? Math.round((vsl.priceRevealSecond / vsl.duration) * 100)
-                          : null;
-
-                      return (
+                    {vsls.map((vsl) => (
                         <TableRow key={vsl.id}>
                           <TableCell className="font-bold">{vsl.version}</TableCell>
                           <TableCell>{vsl.copywriterName ?? "-"}</TableCell>
-                          <TableCell>{formatSeconds(vsl.duration)}</TableCell>
-                          <TableCell>{formatSeconds(vsl.priceRevealSecond)}</TableCell>
-                          <TableCell>{formatSeconds(vsl.buttonAppearSecond)}</TableCell>
-                          <TableCell>
-                            {pctToPrice != null ? (
-                              <Badge variant={pctToPrice > 60 ? "default" : "secondary"}>
-                                {pctToPrice}%
-                              </Badge>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
+                          <TableCell>{formatMinutes(vsl.duration)}</TableCell>
+                          <TableCell>{formatMinutes(vsl.priceRevealSecond)}</TableCell>
                           <TableCell>
                             <Badge variant={vsl.backRedirectActive ? "default" : "outline"}>
                               {vsl.backRedirectActive ? "Sim" : "Não"}
                             </Badge>
                           </TableCell>
                         </TableRow>
-                      );
-                    })}
+                      ))}
                   </TableBody>
                 </Table>
               </div>

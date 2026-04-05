@@ -62,7 +62,6 @@ function VslFormDialog({
       btubeLink: (fd.get("btubeLink") as string) || null,
       duration: fd.get("duration") ? Number(fd.get("duration")) : null,
       priceRevealSecond: fd.get("priceRevealSecond") ? Number(fd.get("priceRevealSecond")) : null,
-      buttonAppearSecond: fd.get("buttonAppearSecond") ? Number(fd.get("buttonAppearSecond")) : null,
       backRedirectActive: fd.get("backRedirectActive") === "on",
       status: "ativo",
     };
@@ -108,18 +107,14 @@ function VslFormDialog({
             <Label htmlFor="btubeLink">Link BTube</Label>
             <Input id="btubeLink" name="btubeLink" defaultValue={vsl?.btubeLink ?? ""} />
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2">
-              <Label htmlFor="duration">Duração (seg)</Label>
+              <Label htmlFor="duration">Duração (min)</Label>
               <Input id="duration" name="duration" type="number" defaultValue={vsl?.duration ?? ""} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="priceRevealSecond">Seg. Preço</Label>
+              <Label htmlFor="priceRevealSecond">Pit de Vendas (min)</Label>
               <Input id="priceRevealSecond" name="priceRevealSecond" type="number" defaultValue={vsl?.priceRevealSecond ?? ""} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="buttonAppearSecond">Seg. Botão</Label>
-              <Input id="buttonAppearSecond" name="buttonAppearSecond" type="number" defaultValue={vsl?.buttonAppearSecond ?? ""} />
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -151,11 +146,9 @@ export function VslsTab({ projectId }: { projectId: number }) {
 
   useEffect(() => { load(); }, [projectId]);
 
-  function formatSeconds(sec: number | null) {
-    if (sec == null) return "-";
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${s.toString().padStart(2, "0")}`;
+  function formatMinutes(val: number | null) {
+    if (val == null) return "-";
+    return `${val} min`;
   }
 
   return (
@@ -174,9 +167,8 @@ export function VslsTab({ projectId }: { projectId: number }) {
               <TableRow>
                 <TableHead>Versão</TableHead>
                 <TableHead>Copywriter</TableHead>
-                <TableHead>Duração</TableHead>
-                <TableHead>Seg. Preço</TableHead>
-                <TableHead>Seg. Botão</TableHead>
+                <TableHead>Duração (min)</TableHead>
+                <TableHead>Pit de Vendas (min)</TableHead>
                 <TableHead>Back Redirect</TableHead>
                 <TableHead className="w-[100px]">Ações</TableHead>
               </TableRow>
@@ -186,9 +178,8 @@ export function VslsTab({ projectId }: { projectId: number }) {
                 <TableRow key={vsl.id}>
                   <TableCell className="font-medium">{vsl.version}</TableCell>
                   <TableCell>{vsl.copywriterName ?? "-"}</TableCell>
-                  <TableCell>{formatSeconds(vsl.duration)}</TableCell>
-                  <TableCell>{formatSeconds(vsl.priceRevealSecond)}</TableCell>
-                  <TableCell>{formatSeconds(vsl.buttonAppearSecond)}</TableCell>
+                  <TableCell>{formatMinutes(vsl.duration)}</TableCell>
+                  <TableCell>{formatMinutes(vsl.priceRevealSecond)}</TableCell>
                   <TableCell>
                     <Badge variant={vsl.backRedirectActive ? "default" : "secondary"}>
                       {vsl.backRedirectActive ? "Sim" : "Não"}

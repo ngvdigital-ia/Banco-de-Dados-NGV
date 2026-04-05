@@ -104,6 +104,16 @@ function FunnelDetail({ funnel, onDelete }: { funnel: Funnel; onDelete: () => vo
     const name = prompt(`Nome do ${nodeTypeLabels[type]}:`);
     if (!name) return;
     const price = prompt("Preço (ex: 47.00):") ?? "0";
+    let contentType: string | null = null;
+    let textLength: string | null = null;
+    const ctChoice = prompt("Tipo de conteúdo: 1 = Vídeo, 2 = Texto (digite 1 ou 2):");
+    if (ctChoice === "1") {
+      contentType = "video";
+    } else if (ctChoice === "2") {
+      contentType = "texto";
+      const tlChoice = prompt("Tamanho do texto: 1 = Longo, 2 = Curto (digite 1 ou 2):");
+      textLength = tlChoice === "1" ? "longo" : "curto";
+    }
     startTransition(async () => {
       await createFunnelNode({
         funnelId: funnel.id,
@@ -114,6 +124,8 @@ function FunnelDetail({ funnel, onDelete }: { funnel: Funnel; onDelete: () => vo
         url: null,
         acceptDestinationId: null,
         declineDestinationId: null,
+        contentType,
+        textLength,
         position: nodes.length,
       });
       load();
@@ -201,6 +213,11 @@ function FunnelDetail({ funnel, onDelete }: { funnel: Funnel; onDelete: () => vo
                     </Badge>
                     <span className="font-medium">{node.offerName}</span>
                     <span className="text-sm text-muted-foreground">R$ {node.price}</span>
+                    {node.contentType && (
+                      <Badge variant="outline">
+                        {node.contentType === "video" ? "Vídeo" : `Texto (${node.textLength === "longo" ? "Longo" : "Curto"})`}
+                      </Badge>
+                    )}
                     {node.url && <span className="text-xs text-muted-foreground truncate max-w-[200px]">{node.url}</span>}
                     <button onClick={() => startTransition(async () => { await deleteFunnelNode(node.id); load(); })}
                       className="ml-auto hover:text-destructive">

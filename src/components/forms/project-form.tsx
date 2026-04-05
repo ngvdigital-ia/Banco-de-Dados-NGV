@@ -25,6 +25,8 @@ import {
 } from "@/app/(dashboard)/projects/actions";
 
 const statusLabels: Record<string, string> = {
+  escalou: "Escalou",
+  nao_escalou: "Não Escalou",
   em_teste: "Em Teste",
   rodando: "Rodando",
   pausado: "Pausado",
@@ -32,12 +34,15 @@ const statusLabels: Record<string, string> = {
 
 const nicheOptions = [
   "Emagrecimento",
-  "Sexualidade",
+  "Sexualidade (Homem)",
+  "Sexualidade (Mulher)",
   "Investimentos",
-  "Saúde",
-  "Relacionamento",
+  "Relacionamento (Homem)",
+  "Relacionamento (Mulher)",
+  "Próstata",
+  "Disfunção Erétil",
   "Renda Extra",
-  "Outro",
+  "Outro (digitar)",
 ];
 
 const languageOptions = [
@@ -50,13 +55,20 @@ const languageOptions = [
   "Outro",
 ];
 
+const typeOptions = [
+  { value: "vsl", label: "VSL" },
+  { value: "tsl", label: "TSL" },
+];
+
 type Project = {
   id: number;
   name: string;
+  type: "vsl" | "tsl";
   niche: string;
-  targetMarket: string;
   language: string;
-  status: "em_teste" | "rodando" | "pausado";
+  status: "escalou" | "nao_escalou" | "em_teste" | "rodando" | "pausado";
+  scaleStartDate: Date | null;
+  scaleEndDate: Date | null;
 };
 
 export function ProjectFormDialog({
@@ -77,10 +89,12 @@ export function ProjectFormDialog({
 
     const data: ProjectFormData = {
       name: formData.get("name") as string,
+      type: formData.get("type") as ProjectFormData["type"],
       niche: formData.get("niche") as string,
-      targetMarket: formData.get("targetMarket") as string,
       language: formData.get("language") as string,
       status: formData.get("status") as ProjectFormData["status"],
+      scaleStartDate: (formData.get("scaleStartDate") as string) || null,
+      scaleEndDate: (formData.get("scaleEndDate") as string) || null,
     };
 
     startTransition(async () => {
@@ -108,6 +122,21 @@ export function ProjectFormDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
+            <Label htmlFor="type">Tipo</Label>
+            <Select name="type" defaultValue={project?.type ?? "vsl"}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                {typeOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="name">Nome do Projeto</Label>
             <Input
               id="name"
@@ -130,16 +159,6 @@ export function ProjectFormDialog({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="targetMarket">Mercado-alvo</Label>
-            <Input
-              id="targetMarket"
-              name="targetMarket"
-              placeholder="Ex: EUA, Alemanha, Brasil..."
-              defaultValue={project?.targetMarket}
-              required
-            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="language">Idioma</Label>
@@ -170,6 +189,26 @@ export function ProjectFormDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="scaleStartDate">Data início escala</Label>
+              <Input
+                id="scaleStartDate"
+                name="scaleStartDate"
+                type="date"
+                defaultValue={project?.scaleStartDate ? new Date(project.scaleStartDate).toISOString().split("T")[0] : ""}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="scaleEndDate">Data fim escala</Label>
+              <Input
+                id="scaleEndDate"
+                name="scaleEndDate"
+                type="date"
+                defaultValue={project?.scaleEndDate ? new Date(project.scaleEndDate).toISOString().split("T")[0] : ""}
+              />
+            </div>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex justify-end gap-2">

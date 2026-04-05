@@ -25,6 +25,8 @@ const funnelNodeSchema = z.object({
   url: z.string().nullable(),
   acceptDestinationId: z.number().nullable(),
   declineDestinationId: z.number().nullable(),
+  contentType: z.string().nullable().optional(),
+  textLength: z.string().nullable().optional(),
   position: z.number().default(0),
 });
 

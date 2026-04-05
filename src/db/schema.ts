@@ -24,9 +24,16 @@ export const teamRoleEnum = pgEnum("team_role", [
 ]);
 
 export const projectStatusEnum = pgEnum("project_status", [
+  "escalou",
+  "nao_escalou",
   "em_teste",
   "rodando",
   "pausado",
+]);
+
+export const projectTypeEnum = pgEnum("project_type", [
+  "vsl",
+  "tsl",
 ]);
 
 export const platformEnum = pgEnum("platform", [
@@ -48,11 +55,10 @@ export const creativeFormatEnum = pgEnum("creative_format", [
 
 export const creativeStatusEnum = pgEnum("creative_status", [
   "rascunho",
-  "testando",
-  "validado",
-  "escalando",
-  "publicado",
-  "pausado",
+  "validou",
+  "nao_validou",
+  "escalou",
+  "nao_escalou",
 ]);
 
 export const funnelNodeTypeEnum = pgEnum("funnel_node_type", [
@@ -103,10 +109,12 @@ export const teamMembersRelations = relations(teamMembers, ({ many }) => ({
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  type: projectTypeEnum("type").notNull().default("vsl"),
   niche: text("niche").notNull(),
-  targetMarket: text("target_market").notNull(),
   language: text("language").notNull(),
   status: projectStatusEnum("status").notNull().default("em_teste"),
+  scaleStartDate: timestamp("scale_start_date", { withTimezone: true }),
+  scaleEndDate: timestamp("scale_end_date", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -181,6 +189,8 @@ export const funnelNodes = pgTable("funnel_nodes", {
   url: text("url"),
   acceptDestinationId: integer("accept_destination_id").references((): AnyPgColumn => funnelNodes.id),
   declineDestinationId: integer("decline_destination_id").references((): AnyPgColumn => funnelNodes.id),
+  contentType: text("content_type"),
+  textLength: text("text_length"),
   position: integer("position").notNull().default(0),
   acceptanceRate: numeric("acceptance_rate", { precision: 8, scale: 4 }),
   revenuePerCustomer: numeric("revenue_per_customer", { precision: 10, scale: 2 }),

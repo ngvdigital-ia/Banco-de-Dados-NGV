@@ -16,7 +16,6 @@ export async function getVslsForComparison() {
       copywriterName: teamMembers.name,
       duration: vsls.duration,
       priceRevealSecond: vsls.priceRevealSecond,
-      buttonAppearSecond: vsls.buttonAppearSecond,
       backRedirectActive: vsls.backRedirectActive,
       status: vsls.status,
       createdAt: vsls.createdAt,

@@ -5,20 +5,20 @@ import { ArrowRight, Video, Megaphone, Users, Trophy } from "lucide-react";
 
 const sections = [
   {
-    title: "Comparação de VSLs",
-    description: "Compare versões de VSL lado a lado para ver qual performa melhor.",
+    title: "Performance de VSLs",
+    description: "Analise a performance das VSLs por projeto, copywriter e métricas de pit de vendas.",
     href: "/analytics/vsls",
     icon: Video,
   },
   {
-    title: "Análise de Criativos",
+    title: "Performance de Criativos",
     description: "Quais formatos de criativo estão sendo mais usados e em quais plataformas.",
     href: "/analytics/creatives",
     icon: Megaphone,
   },
   {
-    title: "Performance da Equipe",
-    description: "Ranking de produtividade: quem produziu mais VSLs, criativos e campanhas.",
+    title: "Performance de Editores",
+    description: "Ranking de produtividade dos editores: quem produziu mais criativos.",
     href: "/analytics/team",
     icon: Users,
   },

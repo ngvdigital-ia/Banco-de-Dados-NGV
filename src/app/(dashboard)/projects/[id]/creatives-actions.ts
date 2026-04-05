@@ -11,11 +11,10 @@ const creativeSchema = z.object({
   projectId: z.number(),
   platform: z.enum(["meta", "tiktok", "google", "kwai"]),
   format: z.enum(["especialista", "ugc_masc", "ugc_fem", "famoso", "youtuber", "autoridade", "podcast"]),
-  copyScript: z.string().nullable(),
   copywriterId: z.number().nullable(),
   editorId: z.number().nullable(),
   videoLink: z.string().nullable(),
-  status: z.enum(["rascunho", "testando", "validado", "escalando", "publicado", "pausado"]),
+  status: z.enum(["rascunho", "validou", "nao_validou", "escalou", "nao_escalou"]),
 });
 
 export type CreativeFormData = z.infer<typeof creativeSchema>;

@@ -8,12 +8,18 @@ import { getProject } from "../actions";
 import { VslsTab } from "./vsls-tab";
 import { FunnelTab } from "./funnel-tab";
 import { CreativesTab } from "./creatives-tab";
-import { CampaignsTab } from "./campaigns-tab";
 
 const statusLabels: Record<string, string> = {
+  escalou: "Escalou",
+  nao_escalou: "Não Escalou",
   em_teste: "Em Teste",
   rodando: "Rodando",
   pausado: "Pausado",
+};
+
+const typeLabels: Record<string, string> = {
+  vsl: "VSL",
+  tsl: "TSL",
 };
 
 export default async function ProjectDetailPage({
@@ -37,15 +43,26 @@ export default async function ProjectDetailPage({
         <div>
           <h1 className="text-3xl font-bold">{project.name}</h1>
           <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-            <span>{project.niche}</span>
+            <Badge variant="secondary">
+              {typeLabels[project.type] ?? project.type}
+            </Badge>
             <span>·</span>
-            <span>{project.targetMarket}</span>
+            <span>{project.niche}</span>
             <span>·</span>
             <span>{project.language}</span>
             <span>·</span>
             <Badge variant="outline">
               {statusLabels[project.status] ?? project.status}
             </Badge>
+            {project.status === "escalou" && project.scaleStartDate && (
+              <>
+                <span>·</span>
+                <span>
+                  Escala: {new Date(project.scaleStartDate).toLocaleDateString("pt-BR")}
+                  {project.scaleEndDate ? ` - ${new Date(project.scaleEndDate).toLocaleDateString("pt-BR")}` : " - atual"}
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -55,7 +72,6 @@ export default async function ProjectDetailPage({
           <TabsTrigger value="vsls">VSLs</TabsTrigger>
           <TabsTrigger value="funnel">Funil</TabsTrigger>
           <TabsTrigger value="creatives">Criativos</TabsTrigger>
-          <TabsTrigger value="campaigns">Campanhas</TabsTrigger>
         </TabsList>
         <TabsContent value="vsls" className="mt-4">
           <VslsTab projectId={project.id} />
@@ -65,9 +81,6 @@ export default async function ProjectDetailPage({
         </TabsContent>
         <TabsContent value="creatives" className="mt-4">
           <CreativesTab projectId={project.id} />
-        </TabsContent>
-        <TabsContent value="campaigns" className="mt-4">
-          <CampaignsTab projectId={project.id} />
         </TabsContent>
       </Tabs>
     </div>
