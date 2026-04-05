@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { AnalyticsFilters, parseMultiParam } from "@/components/filters/analytics-filters";
+import { AnalyticsFilters } from "@/components/filters/analytics-filters";
+import { parseMultiParam } from "@/lib/filter-utils";
 import { getFilterOptions, getOffersRanking } from "../actions";
 
 const statusLabels: Record<string, string> = {
