@@ -90,11 +90,16 @@ const SIGLA_TO_NAME: Record<string, string> = {
   DG: "Diogo", GA: "Gabriel", RO: "Robert",
   MALU: "Malu", VA: "Victor Andrade", CA: "Camile", LF: "Luis Felipe",
 };
-const NAME_TO_SIGLA: Record<string, string> = {};
-Object.entries(SIGLA_TO_NAME).forEach(([s, n]) => {
-  NAME_TO_SIGLA[n.toLowerCase()] = s;
-  NAME_TO_SIGLA[s.toLowerCase()] = s;
-});
+// Map ALL known name variations to siglas
+const NAME_TO_SIGLA: Record<string, string> = {
+  dg: "DG", ga: "GA", ro: "RO", malu: "MALU", va: "VA", ca: "CA", lf: "LF",
+  diogo: "DG", gabriel: "GA", robert: "RO",
+  camile: "CA", camille: "CA",
+  luis: "LF", "luis felipe": "LF",
+  victor: "VA", "victor andrade": "VA",
+  "maria luisa": "MALU", "maria luísa": "MALU",
+  // ICARO e LUIZA não estão na lista de siglas — ficam como valor custom no select
+};
 
 function parseEditors(editorAds: string | null): string[] {
   if (!editorAds) return [];
