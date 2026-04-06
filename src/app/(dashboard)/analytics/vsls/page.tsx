@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/table";
 import { AnalyticsFilters } from "@/components/filters/analytics-filters";
 import { parseMultiParam } from "@/lib/filter-utils";
-import { getFilterOptions, getVslsForComparison } from "../actions";
+import { getFilterOptions, getVslsForComparison, getVturbStats } from "../actions";
 
 function formatMinutes(val: number | null) {
   if (val == null) return "-";
@@ -29,7 +29,7 @@ export default async function VslComparisonPage({
   const hasFilters =
     (filters.niches.length > 0 ? filters : undefined) !== undefined;
 
-  const [options, allVsls] = await Promise.all([
+  const [options, allVsls, vturbStats] = await Promise.all([
     getFilterOptions(),
     getVslsForComparison(
       filters.niches.length > 0 ||
@@ -39,6 +39,7 @@ export default async function VslComparisonPage({
         ? filters
         : undefined
     ),
+    getVturbStats(),
   ]);
 
   // Summary stats
@@ -160,6 +161,73 @@ export default async function VslComparisonPage({
           </Card>
         ))
       )}
+
+      {/* VTurb Section */}
+      <div className="space-y-4 pt-4">
+        <h2 className="text-2xl font-bold">Metricas VTurb (ultimos 7 dias)</h2>
+        {vturbStats.length === 0 ? (
+          <Card>
+            <CardContent className="py-8">
+              <p className="text-center text-muted-foreground">
+                Sync VTurb na pagina Integracoes para ver dados.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Player</TableHead>
+                      <TableHead className="text-right">Views</TableHead>
+                      <TableHead className="text-right">Plays</TableHead>
+                      <TableHead className="text-right">Finishes</TableHead>
+                      <TableHead className="text-right">Clicks</TableHead>
+                      <TableHead>Play Rate (%)</TableHead>
+                      <TableHead>Finish Rate (%)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {vturbStats.map((player) => (
+                      <TableRow key={player.playerName}>
+                        <TableCell className="font-medium">{player.playerName}</TableCell>
+                        <TableCell className="text-right">{player.viewed.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">{player.started.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">{player.finished.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">{player.clicked.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-24 rounded-full bg-muted">
+                              <div
+                                className="h-2 rounded-full bg-blue-500"
+                                style={{ width: `${Math.min(player.playRate, 100)}%` }}
+                              />
+                            </div>
+                            <span className="text-sm">{player.playRate}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-24 rounded-full bg-muted">
+                              <div
+                                className="h-2 rounded-full bg-green-500"
+                                style={{ width: `${Math.min(player.finishRate, 100)}%` }}
+                              />
+                            </div>
+                            <span className="text-sm">{player.finishRate}%</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

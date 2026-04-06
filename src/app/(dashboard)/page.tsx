@@ -6,6 +6,7 @@ import {
   Megaphone,
   BarChart3,
   ArrowRight,
+  Play,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getDashboardStats, getProjectsSummary, getMetricsTrend } from "./dashboard-actions";
+import { getDashboardStats, getProjectsSummary, getMetricsTrend, getVturbSummary } from "./dashboard-actions";
 import { SpendRevenueChart } from "@/components/charts/spend-revenue-chart";
 import { RoasChart } from "@/components/charts/roas-chart";
 
@@ -35,10 +36,11 @@ const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
 };
 
 export default async function DashboardPage() {
-  const [stats, recentProjects, metricsTrend] = await Promise.all([
+  const [stats, recentProjects, metricsTrend, vturbSummary] = await Promise.all([
     getDashboardStats(),
     getProjectsSummary(),
     getMetricsTrend(30),
+    getVturbSummary(),
   ]);
 
   return (
@@ -121,6 +123,60 @@ export default async function DashboardPage() {
             <p className="text-xs text-muted-foreground">
               Integre UTMify para ver
             </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* VTurb Summary */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              VTurb - Total Plays
+            </CardTitle>
+            <Play className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {vturbSummary.totalPlays.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {vturbSummary.totalViews.toLocaleString()} views totais
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              VTurb - Play Rate Medio
+            </CardTitle>
+            <Play className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{vturbSummary.avgPlayRate}%</div>
+            <div className="mt-2 h-2 w-full rounded-full bg-muted">
+              <div
+                className="h-2 rounded-full bg-blue-500"
+                style={{ width: `${Math.min(vturbSummary.avgPlayRate, 100)}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              VTurb - Finish Rate Medio
+            </CardTitle>
+            <Play className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{vturbSummary.avgFinishRate}%</div>
+            <div className="mt-2 h-2 w-full rounded-full bg-muted">
+              <div
+                className="h-2 rounded-full bg-green-500"
+                style={{ width: `${Math.min(vturbSummary.avgFinishRate, 100)}%` }}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
