@@ -92,13 +92,47 @@ export function OfferImport() {
     setResult(null);
 
     Papa.parse(file, {
-      header: true,
+      header: false,
       skipEmptyLines: true,
       complete: (results) => {
-        const parsed = (results.data as RawRow[])
+        const allRows = results.data as string[][];
+
+        // Find the header row (first row that contains "Oferta")
+        let headerIndex = -1;
+        for (let i = 0; i < allRows.length; i++) {
+          if (allRows[i].some((cell) => cell && cell.toString().trim().toLowerCase().includes("oferta"))) {
+            headerIndex = i;
+            break;
+          }
+        }
+
+        if (headerIndex === -1) {
+          setResult("Erro: Não encontrei a coluna 'Oferta' no CSV. Verifique o formato.");
+          return;
+        }
+
+        const headers = allRows[headerIndex].map((h) => h.toString().trim());
+        const dataRows = allRows.slice(headerIndex + 1);
+
+        // Convert to objects
+        const mapped: RawRow[] = dataRows
+          .filter((row) => row.some((cell) => cell && cell.toString().trim() !== ""))
+          .map((row) => {
+            const obj: RawRow = {};
+            headers.forEach((h, i) => {
+              if (h) obj[h] = (row[i] || "").toString().trim();
+            });
+            return obj;
+          });
+
+        const parsed = mapped
           .map(parseRow)
           .filter((r): r is ParsedOffer => r !== null);
         setOffers(parsed);
+
+        if (parsed.length === 0) {
+          setResult("Nenhuma oferta encontrada. Verifique se a planilha tem dados abaixo do cabeçalho.");
+        }
       },
     });
   }
