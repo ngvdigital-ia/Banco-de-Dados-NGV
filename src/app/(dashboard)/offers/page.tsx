@@ -34,20 +34,28 @@ export default async function OffersPage({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Acompanhamento de Ofertas</h1>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Acompanhamento de Ofertas</h1>
+            <p className="text-[13px] text-muted-foreground">Tracking de ofertas da operação</p>
+          </div>
+          <span className="inline-flex h-6 items-center rounded-md border border-zinc-200 bg-zinc-100 px-2 text-[11px] font-mono font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
+            {offers.length} ofertas
+          </span>
+        </div>
         <div className="flex items-center gap-2">
+          <CsvImportDialog />
           <form
             action={async () => {
               "use server";
               await createOffer();
             }}
           >
-            <Button type="submit">
-              <Plus className="mr-1 h-4 w-4" />
+            <Button type="submit" size="sm" className="h-8 gap-1.5 px-3 text-xs font-medium">
+              <Plus className="h-3.5 w-3.5" />
               Nova Oferta
             </Button>
           </form>
-          <CsvImportDialog />
         </div>
       </div>
 
@@ -101,12 +109,9 @@ function OfferFilters({
   const hasFilters = currentLanguage || currentValidation || currentCopywriter;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 text-sm">
-      <span className="text-muted-foreground">Filtros:</span>
-
+    <div className="flex flex-wrap items-center gap-1.5 text-sm">
       {languages.length > 1 && (
         <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground">Língua:</span>
           {languages.map((lang) => (
             <a
               key={lang}
@@ -115,10 +120,10 @@ function OfferFilters({
                 validation: currentValidation,
                 copywriter: currentCopywriter,
               })}
-              className={`rounded-md border px-2 py-0.5 text-xs transition-colors hover:bg-muted ${
+              className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-all ${
                 currentLanguage === lang
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border"
+                  ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                  : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
               }`}
             >
               {lang}
@@ -127,9 +132,12 @@ function OfferFilters({
         </div>
       )}
 
+      {languages.length > 1 && validations.length > 1 && (
+        <div className="mx-1 h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
+      )}
+
       {validations.length > 1 && (
         <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground">Validação:</span>
           {validations.map((val) => (
             <a
               key={val}
@@ -138,10 +146,10 @@ function OfferFilters({
                 validation: currentValidation === val ? undefined : val,
                 copywriter: currentCopywriter,
               })}
-              className={`rounded-md border px-2 py-0.5 text-xs transition-colors hover:bg-muted ${
+              className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-all ${
                 currentValidation === val
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border"
+                  ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                  : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
               }`}
             >
               {val}
@@ -151,12 +159,15 @@ function OfferFilters({
       )}
 
       {hasFilters && (
-        <a
-          href="/offers"
-          className="rounded-md border border-dashed px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted"
-        >
-          Limpar filtros
-        </a>
+        <>
+          <div className="mx-1 h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
+          <a
+            href="/offers"
+            className="rounded-md border border-dashed border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-500 transition-all hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
+          >
+            Limpar filtros
+          </a>
+        </>
       )}
     </div>
   );

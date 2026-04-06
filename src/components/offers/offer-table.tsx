@@ -47,11 +47,11 @@ function nextStatus(current: string | null): StatusValue {
 }
 
 const statusColors: Record<string, string> = {
-  SIM: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
-  NAO: "bg-red-500/15 text-red-700 border-red-500/30",
-  "EM ANDAMENTO": "bg-amber-500/15 text-amber-700 border-amber-500/30",
+  SIM: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800",
+  NAO: "bg-red-50 text-red-600 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800",
+  "EM ANDAMENTO": "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800",
   "NÃO DEU CERTO":
-    "bg-zinc-400/15 text-zinc-500 border-zinc-400/30 line-through",
+    "bg-zinc-100 text-zinc-500 border-zinc-200 line-through dark:bg-zinc-900 dark:text-zinc-500 dark:border-zinc-700",
 };
 
 function getStatusColor(val: string | null) {
@@ -132,7 +132,7 @@ function SelectCell({
       value={normalizedValue}
       onChange={handleChange}
       disabled={isPending}
-      className={`w-full bg-transparent border-0 text-xs h-7 px-1 cursor-pointer outline-none focus:ring-1 focus:ring-primary/30 rounded ${isPending ? "opacity-50" : ""}`}
+      className={`w-full bg-transparent border-0 text-[13px] h-7 px-1 cursor-pointer outline-none focus:ring-1 focus:ring-primary/30 rounded ${isPending ? "opacity-50" : ""}`}
     >
       <option value="">-</option>
       {hasUnmatchedValue && (
@@ -219,7 +219,7 @@ function EditableCell({
         setLocalValue(String(value ?? ""));
         setEditing(true);
       }}
-      className={`cursor-pointer truncate rounded px-1 py-0.5 text-xs hover:bg-muted/50 ${isPending ? "opacity-50" : ""}`}
+      className={`cursor-pointer rounded px-1 py-0.5 text-xs hover:border-b hover:border-dashed hover:border-zinc-300 dark:hover:border-zinc-600 ${isPending ? "opacity-50" : ""}`}
       title={String(value ?? "")}
     >
       {value !== null && value !== undefined && value !== "" && value !== 0 ? value : "-"}
@@ -251,7 +251,7 @@ function StatusBadge({
       type="button"
       onClick={handleClick}
       disabled={isPending}
-      className={`inline-flex h-6 items-center justify-center rounded-full border px-2 text-[10px] font-medium whitespace-nowrap transition-all select-none hover:opacity-80 ${getStatusColor(display)} ${isPending ? "opacity-50" : ""}`}
+      className={`inline-flex h-7 items-center justify-center rounded-full border px-2.5 text-[11px] font-medium whitespace-nowrap transition-all duration-150 select-none hover:scale-105 hover:opacity-90 ${getStatusColor(display)} ${isPending ? "opacity-50" : ""}`}
     >
       {display === "NÃO DEU CERTO"
         ? "N/CERTO"
@@ -277,15 +277,15 @@ function ProgressBar({ offer }: { offer: Offer }) {
 
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-[10px] font-medium tabular-nums text-muted-foreground">
-        {count}/8
-      </span>
-      <div className="h-1.5 w-12 rounded-full bg-muted">
+      <div className="h-2 w-16 rounded-full bg-zinc-200 dark:bg-zinc-700">
         <div
           className={`h-full rounded-full transition-all ${color}`}
           style={{ width: `${pct}%` }}
         />
       </div>
+      <span className="text-[10px] font-mono font-medium tabular-nums text-muted-foreground">
+        {count}/8
+      </span>
     </div>
   );
 }
@@ -361,7 +361,7 @@ function ObservationsCell({
         setLocalValue(value ?? "");
         setEditing(true);
       }}
-      className={`cursor-pointer truncate rounded px-1 py-0.5 text-xs hover:bg-muted/50 ${isPending ? "opacity-50" : ""}`}
+      className={`cursor-pointer truncate rounded px-1 py-0.5 text-xs hover:border-b hover:border-dashed hover:border-zinc-300 dark:hover:border-zinc-600 ${isPending ? "opacity-50" : ""}`}
       title={value ?? ""}
     >
       {display}
@@ -453,10 +453,11 @@ function AdsCopyDisplay({
     );
   }
 
-  const display =
-    entries.length > 0
-      ? entries.map(([k, v]) => `${k[0]}:${v}`).join(" ")
-      : "-";
+  const initialColors: Record<string, string> = {
+    R: "text-blue-600 dark:text-blue-400",
+    G: "text-purple-600 dark:text-purple-400",
+    D: "text-orange-600 dark:text-orange-400",
+  };
 
   return (
     <div
@@ -466,9 +467,21 @@ function AdsCopyDisplay({
         setGabrielVal(String(data.GABRIEL ?? 0));
         setEditing(true);
       }}
-      className={`relative cursor-pointer truncate rounded px-1 py-0.5 text-[10px] font-mono hover:bg-muted/50 ${isPending ? "opacity-50" : ""}`}
+      className={`relative cursor-pointer truncate rounded px-1 py-0.5 text-[10px] hover:border-b hover:border-dashed hover:border-zinc-300 dark:hover:border-zinc-600 ${isPending ? "opacity-50" : ""}`}
     >
-      {display}
+      {entries.length > 0 ? (
+        <span className="flex items-center gap-1.5">
+          {entries.map(([k, v]) => (
+            <span key={k} className="inline-flex items-center">
+              <span className={`font-semibold ${initialColors[k[0]] || "text-zinc-600 dark:text-zinc-400"}`}>{k[0]}</span>
+              <span className="text-zinc-400 dark:text-zinc-500">:</span>
+              <span className="font-mono font-medium text-zinc-700 dark:text-zinc-300">{v}</span>
+            </span>
+          ))}
+        </span>
+      ) : (
+        "-"
+      )}
     </div>
   );
 }
@@ -516,10 +529,10 @@ function EditorStatusDisplay({
             key={name}
             type="button"
             onClick={() => toggleEditor(name)}
-            className={`inline-flex h-5 items-center rounded px-1 text-[9px] font-medium transition-colors ${
+            className={`inline-flex h-6 items-center rounded px-1.5 text-[10px] font-medium transition-all duration-150 ${
               done
-                ? "bg-emerald-500/15 text-emerald-700"
-                : "bg-red-500/10 text-red-600"
+                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
+                : "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
             }`}
             title={`${name}: ${status}`}
           >
@@ -546,7 +559,7 @@ function DeleteButton({ offerId }: { offerId: number }) {
         }
       }}
       disabled={isPending}
-      className={`rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive ${isPending ? "opacity-50" : ""}`}
+      className={`rounded p-1 text-muted-foreground opacity-0 transition-all duration-150 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive ${isPending ? "opacity-50" : ""}`}
       title="Excluir oferta"
     >
       <Trash2 className="h-3.5 w-3.5" />
@@ -575,7 +588,7 @@ const columns: ColumnDef[] = [
   {
     key: "progress",
     label: "Progresso",
-    width: "w-[90px] min-w-[90px]",
+    width: "w-[110px] min-w-[110px]",
     render: (o) => <ProgressBar offer={o} />,
   },
   {
@@ -781,18 +794,18 @@ const columns: ColumnDef[] = [
 
 export function OfferTable({ offers }: { offers: Offer[] }) {
   return (
-    <div className="rounded-md border">
+    <div className="rounded-lg border border-zinc-200 dark:border-zinc-800">
       <div className="overflow-x-auto">
         <table className="w-max table-fixed border-collapse text-sm">
           {/* Header */}
           <thead>
-            <tr className="sticky top-0 z-20 border-b bg-muted/60">
+            <tr className="sticky top-0 z-20 border-b-2 border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`h-8 px-2 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground ${col.width} ${
+                  className={`h-9 px-3 text-left text-[11px] font-semibold font-mono tracking-wide text-zinc-500 dark:text-zinc-400 ${col.width} ${
                     col.sticky
-                      ? "sticky left-0 z-30 bg-muted/60"
+                      ? "sticky left-0 z-30 bg-zinc-50 dark:bg-zinc-900/50"
                       : ""
                   }`}
                 >
@@ -804,19 +817,17 @@ export function OfferTable({ offers }: { offers: Offer[] }) {
 
           {/* Body */}
           <tbody>
-            {offers.map((offer, rowIdx) => (
+            {offers.map((offer) => (
               <tr
                 key={offer.id}
-                className={`group border-b transition-colors hover:border-l-2 hover:border-l-primary hover:bg-muted/30 ${
-                  rowIdx % 2 === 0 ? "bg-background" : "bg-muted/10"
-                }`}
+                className="group border-b border-zinc-100 border-l-2 border-l-transparent bg-background transition-all hover:border-l-emerald-500 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/30"
               >
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className={`h-8 px-2 ${col.width} ${
+                    className={`h-10 px-3 ${col.width} ${
                       col.sticky
-                        ? `sticky left-0 z-10 ${rowIdx % 2 === 0 ? "bg-background" : "bg-muted/10"} group-hover:bg-muted/30`
+                        ? "sticky left-0 z-10 bg-background group-hover:bg-zinc-50 dark:group-hover:bg-zinc-900/30"
                         : ""
                     }`}
                   >
@@ -830,8 +841,8 @@ export function OfferTable({ offers }: { offers: Offer[] }) {
       </div>
 
       {/* Row count footer */}
-      <div className="border-t px-3 py-1.5 text-xs text-muted-foreground">
-        {offers.length} oferta(s)
+      <div className="border-t border-zinc-200 px-4 py-2.5 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+        <span className="font-mono font-medium">{offers.length}</span> ofertas <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">&middot;</span> Última atualização: agora
       </div>
     </div>
   );
