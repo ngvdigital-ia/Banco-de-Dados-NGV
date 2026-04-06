@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { vsls, metricsSnapshots } from "@/db/schema";
-import { isNotNull } from "drizzle-orm";
-import { fetchVideoAnalytics, extractVideoId } from "@/lib/vturb";
+import { metricsSnapshots } from "@/db/schema";
+import { fetchPlayers, fetchEventsByPlayer, fetchSessionStats, fetchUserEngagement } from "@/lib/vturb";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -11,65 +10,73 @@ export async function GET(request: Request) {
   }
 
   if (!process.env.VTURB_API_KEY) {
-    return NextResponse.json({
-      success: false,
-      message: "VTURB_API_KEY not configured",
-    });
+    return NextResponse.json({ success: false, message: "VTURB_API_KEY not configured" });
   }
 
-  // Get all VSLs that have a BTube link
-  const vslsWithLinks = await db
-    .select({ id: vsls.id, btubeLink: vsls.btubeLink })
-    .from(vsls)
-    .where(isNotNull(vsls.btubeLink));
+  // Date range: last 7 days
+  const now = new Date();
+  const weekAgo = new Date(now);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const dateFrom = weekAgo.toISOString().split("T")[0];
+  const dateTo = now.toISOString().split("T")[0];
 
-  const results: { vslId: number; status: string; error?: string }[] = [];
+  const results: { player: string; status: string; error?: string }[] = [];
 
-  for (const vsl of vslsWithLinks) {
-    if (!vsl.btubeLink) continue;
-
-    const videoId = extractVideoId(vsl.btubeLink);
-    if (!videoId) {
-      results.push({ vslId: vsl.id, status: "skipped", error: "Could not extract video ID" });
-      continue;
-    }
-
-    try {
-      const analytics = await fetchVideoAnalytics(videoId);
-      if (!analytics) {
-        results.push({ vslId: vsl.id, status: "skipped", error: "No analytics data" });
-        continue;
-      }
-
-      await db.insert(metricsSnapshots).values({
-        date: new Date(),
-        entityType: "vsl",
-        entityId: vsl.id,
-        source: "utmify", // using closest available source enum
-        pageVisits: analytics.views ?? null,
-        playRate: analytics.playRate ? String(analytics.playRate) : null,
-        videoRetentionJson: analytics.retention ?? null,
-        extraData: {
-          source: "vturb",
-          videoId,
-          title: analytics.title,
-          uniqueViews: analytics.uniqueViews,
-          avgWatchTime: analytics.avgWatchTime,
-        },
+  try {
+    // 1. List all players
+    const playersData = await fetchPlayers(dateFrom, dateTo);
+    if (!playersData?.players?.length) {
+      return NextResponse.json({
+        success: true,
+        message: "No players found in VTurb",
+        syncedAt: now.toISOString(),
       });
-
-      results.push({ vslId: vsl.id, status: "ok" });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      console.error(`[VTurb] Error for VSL ${vsl.id}:`, msg);
-      results.push({ vslId: vsl.id, status: "error", error: msg });
     }
+
+    const playerHashes = playersData.players.map((p) => p.hash);
+
+    // 2. Get events per player
+    const events = await fetchEventsByPlayer(playerHashes, dateFrom, dateTo);
+
+    // 3. Get session stats
+    const sessions = await fetchSessionStats(playerHashes, dateFrom, dateTo);
+
+    // 4. Get engagement/retention
+    const engagement = await fetchUserEngagement(playerHashes, dateFrom, dateTo);
+
+    // 5. Save each player's data
+    for (const player of playersData.players) {
+      try {
+        await db.insert(metricsSnapshots).values({
+          date: now,
+          entityType: "vturb_player",
+          entityId: 0,
+          source: "manual", // closest available enum
+          extraData: {
+            source: "vturb",
+            playerHash: player.hash,
+            playerName: player.name,
+            playerId: player.id,
+            dateRange: { from: dateFrom, to: dateTo },
+            events: events ?? null,
+            sessions: sessions ?? null,
+            engagement: engagement ?? null,
+          },
+        });
+        results.push({ player: player.name, status: "ok" });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown";
+        results.push({ player: player.name, status: "error", error: msg });
+      }
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ success: false, error: msg });
   }
 
   return NextResponse.json({
     success: true,
-    syncedAt: new Date().toISOString(),
-    totalVsls: vslsWithLinks.length,
+    syncedAt: now.toISOString(),
     results,
   });
 }

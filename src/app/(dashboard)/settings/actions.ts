@@ -1,10 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { metricsSnapshots, vsls } from "@/db/schema";
-import { isNotNull } from "drizzle-orm";
+import { metricsSnapshots } from "@/db/schema";
 import { DASHBOARDS, fetchDashboardSummary, fetchMetaAdObjects } from "@/lib/utmify";
-import { fetchVideoAnalytics, extractVideoId } from "@/lib/vturb";
 
 export async function triggerSync(endpoint: string) {
   try {
@@ -151,34 +149,48 @@ async function syncClickup() {
 async function syncVturb() {
   if (!process.env.VTURB_API_KEY) return "Erro: VTURB_API_KEY não configurada";
 
-  const vslsWithLinks = await db
-    .select({ id: vsls.id, btubeLink: vsls.btubeLink })
-    .from(vsls)
-    .where(isNotNull(vsls.btubeLink));
+  const now = new Date();
+  const weekAgo = new Date(now);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const dateFrom = weekAgo.toISOString().split("T")[0];
+  const dateTo = now.toISOString().split("T")[0];
 
-  let synced = 0;
-  for (const vsl of vslsWithLinks) {
-    if (!vsl.btubeLink) continue;
-    const videoId = extractVideoId(vsl.btubeLink);
-    if (!videoId) continue;
+  // Fetch all players from VTurb
+  const { fetchPlayers, fetchEventsByPlayer, fetchSessionStats } = await import("@/lib/vturb");
+  const playersData = await fetchPlayers(dateFrom, dateTo);
 
-    try {
-      const analytics = await fetchVideoAnalytics(videoId);
-      if (!analytics) continue;
-
-      await db.insert(metricsSnapshots).values({
-        date: new Date(),
-        entityType: "vsl",
-        entityId: vsl.id,
-        source: "utmify",
-        pageVisits: analytics.views ?? null,
-        playRate: analytics.playRate ? String(analytics.playRate) : null,
-        videoRetentionJson: analytics.retention ?? null,
-        extraData: { source: "vturb", videoId, title: analytics.title },
-      });
-      synced++;
-    } catch { /* skip individual errors */ }
+  if (!playersData?.players?.length) {
+    return "VTurb: nenhum player encontrado";
   }
 
-  return `Sincronizado com sucesso! ${synced} VSL(s) processada(s)`;
+  const playerHashes = playersData.players.map((p: { hash: string }) => p.hash);
+  let synced = 0;
+
+  try {
+    const events = await fetchEventsByPlayer(playerHashes, dateFrom, dateTo);
+    const sessions = await fetchSessionStats(playerHashes, dateFrom, dateTo);
+
+    for (const player of playersData.players) {
+      await db.insert(metricsSnapshots).values({
+        date: now,
+        entityType: "vturb_player",
+        entityId: 0,
+        source: "manual",
+        extraData: {
+          source: "vturb",
+          playerHash: player.hash,
+          playerName: player.name,
+          dateRange: { from: dateFrom, to: dateTo },
+          events: events ?? null,
+          sessions: sessions ?? null,
+        },
+      });
+      synced++;
+    }
+  } catch (e) {
+    console.error("[VTurb sync]", e);
+    return `Erro VTurb: ${e instanceof Error ? e.message : "Erro desconhecido"}`;
+  }
+
+  return `Sincronizado com sucesso! ${synced} player(s) do VTurb processado(s)`;
 }
