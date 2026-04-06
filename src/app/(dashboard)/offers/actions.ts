@@ -145,49 +145,73 @@ export async function importOffers(rows: Record<string, unknown>[]) {
         return 0;
       };
 
-      // Parse adsCopyByPerson from "Ads copy (ROBERT )" and "Ads copy ( GABRIEL )"
+      // Fuzzy key finder — matches column names with extra spaces
+      const findKey = (search: string) => {
+        const searchLower = search.toLowerCase().replace(/\s+/g, "").trim();
+        return Object.keys(row).find((k) => {
+          const kLower = k.toLowerCase().replace(/\s+/g, "").trim();
+          return kLower === searchLower || kLower.includes(searchLower);
+        });
+      };
+      const getStringFuzzy = (search: string) => {
+        const key = findKey(search);
+        return key ? getString(key) : "";
+      };
+      const getNumberFuzzy = (search: string) => {
+        const key = findKey(search);
+        return key ? getNumber(key) : 0;
+      };
+
+      // Parse adsCopyByPerson from "Ads copy (ROBERT)" and "Ads copy (GABRIEL)"
       const adsCopyByPerson: Record<string, number> = {};
-      const robertVal = getNumber("Ads copy (ROBERT )");
-      const gabrielVal = getNumber("Ads copy ( GABRIEL )");
+      const robertVal = getNumberFuzzy("ads copy (robert");
+      const gabrielVal = getNumberFuzzy("ads copy (gabriel");
       if (robertVal) adsCopyByPerson.ROBERT = robertVal;
       if (gabrielVal) adsCopyByPerson.GABRIEL = gabrielVal;
 
-      // Parse editorStatus from "Edicao Camile", "Edicao Luis", etc.
+      // Parse editorStatus from "Edição Camile", "Edição Luis", etc.
       const editorStatus: Record<string, string> = {};
-      const camile = getString("Edição Camile") || getString("Edicao Camile");
-      const luis = getString("Edição Luis") || getString("Edicao Luis");
-      const victor = getString("Edição Victor") || getString("Edicao Victor");
-      const malu = getString("Edição Malu") || getString("Edicao Malu");
+      const camile = getStringFuzzy("camile");
+      const luis = getStringFuzzy("luis");
+      const victor = getStringFuzzy("victor");
+      const malu = getStringFuzzy("malu");
       if (camile) editorStatus.Camile = camile;
       if (luis) editorStatus.Luis = luis;
       if (victor) editorStatus.Victor = victor;
       if (malu) editorStatus.Malu = malu;
 
       await db.insert(offerTracking).values({
-        name: getString("Oferta") || "Sem nome",
-        copyVsl: getString("Copy da VSL") || null,
-        copyAds: getString("Copy ADS") || null,
-        editorAds: getString("Editor dos Ads") || null,
-        editorVsl: getString("Editor da VSL") || null,
-        ticket: getString("Ticket") || null,
-        language: getString("Língua") || "EN",
-        copyVslStatus: getString("Copy VSL") || "NAO",
-        copyCriativosStatus: getString("Copy criativos") || "NAO",
-        vslInVturb: getString("VSL no Vturb") || "NAO",
+        name: getStringFuzzy("oferta") || "Sem nome",
+        copyVsl: getStringFuzzy("copy da vsl") || null,
+        copyAds: getStringFuzzy("copy ads") || null,
+        editorAds: getStringFuzzy("editor dos ads") || null,
+        editorVsl: getStringFuzzy("editor da vsl") || null,
+        ticket: getStringFuzzy("ticket") || null,
+        language: getStringFuzzy("língua") || getStringFuzzy("lingua") || "EN",
+        copyVslStatus: (() => {
+          // "Copy VSL" is column 7 (status SIM/NAO), not "Copy da VSL" (column 2, person name)
+          const key = Object.keys(row).find(k => {
+            const clean = k.toLowerCase().replace(/\s+/g, "").trim();
+            return clean === "copyvsl";
+          });
+          return key ? getString(key) : "NAO";
+        })(),
+        copyCriativosStatus: getStringFuzzy("copycriativos") || "NAO",
+        vslInVturb: getStringFuzzy("vsl no vturb") || "NAO",
         adsCopyByPerson:
           Object.keys(adsCopyByPerson).length > 0 ? adsCopyByPerson : null,
-        adsEditedCount: getNumber("ADS Editados (qtd)"),
-        adsRejectedCount: getNumber("ADS Rejeitados (qtd)"),
+        adsEditedCount: getNumberFuzzy("ads editados"),
+        adsRejectedCount: getNumberFuzzy("ads rejeitados"),
         editorStatus:
           Object.keys(editorStatus).length > 0 ? editorStatus : null,
-        campaignsActive: getString("Campanhas ativas") || "NAO",
-        validation: getString("Validação da oferta") || "EM ANDAMENTO",
-        preScale: getString("Pré escala") || "NAO",
-        scale: getString("Escala") || "NAO",
-        productCreated: getString("Produto criado") || "NAO",
-        productApproved: getString("Produto aprovado na plataforma") || "NAO",
-        siteCreated: getString("Site criado") || "NAO",
-        observations: getString("Observações") || null,
+        campaignsActive: getStringFuzzy("campanhas") || "NAO",
+        validation: getStringFuzzy("validação") || getStringFuzzy("validacao") || "EM ANDAMENTO",
+        preScale: getStringFuzzy("pré escala") || getStringFuzzy("pre escala") || "NAO",
+        scale: getStringFuzzy("escala") || "NAO",
+        productCreated: getStringFuzzy("produto criado") || "NAO",
+        productApproved: getStringFuzzy("produto aprovado") || "NAO",
+        siteCreated: getStringFuzzy("site criado") || "NAO",
+        observations: getStringFuzzy("observ") || null,
       });
 
       imported++;

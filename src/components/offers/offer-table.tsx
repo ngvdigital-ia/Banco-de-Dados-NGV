@@ -644,17 +644,10 @@ const columns: ColumnDef[] = [
   {
     key: "adsEditedCount",
     label: "Ads Edit",
-    width: "w-[80px] min-w-[80px]",
-    render: (o) => {
-      const editors = parseEditors(o.editorAds);
-      const label = editors.map((e) => e[0]).join("+");
-      return (
-        <div className="flex items-center gap-1">
-          {label && <span className="text-[9px] text-muted-foreground">{label}:</span>}
-          <EditableCell value={o.adsEditedCount} offerId={o.id} field="adsEditedCount" type="number" />
-        </div>
-      );
-    },
+    width: "w-[60px] min-w-[60px]",
+    render: (o) => (
+      <EditableCell value={o.adsEditedCount} offerId={o.id} field="adsEditedCount" type="number" />
+    ),
   },
   {
     key: "adsRejectedCount",
