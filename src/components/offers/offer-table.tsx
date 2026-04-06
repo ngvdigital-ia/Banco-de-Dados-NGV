@@ -101,6 +101,84 @@ const NAME_TO_SIGLA: Record<string, string> = {
   // ICARO e LUIZA não estão na lista de siglas — ficam como valor custom no select
 };
 
+// Convert a multi-person string like "ROBERT & GABRIEL" → "RO & GA"
+function convertNamesToSiglas(value: string | null): string {
+  if (!value) return "-";
+  return value
+    .split(/[&,\-]/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((name) => {
+      const sigla = NAME_TO_SIGLA[name.toLowerCase()];
+      return sigla || name;
+    })
+    .join(" & ");
+}
+
+// Multi-person display cell (read-only display with siglas, click to edit as text)
+function MultiPersonCell({
+  value,
+  offerId,
+  field,
+}: {
+  value: string | null;
+  offerId: number;
+  field: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [localValue, setLocalValue] = useState(value ?? "");
+  const [isPending, startTransition] = useTransition();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!editing) setLocalValue(value ?? "");
+  }, [value, editing]);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  function handleSave() {
+    setEditing(false);
+    if (localValue !== (value ?? "")) {
+      startTransition(async () => {
+        await updateOfferField(offerId, field, localValue || null);
+      });
+    }
+  }
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        className="h-7 w-full rounded border border-input bg-background px-1.5 text-xs outline-none focus:border-ring"
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleSave();
+          if (e.key === "Escape") { setLocalValue(value ?? ""); setEditing(false); }
+        }}
+      />
+    );
+  }
+
+  const display = convertNamesToSiglas(value);
+
+  return (
+    <div
+      onClick={() => { setLocalValue(value ?? ""); setEditing(true); }}
+      className={`cursor-pointer truncate rounded px-1 py-0.5 text-xs font-medium hover:border-b hover:border-dashed hover:border-zinc-300 ${isPending ? "opacity-50" : ""}`}
+      title={value ?? ""}
+    >
+      {display}
+    </div>
+  );
+}
+
 function parseEditors(editorAds: string | null): string[] {
   if (!editorAds) return [];
   return editorAds
@@ -639,18 +717,25 @@ const columns: ColumnDef[] = [
   {
     key: "copyAds",
     label: "Copy ADS",
-    width: "w-[100px] min-w-[100px]",
-    render: (o) => (
-      <SelectCell value={o.copyAds} offerId={o.id} field="copyAds" options={COPYWRITERS} />
-    ),
+    width: "w-[120px] min-w-[120px]",
+    render: (o) => {
+      // Single person → select, multiple → multi-person display
+      const hasMultiple = o.copyAds && /[&,\-]/.test(o.copyAds);
+      return hasMultiple
+        ? <MultiPersonCell value={o.copyAds} offerId={o.id} field="copyAds" />
+        : <SelectCell value={o.copyAds} offerId={o.id} field="copyAds" options={COPYWRITERS} />;
+    },
   },
   {
     key: "editorAds",
     label: "Editor Ads",
-    width: "w-[100px] min-w-[100px]",
-    render: (o) => (
-      <SelectCell value={o.editorAds} offerId={o.id} field="editorAds" options={EDITORS} />
-    ),
+    width: "w-[130px] min-w-[130px]",
+    render: (o) => {
+      const hasMultiple = o.editorAds && /[&,\-]/.test(o.editorAds);
+      return hasMultiple
+        ? <MultiPersonCell value={o.editorAds} offerId={o.id} field="editorAds" />
+        : <SelectCell value={o.editorAds} offerId={o.id} field="editorAds" options={EDITORS} />;
+    },
   },
   {
     key: "editorVsl",
