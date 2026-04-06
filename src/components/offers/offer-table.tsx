@@ -79,6 +79,49 @@ function calcProgress(offer: Offer): number {
   }).length;
 }
 
+// ---------- Fixed options ----------
+
+const COPYWRITERS = ["Diogo", "Robert", "Gabriel"];
+const EDITORS = ["Malu", "Luis", "Victor", "Camile"];
+const LANGUAGES = ["EN", "FR", "DE", "ITA", "ES", "PT"];
+
+// ---------- SelectCell ----------
+
+function SelectCell({
+  value,
+  offerId,
+  field,
+  options,
+}: {
+  value: string | null;
+  offerId: number;
+  field: string;
+  options: string[];
+}) {
+  const [isPending, startTransition] = useTransition();
+
+  function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const newVal = e.target.value;
+    startTransition(async () => {
+      await updateOfferField(offerId, field, newVal || null);
+    });
+  }
+
+  return (
+    <select
+      value={value || ""}
+      onChange={handleChange}
+      disabled={isPending}
+      className={`w-full bg-transparent border-0 text-xs h-7 px-1 cursor-pointer outline-none focus:ring-1 focus:ring-primary/30 rounded ${isPending ? "opacity-50" : ""}`}
+    >
+      <option value="">-</option>
+      {options.map((opt) => (
+        <option key={opt} value={opt}>{opt}</option>
+      ))}
+    </select>
+  );
+}
+
 // ---------- Sub-components ----------
 
 function EditableCell({
@@ -473,7 +516,7 @@ const columns: ColumnDef[] = [
     label: "Língua",
     width: "w-[70px] min-w-[70px]",
     render: (o) => (
-      <EditableCell value={o.language} offerId={o.id} field="language" />
+      <SelectCell value={o.language} offerId={o.id} field="language" options={LANGUAGES} />
     ),
   },
   {
@@ -481,7 +524,7 @@ const columns: ColumnDef[] = [
     label: "Copy VSL",
     width: "w-[100px] min-w-[100px]",
     render: (o) => (
-      <EditableCell value={o.copyVsl} offerId={o.id} field="copyVsl" />
+      <SelectCell value={o.copyVsl} offerId={o.id} field="copyVsl" options={COPYWRITERS} />
     ),
   },
   {
@@ -489,7 +532,7 @@ const columns: ColumnDef[] = [
     label: "Copy ADS",
     width: "w-[100px] min-w-[100px]",
     render: (o) => (
-      <EditableCell value={o.copyAds} offerId={o.id} field="copyAds" />
+      <SelectCell value={o.copyAds} offerId={o.id} field="copyAds" options={COPYWRITERS} />
     ),
   },
   {
@@ -497,7 +540,7 @@ const columns: ColumnDef[] = [
     label: "Editor Ads",
     width: "w-[100px] min-w-[100px]",
     render: (o) => (
-      <EditableCell value={o.editorAds} offerId={o.id} field="editorAds" />
+      <SelectCell value={o.editorAds} offerId={o.id} field="editorAds" options={EDITORS} />
     ),
   },
   {
@@ -505,7 +548,7 @@ const columns: ColumnDef[] = [
     label: "Editor VSL",
     width: "w-[100px] min-w-[100px]",
     render: (o) => (
-      <EditableCell value={o.editorVsl} offerId={o.id} field="editorVsl" />
+      <SelectCell value={o.editorVsl} offerId={o.id} field="editorVsl" options={EDITORS} />
     ),
   },
   {
