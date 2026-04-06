@@ -100,6 +100,11 @@ function SelectCell({
 }) {
   const [isPending, startTransition] = useTransition();
 
+  // Match value case-insensitively to options
+  const normalizedValue = value
+    ? options.find((o) => o.toLowerCase() === value.toLowerCase()) || value
+    : "";
+
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const newVal = e.target.value;
     startTransition(async () => {
@@ -107,14 +112,20 @@ function SelectCell({
     });
   }
 
+  // Check if value exists but doesn't match any option (imported data)
+  const hasUnmatchedValue = value && !options.some((o) => o.toLowerCase() === value.toLowerCase());
+
   return (
     <select
-      value={value || ""}
+      value={normalizedValue}
       onChange={handleChange}
       disabled={isPending}
       className={`w-full bg-transparent border-0 text-xs h-7 px-1 cursor-pointer outline-none focus:ring-1 focus:ring-primary/30 rounded ${isPending ? "opacity-50" : ""}`}
     >
       <option value="">-</option>
+      {hasUnmatchedValue && (
+        <option value={value}>{value}</option>
+      )}
       {options.map((opt) => (
         <option key={opt} value={opt}>{opt}</option>
       ))}
