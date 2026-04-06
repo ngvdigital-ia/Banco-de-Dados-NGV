@@ -85,6 +85,18 @@ const COPYWRITERS = ["Diogo", "Robert", "Gabriel"];
 const EDITORS = ["Malu", "Luis", "Victor", "Camile"];
 const LANGUAGES = ["EN", "FR", "DE", "ITA", "ES", "PT"];
 
+function parseEditors(editorAds: string | null): string[] {
+  if (!editorAds) return [];
+  return editorAds
+    .split(/[&,]/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((name) => {
+      const known = EDITORS.find((e) => e.toLowerCase() === name.toLowerCase());
+      return known || name;
+    });
+}
+
 // ---------- SelectCell ----------
 
 function SelectCell({
@@ -354,14 +366,17 @@ function AdsCopyDisplay({
   const data = (value as Record<string, number> | null) ?? {};
   const entries = Object.entries(data);
 
+  const [diogoVal, setDiogoVal] = useState(String(data.DIOGO ?? 0));
   const [robertVal, setRobertVal] = useState(String(data.ROBERT ?? 0));
   const [gabrielVal, setGabrielVal] = useState(String(data.GABRIEL ?? 0));
 
   function handleSave() {
     setEditing(false);
     const newData: Record<string, number> = {};
+    const d = parseInt(diogoVal, 10) || 0;
     const r = parseInt(robertVal, 10) || 0;
     const g = parseInt(gabrielVal, 10) || 0;
+    if (d) newData.DIOGO = d;
     if (r) newData.ROBERT = r;
     if (g) newData.GABRIEL = g;
     startTransition(async () => {
@@ -376,6 +391,15 @@ function AdsCopyDisplay({
   if (editing) {
     return (
       <div className="absolute left-0 top-0 z-30 flex flex-col gap-1 rounded border bg-background p-2 shadow-lg">
+        <label className="flex items-center gap-1 text-[10px]">
+          D:
+          <input
+            className="h-5 w-10 rounded border px-1 text-[10px]"
+            value={diogoVal}
+            onChange={(e) => setDiogoVal(e.target.value)}
+            type="number"
+          />
+        </label>
         <label className="flex items-center gap-1 text-[10px]">
           R:
           <input
@@ -412,6 +436,7 @@ function AdsCopyDisplay({
   return (
     <div
       onClick={() => {
+        setDiogoVal(String(data.DIOGO ?? 0));
         setRobertVal(String(data.ROBERT ?? 0));
         setGabrielVal(String(data.GABRIEL ?? 0));
         setEditing(true);
@@ -426,14 +451,16 @@ function AdsCopyDisplay({
 function EditorStatusDisplay({
   value,
   offerId,
+  editorAds,
 }: {
   value: unknown;
   offerId: number;
+  editorAds: string | null;
 }) {
   const [isPending, startTransition] = useTransition();
   const data = (value as Record<string, string> | null) ?? {};
 
-  const editors = ["Camile", "Luis", "Victor", "Malu"];
+  const editors = parseEditors(editorAds);
 
   function toggleEditor(name: string) {
     const current = (data[name] || "NAO").toUpperCase().trim();
@@ -446,6 +473,10 @@ function EditorStatusDisplay({
         JSON.stringify(newData) as unknown as string
       );
     });
+  }
+
+  if (editors.length === 0) {
+    return <span className="text-xs text-muted-foreground">-</span>;
   }
 
   return (
@@ -613,15 +644,17 @@ const columns: ColumnDef[] = [
   {
     key: "adsEditedCount",
     label: "Ads Edit",
-    width: "w-[60px] min-w-[60px]",
-    render: (o) => (
-      <EditableCell
-        value={o.adsEditedCount}
-        offerId={o.id}
-        field="adsEditedCount"
-        type="number"
-      />
-    ),
+    width: "w-[80px] min-w-[80px]",
+    render: (o) => {
+      const editors = parseEditors(o.editorAds);
+      const label = editors.map((e) => e[0]).join("+");
+      return (
+        <div className="flex items-center gap-1">
+          {label && <span className="text-[9px] text-muted-foreground">{label}:</span>}
+          <EditableCell value={o.adsEditedCount} offerId={o.id} field="adsEditedCount" type="number" />
+        </div>
+      );
+    },
   },
   {
     key: "adsRejectedCount",
@@ -641,7 +674,7 @@ const columns: ColumnDef[] = [
     label: "Editores",
     width: "w-[110px] min-w-[110px]",
     render: (o) => (
-      <EditorStatusDisplay value={o.editorStatus} offerId={o.id} />
+      <EditorStatusDisplay value={o.editorStatus} offerId={o.id} editorAds={o.editorAds} />
     ),
   },
   {

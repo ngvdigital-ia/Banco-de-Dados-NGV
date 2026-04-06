@@ -70,6 +70,42 @@ export async function updateOfferField(
     .set({ [field]: value, updatedAt: new Date() })
     .where(eq(offerTracking.id, id));
 
+  // Cascade status changes through the pipeline
+  if (field === "campaignsActive" && String(value).toUpperCase() === "SIM") {
+    await db
+      .update(offerTracking)
+      .set({ validation: "EM ANDAMENTO", updatedAt: new Date() })
+      .where(eq(offerTracking.id, id));
+  }
+  if (field === "validation") {
+    const upper = String(value).toUpperCase();
+    if (upper === "SIM") {
+      await db
+        .update(offerTracking)
+        .set({ preScale: "EM ANDAMENTO", updatedAt: new Date() })
+        .where(eq(offerTracking.id, id));
+    } else if (upper === "NAO" || upper === "NÃO DEU CERTO") {
+      await db
+        .update(offerTracking)
+        .set({ preScale: "NAO", scale: "NAO", updatedAt: new Date() })
+        .where(eq(offerTracking.id, id));
+    }
+  }
+  if (field === "preScale") {
+    const upper = String(value).toUpperCase();
+    if (upper === "SIM") {
+      await db
+        .update(offerTracking)
+        .set({ scale: "EM ANDAMENTO", updatedAt: new Date() })
+        .where(eq(offerTracking.id, id));
+    } else if (upper === "NAO") {
+      await db
+        .update(offerTracking)
+        .set({ scale: "NAO", updatedAt: new Date() })
+        .where(eq(offerTracking.id, id));
+    }
+  }
+
   revalidatePath("/offers");
 }
 
