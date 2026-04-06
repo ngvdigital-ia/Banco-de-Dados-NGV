@@ -13,7 +13,9 @@ function getHeaders() {
 export type VturbPlayer = {
   id: string;
   name: string;
-  hash: string;
+  pitch_time: number;
+  duration: number;
+  created_at: string;
 };
 
 export type VturbEventStats = {
@@ -53,7 +55,10 @@ export async function fetchPlayers(dateFrom?: string, dateTo?: string) {
       return null;
     }
 
-    return res.json() as Promise<{ players: VturbPlayer[] }>;
+    // API returns array directly, not { players: [...] }
+    const data = await res.json();
+    const players = Array.isArray(data) ? data : data.players || [];
+    return { players } as { players: VturbPlayer[] };
   } catch (err) {
     console.error("[VTurb] List players error:", err);
     return null;
@@ -78,6 +83,7 @@ export async function fetchEventsByPlayer(
       headers: getHeaders(),
       body: JSON.stringify({
         player_hashes: playerHashes,
+        events: ["started", "finished", "viewed", "clicked"],
         date_start: dateFrom,
         date_end: dateTo,
         timezone,

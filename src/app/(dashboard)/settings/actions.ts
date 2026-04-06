@@ -165,12 +165,15 @@ async function syncVturb() {
     return "VTurb: nenhum player encontrado";
   }
 
-  const playerHashes = playersData.players.map((p: { hash: string }) => p.hash);
+  // Use player IDs, limit to 50 most recent
+  const playerIds = playersData.players
+    .slice(0, 50)
+    .map((p: { id: string }) => p.id);
   let synced = 0;
 
   try {
-    const events = await fetchEventsByPlayer(playerHashes, dateFrom, dateTo);
-    const sessions = await fetchSessionStats(playerHashes, dateFrom, dateTo);
+    const events = await fetchEventsByPlayer(playerIds, dateFrom, dateTo);
+    const sessions = await fetchSessionStats(playerIds, dateFrom, dateTo);
 
     for (const player of playersData.players) {
       await db.insert(metricsSnapshots).values({
@@ -180,7 +183,7 @@ async function syncVturb() {
         source: "manual",
         extraData: {
           source: "vturb",
-          playerHash: player.hash,
+          playerId: player.id,
           playerName: player.name,
           dateRange: { from: dateFrom, to: dateTo },
           events: events ?? null,

@@ -33,7 +33,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const playerHashes = playersData.players.map((p) => p.hash);
+    const playerHashes = playersData.players.map((p) => p.id);
 
     // 2. Get events per player
     const events = await fetchEventsByPlayer(playerHashes, dateFrom, dateTo);
@@ -54,9 +54,8 @@ export async function GET(request: Request) {
           source: "manual", // closest available enum
           extraData: {
             source: "vturb",
-            playerHash: player.hash,
-            playerName: player.name,
             playerId: player.id,
+            playerName: player.name,
             dateRange: { from: dateFrom, to: dateTo },
             events: events ?? null,
             sessions: sessions ?? null,
