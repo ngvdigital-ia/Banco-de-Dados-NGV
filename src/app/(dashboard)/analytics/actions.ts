@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { projects, vsls, creatives, campaigns, teamMembers } from "@/db/schema";
+import { projects, vsls, creatives, campaigns, teamMembers, metricsSnapshots } from "@/db/schema";
 import { eq, sql, desc, and, inArray } from "drizzle-orm";
 
 // ========== TYPES ==========
@@ -375,7 +375,38 @@ export async function getTeamPerformance(filters?: AnalyticsFilters) {
       totalOutput,
       creativesEscalouCount,
       pctEscalou,
+      clickupTasks: 0,
     });
+  }
+
+  // Fetch ClickUp task counts from metricsSnapshots
+  const clickupRows = await db
+    .select({
+      entityId: metricsSnapshots.entityId,
+      extraData: metricsSnapshots.extraData,
+    })
+    .from(metricsSnapshots)
+    .where(eq(metricsSnapshots.entityType, "clickup_member"))
+    .orderBy(desc(metricsSnapshots.createdAt));
+
+  // Build a map of clickup member name → latest task count
+  const clickupByName = new Map<string, number>();
+  for (const row of clickupRows) {
+    const data = row.extraData as { memberName?: string; taskCount?: number } | null;
+    if (data?.memberName && !clickupByName.has(data.memberName.toLowerCase())) {
+      clickupByName.set(data.memberName.toLowerCase(), data.taskCount ?? 0);
+    }
+  }
+
+  // Match ClickUp members to team members by name (case-insensitive, first name match)
+  for (const member of results) {
+    const memberFirstName = member.name.split(" ")[0].toLowerCase();
+    for (const [clickupName, count] of clickupByName) {
+      if (clickupName.toLowerCase().includes(memberFirstName) || memberFirstName.includes(clickupName.split(" ")[0].toLowerCase())) {
+        member.clickupTasks = count;
+        break;
+      }
+    }
   }
 
   return results.sort((a, b) => b.totalOutput - a.totalOutput);

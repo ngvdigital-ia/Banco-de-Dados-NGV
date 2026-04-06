@@ -82,15 +82,40 @@ async function syncUtmify() {
 async function syncClickup() {
   if (!process.env.CLICKUP_API_KEY) return "Erro: CLICKUP_API_KEY não configurada";
 
-  const listIds = ["901323138754", "901325026428"];
+  const SPACE_ID = "90131585986";
+  const API = "https://api.clickup.com/api/v2";
+  const headers = { Authorization: process.env.CLICKUP_API_KEY };
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  let totalTasks = 0;
 
-  for (const listId of listIds) {
+  // 1. Discover ALL folders in the space
+  const foldersRes = await fetch(`${API}/space/${SPACE_ID}/folder?archived=false`, { headers });
+  const foldersData = foldersRes.ok ? await foldersRes.json() : { folders: [] };
+
+  // 2. Collect ALL list IDs from all folders + folderless lists
+  const allListIds: string[] = [];
+
+  for (const folder of foldersData.folders ?? []) {
+    for (const list of folder.lists ?? []) {
+      allListIds.push(list.id);
+    }
+  }
+
+  // Also get folderless lists
+  const folderlessRes = await fetch(`${API}/space/${SPACE_ID}/list?archived=false`, { headers });
+  const folderlessData = folderlessRes.ok ? await folderlessRes.json() : { lists: [] };
+  for (const list of folderlessData.lists ?? []) {
+    allListIds.push(list.id);
+  }
+
+  // 3. Fetch completed tasks from ALL lists
+  let totalTasks = 0;
+  const globalByAssignee = new Map<string, { name: string; count: number }>();
+
+  for (const listId of allListIds) {
     try {
       const res = await fetch(
-        `https://api.clickup.com/api/v2/list/${listId}/task?statuses[]=complete&date_updated_gt=${sevenDaysAgo}`,
-        { headers: { Authorization: process.env.CLICKUP_API_KEY } }
+        `${API}/list/${listId}/task?statuses[]=complete&statuses[]=closed&date_updated_gt=${sevenDaysAgo}&include_closed=true`,
+        { headers }
       );
 
       if (!res.ok) continue;
@@ -98,30 +123,29 @@ async function syncClickup() {
       const tasks = data.tasks ?? [];
       totalTasks += tasks.length;
 
-      const byAssignee = new Map<string, { name: string; count: number }>();
       for (const task of tasks) {
         for (const assignee of task.assignees ?? []) {
-          const existing = byAssignee.get(assignee.id.toString()) ?? { name: assignee.username, count: 0 };
+          const id = assignee.id.toString();
+          const existing = globalByAssignee.get(id) ?? { name: assignee.username || assignee.email || `User ${id}`, count: 0 };
           existing.count++;
-          byAssignee.set(assignee.id.toString(), existing);
+          globalByAssignee.set(id, existing);
         }
       }
-
-      for (const [memberId, info] of byAssignee) {
-        await db.insert(metricsSnapshots).values({
-          date: new Date(),
-          entityType: "clickup_member",
-          entityId: parseInt(memberId) || 0,
-          source: "manual",
-          extraData: { memberName: info.name, taskCount: info.count, listId },
-        });
-      }
-    } catch (err) {
-      console.error(`[ClickUp] List ${listId}:`, err);
-    }
+    } catch { /* skip individual list errors */ }
   }
 
-  return `Sincronizado com sucesso! ${totalTasks} tarefa(s) encontrada(s)`;
+  // 4. Save aggregated data per member
+  for (const [memberId, info] of globalByAssignee) {
+    await db.insert(metricsSnapshots).values({
+      date: new Date(),
+      entityType: "clickup_member",
+      entityId: parseInt(memberId) || 0,
+      source: "manual",
+      extraData: { memberName: info.name, taskCount: info.count, totalLists: allListIds.length },
+    });
+  }
+
+  return `Sincronizado com sucesso! ${totalTasks} tarefa(s) de ${globalByAssignee.size} membro(s) em ${allListIds.length} lista(s)`;
 }
 
 async function syncVturb() {

@@ -81,6 +81,7 @@ export default async function TeamAnalyticsPage({
                     <TableHead className="text-center">Criativos (edicao)</TableHead>
                     <TableHead className="text-center">Campanhas</TableHead>
                     <TableHead className="text-center">Total</TableHead>
+                    <TableHead className="text-center">Tarefas ClickUp (7d)</TableHead>
                     <TableHead className="text-center">% Escalou</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -112,6 +113,15 @@ export default async function TeamAnalyticsPage({
                         <Badge variant={member.totalOutput > 0 ? "default" : "secondary"}>
                           {member.totalOutput}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {member.clickupTasks > 0 ? (
+                          <Badge variant="outline" className="border-purple-300 text-purple-700">
+                            {member.clickupTasks}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-center">
                         {member.pctEscalou > 0 ? (
