@@ -159,9 +159,16 @@ function EditableCell({
   type?: "text" | "number";
 }) {
   const [editing, setEditing] = useState(false);
-  const [localValue, setLocalValue] = useState(value ?? "");
+  const [localValue, setLocalValue] = useState(String(value ?? ""));
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync local value when prop changes (after server revalidation)
+  useEffect(() => {
+    if (!editing) {
+      setLocalValue(String(value ?? ""));
+    }
+  }, [value, editing]);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -173,13 +180,14 @@ function EditableCell({
   function handleSave() {
     setEditing(false);
     const newValue =
-      type === "number" ? parseInt(String(localValue), 10) || 0 : localValue;
-    if (newValue !== value) {
+      type === "number" ? parseInt(localValue, 10) || 0 : localValue;
+    const oldValue = type === "number" ? (value ?? 0) : (value ?? "");
+    if (String(newValue) !== String(oldValue)) {
       startTransition(async () => {
         await updateOfferField(
           offerId,
           field,
-          newValue === "" ? null : newValue
+          localValue === "" ? null : newValue
         );
       });
     }
@@ -197,7 +205,7 @@ function EditableCell({
         onKeyDown={(e) => {
           if (e.key === "Enter") handleSave();
           if (e.key === "Escape") {
-            setLocalValue(value ?? "");
+            setLocalValue(String(value ?? ""));
             setEditing(false);
           }
         }}
@@ -208,13 +216,13 @@ function EditableCell({
   return (
     <div
       onClick={() => {
-        setLocalValue(value ?? "");
+        setLocalValue(String(value ?? ""));
         setEditing(true);
       }}
       className={`cursor-pointer truncate rounded px-1 py-0.5 text-xs hover:bg-muted/50 ${isPending ? "opacity-50" : ""}`}
       title={String(value ?? "")}
     >
-      {value ?? "-"}
+      {value !== null && value !== undefined && value !== "" && value !== 0 ? value : "-"}
     </div>
   );
 }
@@ -294,6 +302,13 @@ function ObservationsCell({
   const [isPending, startTransition] = useTransition();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Sync when prop changes
+  useEffect(() => {
+    if (!editing) {
+      setLocalValue(value ?? "");
+    }
+  }, [value, editing]);
+
   useEffect(() => {
     if (editing && textareaRef.current) {
       textareaRef.current.focus();
@@ -369,6 +384,16 @@ function AdsCopyDisplay({
   const [diogoVal, setDiogoVal] = useState(String(data.DIOGO ?? 0));
   const [robertVal, setRobertVal] = useState(String(data.ROBERT ?? 0));
   const [gabrielVal, setGabrielVal] = useState(String(data.GABRIEL ?? 0));
+
+  // Sync when prop changes
+  useEffect(() => {
+    if (!editing) {
+      const d = (value as Record<string, number> | null) ?? {};
+      setDiogoVal(String(d.DIOGO ?? 0));
+      setRobertVal(String(d.ROBERT ?? 0));
+      setGabrielVal(String(d.GABRIEL ?? 0));
+    }
+  }, [value, editing]);
 
   function handleSave() {
     setEditing(false);
