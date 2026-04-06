@@ -141,52 +141,7 @@ export default async function SettingsPage() {
           )}
         </div>
 
-        {/* Google Sheets Card */}
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Webhook className="h-5 w-5 text-green-600" />
-              <h2 className="text-lg font-semibold">Google Sheets</h2>
-            </div>
-            {sheetsSecretConfigured ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                <CheckCircle2 className="h-3 w-3" />
-                Webhook ativo
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                <AlertTriangle className="h-3 w-3" />
-                Secret não configurado
-              </span>
-            )}
-          </div>
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <div>
-              <p className="font-medium text-foreground mb-1">URL do Webhook:</p>
-              <code className="block rounded bg-muted p-2 text-xs break-all">
-                {webhookUrl}
-              </code>
-            </div>
-            <div>
-              <p className="font-medium text-foreground mb-1">Instruções para Google Apps Script:</p>
-              <ol className="ml-4 list-decimal space-y-1 text-xs">
-                <li>Abra o Google Sheets e vá em Extensões &gt; Apps Script</li>
-                <li>Crie uma função que envia POST para a URL acima</li>
-                <li>
-                  Inclua o header{" "}
-                  <code className="rounded bg-muted px-1 font-mono">x-webhook-secret</code>{" "}
-                  com o valor da variável <code className="rounded bg-muted px-1 font-mono">GOOGLE_SHEETS_WEBHOOK_SECRET</code>
-                </li>
-                <li>
-                  Formato do body:{" "}
-                  <code className="rounded bg-muted px-1 font-mono">
-                    {`{ "rows": [{ "format": "ugc_masc", "projectId": 1, "platform": "meta", "videoLink": "..." }] }`}
-                  </code>
-                </li>
-              </ol>
-            </div>
-          </div>
-        </div>
+        {/* Google Sheets Card — comentado por enquanto */}
       </div>
     </div>
   );
