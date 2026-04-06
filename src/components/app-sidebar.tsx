@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  ClipboardList,
   FolderOpen,
   History,
   LayoutDashboard,
@@ -31,6 +32,7 @@ import {
 const navItems = [
   { title: "Dashboard", href: "/", icon: LayoutDashboard },
   { title: "Projetos", href: "/projects", icon: FolderOpen },
+  { title: "Ofertas", href: "/offers", icon: ClipboardList },
   { title: "Equipe", href: "/team", icon: Users },
   { title: "Métricas", href: "/metrics", icon: LineChart },
   { title: "Análises", href: "/analytics", icon: PieChart },

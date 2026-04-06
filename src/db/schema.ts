@@ -474,3 +474,35 @@ export const alertHistory = pgTable("alert_history", {
   currentValue: numeric("current_value", { precision: 12, scale: 2 }),
   message: text("message"),
 });
+
+// ============================================================
+// 17. OFFER TRACKING (substitui planilha de acompanhamento)
+// ============================================================
+
+export const offerTracking = pgTable("offer_tracking", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  copyVsl: text("copy_vsl"),
+  copyAds: text("copy_ads"),
+  editorAds: text("editor_ads"),
+  editorVsl: text("editor_vsl"),
+  ticket: text("ticket"),
+  language: text("language").notNull().default("EN"),
+  copyVslStatus: text("copy_vsl_status").default("NAO"),
+  copyCriativosStatus: text("copy_criativos_status").default("NAO"),
+  vslInVturb: text("vsl_in_vturb").default("NAO"),
+  adsCopyByPerson: jsonb("ads_copy_by_person"),
+  adsEditedCount: integer("ads_edited_count").default(0),
+  adsRejectedCount: integer("ads_rejected_count").default(0),
+  editorStatus: jsonb("editor_status"),
+  campaignsActive: text("campaigns_active").default("NAO"),
+  validation: text("validation").default("EM ANDAMENTO"),
+  preScale: text("pre_scale").default("NAO"),
+  scale: text("scale").default("NAO"),
+  productCreated: text("product_created").default("NAO"),
+  productApproved: text("product_approved").default("NAO"),
+  siteCreated: text("site_created").default("NAO"),
+  observations: text("observations"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
