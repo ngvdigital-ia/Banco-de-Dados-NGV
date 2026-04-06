@@ -81,9 +81,20 @@ function calcProgress(offer: Offer): number {
 
 // ---------- Fixed options ----------
 
-const COPYWRITERS = ["Diogo", "Robert", "Gabriel"];
-const EDITORS = ["Malu", "Luis", "Victor", "Camile"];
+// Siglas: DG=Diogo, GA=Gabriel, RO=Robert, MALU=Malu, VA=Victor Andrade, CA=Camile, LF=Luis Felipe
+const COPYWRITERS = ["DG", "GA", "RO", "MALU", "VA", "CA", "LF"];
+const EDITORS = ["DG", "GA", "RO", "MALU", "VA", "CA", "LF"];
 const LANGUAGES = ["EN", "FR", "DE", "ITA", "ES", "PT"];
+
+const SIGLA_TO_NAME: Record<string, string> = {
+  DG: "Diogo", GA: "Gabriel", RO: "Robert",
+  MALU: "Malu", VA: "Victor Andrade", CA: "Camile", LF: "Luis Felipe",
+};
+const NAME_TO_SIGLA: Record<string, string> = {};
+Object.entries(SIGLA_TO_NAME).forEach(([s, n]) => {
+  NAME_TO_SIGLA[n.toLowerCase()] = s;
+  NAME_TO_SIGLA[s.toLowerCase()] = s;
+});
 
 function parseEditors(editorAds: string | null): string[] {
   if (!editorAds) return [];
@@ -112,10 +123,17 @@ function SelectCell({
 }) {
   const [isPending, startTransition] = useTransition();
 
-  // Match value case-insensitively to options
-  const normalizedValue = value
-    ? options.find((o) => o.toLowerCase() === value.toLowerCase()) || value
-    : "";
+  // Match value: try sigla first, then name→sigla conversion, then case-insensitive
+  const normalizedValue = (() => {
+    if (!value) return "";
+    // Direct match
+    const direct = options.find((o) => o.toLowerCase() === value.toLowerCase());
+    if (direct) return direct;
+    // Name→sigla conversion (e.g., "Diogo" → "DG")
+    const sigla = NAME_TO_SIGLA[value.toLowerCase()];
+    if (sigla) return sigla;
+    return value;
+  })();
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const newVal = e.target.value;
@@ -417,7 +435,7 @@ function AdsCopyDisplay({
     return (
       <div className="flex items-center gap-1">
         <label className="flex items-center gap-0.5 text-[10px]">
-          D:
+          <span className="text-orange-600 font-semibold">DG</span>:
           <input
             className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
             value={diogoVal}
@@ -426,7 +444,7 @@ function AdsCopyDisplay({
           />
         </label>
         <label className="flex items-center gap-0.5 text-[10px]">
-          R:
+          <span className="text-blue-600 font-semibold">RO</span>:
           <input
             className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
             value={robertVal}
@@ -435,7 +453,7 @@ function AdsCopyDisplay({
           />
         </label>
         <label className="flex items-center gap-0.5 text-[10px]">
-          G:
+          <span className="text-purple-600 font-semibold">GA</span>:
           <input
             className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
             value={gabrielVal}
@@ -453,10 +471,13 @@ function AdsCopyDisplay({
     );
   }
 
-  const initialColors: Record<string, string> = {
-    R: "text-blue-600 dark:text-blue-400",
-    G: "text-purple-600 dark:text-purple-400",
-    D: "text-orange-600 dark:text-orange-400",
+  const keyToSigla: Record<string, string> = {
+    DIOGO: "DG", ROBERT: "RO", GABRIEL: "GA",
+  };
+  const siglaColors: Record<string, string> = {
+    DG: "text-orange-600 dark:text-orange-400",
+    RO: "text-blue-600 dark:text-blue-400",
+    GA: "text-purple-600 dark:text-purple-400",
   };
 
   return (
@@ -471,13 +492,16 @@ function AdsCopyDisplay({
     >
       {entries.length > 0 ? (
         <span className="flex items-center gap-1.5">
-          {entries.map(([k, v]) => (
-            <span key={k} className="inline-flex items-center">
-              <span className={`font-semibold ${initialColors[k[0]] || "text-zinc-600 dark:text-zinc-400"}`}>{k[0]}</span>
-              <span className="text-zinc-400 dark:text-zinc-500">:</span>
-              <span className="font-mono font-medium text-zinc-700 dark:text-zinc-300">{v}</span>
-            </span>
-          ))}
+          {entries.map(([k, v]) => {
+            const sigla = keyToSigla[k] || k[0];
+            return (
+              <span key={k} className="inline-flex items-center">
+                <span className={`font-semibold ${siglaColors[sigla] || "text-zinc-600 dark:text-zinc-400"}`}>{sigla}</span>
+                <span className="text-zinc-400 dark:text-zinc-500">:</span>
+                <span className="font-mono font-medium text-zinc-700 dark:text-zinc-300">{v}</span>
+              </span>
+            );
+          })}
         </span>
       ) : (
         "-"
@@ -700,14 +724,7 @@ const columns: ColumnDef[] = [
       />
     ),
   },
-  {
-    key: "editorStatus",
-    label: "Editores",
-    width: "w-[110px] min-w-[110px]",
-    render: (o) => (
-      <EditorStatusDisplay value={o.editorStatus} offerId={o.id} editorAds={o.editorAds} />
-    ),
-  },
+  // Coluna "Editores" removida a pedido do Diogo (confunde)
   {
     key: "campaignsActive",
     label: "Campanhas",
