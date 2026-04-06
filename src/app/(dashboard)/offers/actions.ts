@@ -131,87 +131,88 @@ export async function importOffers(rows: Record<string, unknown>[]) {
 
   for (const row of rows) {
     try {
-      const getString = (key: string) => {
-        const val = row[key];
+      // Get all keys and build index-based access
+      const keys = Object.keys(row);
+      const col = (idx: number) => {
+        const val = row[keys[idx]];
         return typeof val === "string" ? val.trim() : "";
       };
-      const getNumber = (key: string) => {
-        const val = row[key];
-        if (typeof val === "number") return val;
-        if (typeof val === "string") {
-          const n = parseInt(val.trim(), 10);
-          return isNaN(n) ? 0 : n;
-        }
-        return 0;
+      const colNum = (idx: number) => {
+        const val = col(idx);
+        const n = parseInt(val, 10);
+        return isNaN(n) ? 0 : n;
       };
 
-      // Fuzzy key finder — matches column names with extra spaces
-      const findKey = (search: string) => {
-        const searchLower = search.toLowerCase().replace(/\s+/g, "").trim();
-        return Object.keys(row).find((k) => {
-          const kLower = k.toLowerCase().replace(/\s+/g, "").trim();
-          return kLower === searchLower || kLower.includes(searchLower);
-        });
-      };
-      const getStringFuzzy = (search: string) => {
-        const key = findKey(search);
-        return key ? getString(key) : "";
-      };
-      const getNumberFuzzy = (search: string) => {
-        const key = findKey(search);
-        return key ? getNumber(key) : 0;
-      };
+      // Column mapping by index (based on the spreadsheet order):
+      // 0: Oferta
+      // 1: Copy da VSL
+      // 2: Copy ADS
+      // 3: Editor dos Ads
+      // 4: Editor da VSL
+      // 5: Ticket
+      // 6: Copy VSL (status)
+      // 7: Copy criativos (status)
+      // 8: VSL no Vturb
+      // 9: Ads copy (ROBERT)
+      // 10: ADS Editados (qtd)
+      // 11: Ads copy (GABRIEL)
+      // 12: Língua
+      // 13: Edição Camile
+      // 14: Edição Luis
+      // 15: Edição Victor
+      // 16: Edição Malu
+      // 17: ADS Rejeitados (qtd)
+      // 18: Campanhas ativas
+      // 19: Validação da oferta
+      // 20: Pré escala
+      // 21: Escala
+      // 22: Produto criado
+      // 23: Produto aprovado na plataforma
+      // 24: Site criado
+      // 25: Observações
 
-      // Parse adsCopyByPerson from "Ads copy (ROBERT)" and "Ads copy (GABRIEL)"
+      const name = col(0);
+      if (!name) continue;
+
       const adsCopyByPerson: Record<string, number> = {};
-      const robertVal = getNumberFuzzy("ads copy (robert");
-      const gabrielVal = getNumberFuzzy("ads copy (gabriel");
+      const robertVal = colNum(9);
+      const gabrielVal = colNum(11);
       if (robertVal) adsCopyByPerson.ROBERT = robertVal;
       if (gabrielVal) adsCopyByPerson.GABRIEL = gabrielVal;
 
-      // Parse editorStatus from "Edição Camile", "Edição Luis", etc.
       const editorStatus: Record<string, string> = {};
-      const camile = getStringFuzzy("camile");
-      const luis = getStringFuzzy("luis");
-      const victor = getStringFuzzy("victor");
-      const malu = getStringFuzzy("malu");
+      const camile = col(13);
+      const luis = col(14);
+      const victor = col(15);
+      const malu = col(16);
       if (camile) editorStatus.Camile = camile;
       if (luis) editorStatus.Luis = luis;
       if (victor) editorStatus.Victor = victor;
       if (malu) editorStatus.Malu = malu;
 
       await db.insert(offerTracking).values({
-        name: getStringFuzzy("oferta") || "Sem nome",
-        copyVsl: getStringFuzzy("copy da vsl") || null,
-        copyAds: getStringFuzzy("copy ads") || null,
-        editorAds: getStringFuzzy("editor dos ads") || null,
-        editorVsl: getStringFuzzy("editor da vsl") || null,
-        ticket: getStringFuzzy("ticket") || null,
-        language: getStringFuzzy("língua") || getStringFuzzy("lingua") || "EN",
-        copyVslStatus: (() => {
-          // "Copy VSL" is column 7 (status SIM/NAO), not "Copy da VSL" (column 2, person name)
-          const key = Object.keys(row).find(k => {
-            const clean = k.toLowerCase().replace(/\s+/g, "").trim();
-            return clean === "copyvsl";
-          });
-          return key ? getString(key) : "NAO";
-        })(),
-        copyCriativosStatus: getStringFuzzy("copycriativos") || "NAO",
-        vslInVturb: getStringFuzzy("vsl no vturb") || "NAO",
-        adsCopyByPerson:
-          Object.keys(adsCopyByPerson).length > 0 ? adsCopyByPerson : null,
-        adsEditedCount: getNumberFuzzy("ads editados"),
-        adsRejectedCount: getNumberFuzzy("ads rejeitados"),
-        editorStatus:
-          Object.keys(editorStatus).length > 0 ? editorStatus : null,
-        campaignsActive: getStringFuzzy("campanhas") || "NAO",
-        validation: getStringFuzzy("validação") || getStringFuzzy("validacao") || "EM ANDAMENTO",
-        preScale: getStringFuzzy("pré escala") || getStringFuzzy("pre escala") || "NAO",
-        scale: getStringFuzzy("escala") || "NAO",
-        productCreated: getStringFuzzy("produto criado") || "NAO",
-        productApproved: getStringFuzzy("produto aprovado") || "NAO",
-        siteCreated: getStringFuzzy("site criado") || "NAO",
-        observations: getStringFuzzy("observ") || null,
+        name,
+        copyVsl: col(1) || null,
+        copyAds: col(2) || null,
+        editorAds: col(3) || null,
+        editorVsl: col(4) || null,
+        ticket: col(5) || null,
+        copyVslStatus: col(6) || "NAO",
+        copyCriativosStatus: col(7) || "NAO",
+        vslInVturb: col(8) || "NAO",
+        adsCopyByPerson: Object.keys(adsCopyByPerson).length > 0 ? adsCopyByPerson : null,
+        adsEditedCount: colNum(10),
+        adsRejectedCount: colNum(17),
+        language: col(12) || "EN",
+        editorStatus: Object.keys(editorStatus).length > 0 ? editorStatus : null,
+        campaignsActive: col(18) || "NAO",
+        validation: col(19) || "EM ANDAMENTO",
+        preScale: col(20) || "NAO",
+        scale: col(21) || "NAO",
+        productCreated: col(22) || "NAO",
+        productApproved: col(23) || "NAO",
+        siteCreated: col(24) || "NAO",
+        observations: col(25) || null,
       });
 
       imported++;
