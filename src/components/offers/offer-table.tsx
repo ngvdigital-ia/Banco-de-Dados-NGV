@@ -147,8 +147,8 @@ function SelectCell({
     });
   }
 
-  // Check if value exists but doesn't match any option (imported data)
-  const hasUnmatchedValue = value && !options.some((o) => o.toLowerCase() === value.toLowerCase());
+  // Check if normalized value matches any option — if not, show as extra option
+  const hasUnmatchedValue = normalizedValue && !options.includes(normalizedValue);
 
   return (
     <select
@@ -158,8 +158,8 @@ function SelectCell({
       className={`w-full bg-transparent border-0 text-[13px] h-7 px-1 cursor-pointer outline-none focus:ring-1 focus:ring-primary/30 rounded ${isPending ? "opacity-50" : ""}`}
     >
       <option value="">-</option>
-      {hasUnmatchedValue && (
-        <option value={value}>{value}</option>
+      {hasUnmatchedValue && normalizedValue && (
+        <option value={normalizedValue}>{normalizedValue}</option>
       )}
       {options.map((opt) => (
         <option key={opt} value={opt}>{opt}</option>
