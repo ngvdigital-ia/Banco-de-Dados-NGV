@@ -1,38 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { triggerSync } from "./actions";
 
 export function SyncButton({ endpoint, label }: { endpoint: string; label: string }) {
-  const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<string | null>(null);
 
-  async function handleSync() {
-    setLoading(true);
+  function handleSync() {
     setResult(null);
-    try {
-      const res = await fetch(endpoint, {
-        headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET ?? ""}` },
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setResult("Sincronizado com sucesso!");
-      } else {
-        setResult(`Erro: ${data.error ?? "Falha na sincronização"}`);
-      }
-    } catch {
-      setResult("Erro de rede ao sincronizar");
-    } finally {
-      setLoading(false);
-    }
+    startTransition(async () => {
+      const res = await triggerSync(endpoint);
+      setResult(res);
+    });
   }
 
   return (
     <div className="space-y-2">
-      <Button onClick={handleSync} disabled={loading} variant="outline" size="sm">
-        <RefreshCw className={`mr-2 h-3 w-3 ${loading ? "animate-spin" : ""}`} />
-        {loading ? "Sincronizando..." : label}
+      <Button onClick={handleSync} disabled={isPending} variant="outline" size="sm">
+        <RefreshCw className={`mr-2 h-3 w-3 ${isPending ? "animate-spin" : ""}`} />
+        {isPending ? "Sincronizando..." : label}
       </Button>
       {result && (
         <p className="text-xs text-muted-foreground">{result}</p>
