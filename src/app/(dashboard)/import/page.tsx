@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Upload } from "lucide-react";
 import Papa from "papaparse";
+import { OfferImport } from "./offer-import";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -64,7 +65,11 @@ export default function ImportPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Import CSV</h1>
+      <h1 className="text-3xl font-bold">Import</h1>
+
+      <OfferImport />
+
+      <h2 className="text-xl font-bold mt-8">Import de Métricas (CSV)</h2>
       <p className="text-muted-foreground">
         Importe métricas de uma planilha CSV. Colunas suportadas: date, entity_id,
         impressions, clicks, spend, revenue, cpa, roas.
