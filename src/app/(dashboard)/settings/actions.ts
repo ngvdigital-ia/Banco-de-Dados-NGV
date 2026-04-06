@@ -83,7 +83,9 @@ async function syncClickup() {
   const SPACE_ID = "90131585986";
   const API = "https://api.clickup.com/api/v2";
   const headers = { Authorization: process.env.CLICKUP_API_KEY };
-  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  // Get first day of current month
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
   // 1. Discover ALL folders in the space
   const foldersRes = await fetch(`${API}/space/${SPACE_ID}/folder?archived=false`, { headers });
@@ -112,7 +114,7 @@ async function syncClickup() {
   for (const listId of allListIds) {
     try {
       const res = await fetch(
-        `${API}/list/${listId}/task?statuses[]=complete&statuses[]=closed&date_updated_gt=${sevenDaysAgo}&include_closed=true`,
+        `${API}/list/${listId}/task?statuses[]=complete&statuses[]=closed&date_updated_gt=${monthStart}&include_closed=true`,
         { headers }
       );
 
