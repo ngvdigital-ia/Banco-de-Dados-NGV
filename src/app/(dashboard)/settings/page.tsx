@@ -62,12 +62,12 @@ export default async function SettingsPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-blue-600" />
-              <h2 className="text-lg font-semibold">UTMify</h2>
+              <h2 className="text-lg font-semibold">UTMify / Vendas</h2>
             </div>
-            <StatusBadge connected={utmifyConnected} />
+            <StatusBadge connected={true} />
           </div>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p><strong>Dashboards:</strong></p>
+            <p><strong>Dashboards UTMify:</strong></p>
             <ul className="ml-4 list-disc space-y-1">
               <li>Principal-NGV DIGITAL (BRL)</li>
               <li>Dash Conta em Dolar (USD)</li>
@@ -76,15 +76,20 @@ export default async function SettingsPage() {
               <strong>Última sincronização:</strong>{" "}
               {formatDate(lastUtmifySync)}
             </p>
-            <p>
-              <strong>Frequência:</strong> A cada 6 horas (cron)
+            <div className="mt-3 rounded-md bg-blue-50 dark:bg-blue-950/30 p-3">
+              <p className="font-medium text-foreground mb-1">Webhook de Vendas (automático):</p>
+              <code className="block rounded bg-muted p-2 text-xs break-all mb-2">
+                https://banco-de-dados-ngv.vercel.app/api/webhooks/sales
+              </code>
+              <p className="text-xs">
+                Configure esta URL nas plataformas de pagamento (Cartpanda, Hotmart, PerfectPay, etc.)
+                para receber vendas automaticamente. Mesma URL que envia pro UTMify.
+              </p>
+            </div>
+            <p className="text-xs mt-2">
+              <strong>Sync via Claude:</strong> Peça &quot;atualiza UTMify&quot; no Claude para puxar dados completos (gasto, ROAS, campanhas).
             </p>
           </div>
-          {utmifyConnected && (
-            <div className="mt-4">
-              <SyncButton endpoint="/api/cron/sync-utmify" label="Sync UTMify Agora" />
-            </div>
-          )}
         </div>
 
         {/* ClickUp Card */}
