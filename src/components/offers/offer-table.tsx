@@ -415,29 +415,29 @@ function AdsCopyDisplay({
 
   if (editing) {
     return (
-      <div className="absolute left-0 top-0 z-30 flex flex-col gap-1 rounded border bg-background p-2 shadow-lg">
-        <label className="flex items-center gap-1 text-[10px]">
+      <div className="flex items-center gap-1">
+        <label className="flex items-center gap-0.5 text-[10px]">
           D:
           <input
-            className="h-5 w-10 rounded border px-1 text-[10px]"
+            className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
             value={diogoVal}
             onChange={(e) => setDiogoVal(e.target.value)}
             type="number"
           />
         </label>
-        <label className="flex items-center gap-1 text-[10px]">
+        <label className="flex items-center gap-0.5 text-[10px]">
           R:
           <input
-            className="h-5 w-10 rounded border px-1 text-[10px]"
+            className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
             value={robertVal}
             onChange={(e) => setRobertVal(e.target.value)}
             type="number"
           />
         </label>
-        <label className="flex items-center gap-1 text-[10px]">
+        <label className="flex items-center gap-0.5 text-[10px]">
           G:
           <input
-            className="h-5 w-10 rounded border px-1 text-[10px]"
+            className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
             value={gabrielVal}
             onChange={(e) => setGabrielVal(e.target.value)}
             type="number"
@@ -445,7 +445,7 @@ function AdsCopyDisplay({
         </label>
         <button
           onClick={handleSave}
-          className="mt-1 rounded bg-primary px-2 py-0.5 text-[10px] text-primary-foreground"
+          className="rounded bg-primary px-1.5 py-0.5 text-[9px] text-primary-foreground"
         >
           OK
         </button>
@@ -661,7 +661,7 @@ const columns: ColumnDef[] = [
   {
     key: "adsCopyByPerson",
     label: "Ads Copy",
-    width: "w-[80px] min-w-[80px]",
+    width: "w-[160px] min-w-[160px]",
     render: (o) => (
       <AdsCopyDisplay value={o.adsCopyByPerson} offerId={o.id} />
     ),
