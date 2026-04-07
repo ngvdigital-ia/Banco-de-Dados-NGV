@@ -81,24 +81,26 @@ function calcProgress(offer: Offer): number {
 
 // ---------- Fixed options ----------
 
-// Siglas: DG=Diogo, GA=Gabriel, RO=Robert, MALU=Malu, VA=Victor Andrade, CA=Camile, LF=Luis Felipe
-const COPYWRITERS = ["DG", "GA", "RO", "MALU", "VA", "CA", "LF"];
-const EDITORS = ["DG", "GA", "RO", "MALU", "VA", "CA", "LF"];
+// Siglas: DG=Diogo, GF=Gabriel Fischer, GL=Gabriel Lima, RO=Robert, MALU=Malu, VA=Victor Andrade, CA=Camile, LF=Luis Felipe
+const COPYWRITERS = ["DG", "GF", "GL", "RO", "MALU", "VA", "CA", "LF"];
+const EDITORS = ["DG", "GF", "GL", "RO", "MALU", "VA", "CA", "LF"];
 const LANGUAGES = ["EN", "FR", "DE", "ITA", "ES", "PT"];
 
 const SIGLA_TO_NAME: Record<string, string> = {
-  DG: "Diogo", GA: "Gabriel", RO: "Robert",
+  DG: "Diogo", GF: "Gabriel Fischer", GL: "Gabriel Lima", GA: "Gabriel Fischer", RO: "Robert",
   MALU: "Malu", VA: "Victor Andrade", CA: "Camile", LF: "Luis Felipe",
 };
 // Map ALL known name variations to siglas
 const NAME_TO_SIGLA: Record<string, string> = {
-  dg: "DG", ga: "GA", ro: "RO", malu: "MALU", va: "VA", ca: "CA", lf: "LF",
-  diogo: "DG", gabriel: "GA", robert: "RO",
+  dg: "DG", gf: "GF", gl: "GL", ga: "GF", ro: "RO", malu: "MALU", va: "VA", ca: "CA", lf: "LF",
+  diogo: "DG",
+  gabriel: "GF", "gabriel fischer": "GF", "gabriel backes fischer": "GF", fischer: "GF",
+  "gabriel lima": "GL", lima: "GL",
+  robert: "RO", "robert oliveira": "RO",
   camile: "CA", camille: "CA",
   luis: "LF", "luis felipe": "LF",
   victor: "VA", "victor andrade": "VA",
   "maria luisa": "MALU", "maria luísa": "MALU",
-  // ICARO e LUIZA não estão na lista de siglas — ficam como valor custom no select
 };
 
 // Convert a multi-person string like "ROBERT & GABRIEL" → "RO & GA"
@@ -555,7 +557,7 @@ function AdsCopyDisplay({
   }
 
   const keyToSigla: Record<string, string> = {
-    DIOGO: "DG", ROBERT: "RO", GABRIEL: "GA",
+    DIOGO: "DG", ROBERT: "RO", GABRIEL: "GF", "GABRIEL FISCHER": "GF", "GABRIEL LIMA": "GL",
   };
   const siglaColors: Record<string, string> = {
     DG: "text-orange-600 dark:text-orange-400",
