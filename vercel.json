@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/sync-vturb",
       "schedule": "0 */12 * * *"
+    },
+    {
+      "path": "/api/cron/slack-reminder",
+      "schedule": "0 12 * * 1-5"
     }
   ]
 }
