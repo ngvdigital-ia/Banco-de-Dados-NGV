@@ -29,13 +29,14 @@ const roleLabels: Record<string, string> = {
   copywriter: "Copywriter",
   editor: "Editor",
   gestor_trafego: "Gestor de Tráfego",
+  suporte: "Suporte",
 };
 
 type TeamMember = {
   id: number;
   name: string;
   email: string;
-  role: "admin" | "copywriter" | "editor" | "gestor_trafego";
+  role: "admin" | "copywriter" | "editor" | "gestor_trafego" | "suporte";
   active: boolean;
 };
 

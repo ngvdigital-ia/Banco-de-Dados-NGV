@@ -20,6 +20,7 @@ export const teamRoleEnum = pgEnum("team_role", [
   "admin",
   "copywriter",
   "editor",
+  "suporte",
   "gestor_trafego",
 ]);
 

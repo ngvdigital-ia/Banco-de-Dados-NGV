@@ -17,6 +17,7 @@ const roleLabels: Record<string, string> = {
   copywriter: "Copywriter",
   editor: "Editor",
   gestor_trafego: "Gestor de Tráfego",
+  suporte: "Suporte",
 };
 
 const roleBadgeVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {

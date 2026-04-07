@@ -10,7 +10,7 @@ import { logChange } from "@/lib/changelog";
 const teamMemberSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   email: z.email("Email inválido"),
-  role: z.enum(["admin", "copywriter", "editor", "gestor_trafego"]),
+  role: z.enum(["admin", "copywriter", "editor", "gestor_trafego", "suporte"]),
   active: z.boolean().default(true),
 });
 
