@@ -2,13 +2,15 @@
 
 import { db } from "@/db";
 import { offerTracking } from "@/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, gte, lt, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function getOffers(filters?: {
   language?: string;
   validation?: string;
   copywriter?: string;
+  monthFrom?: string; // "2026-03" format
+  monthTo?: string;   // "2026-04" format
 }) {
   const conditions = [];
 
@@ -21,6 +23,15 @@ export async function getOffers(filters?: {
   if (filters?.copywriter) {
     conditions.push(eq(offerTracking.copyVsl, filters.copywriter));
   }
+  if (filters?.monthFrom) {
+    const [y, m] = filters.monthFrom.split("-").map(Number);
+    conditions.push(gte(offerTracking.createdAt, new Date(y, m - 1, 1)));
+  }
+  if (filters?.monthTo) {
+    const [y, m] = filters.monthTo.split("-").map(Number);
+    // End of month: first day of next month
+    conditions.push(lt(offerTracking.createdAt, new Date(y, m, 1)));
+  }
 
   const result = await db
     .select()
@@ -29,6 +40,17 @@ export async function getOffers(filters?: {
     .orderBy(desc(offerTracking.createdAt));
 
   return result;
+}
+
+export async function getOfferMonths() {
+  const rows = await db
+    .selectDistinct({
+      month: sql<string>`to_char(${offerTracking.createdAt}, 'YYYY-MM')`,
+    })
+    .from(offerTracking)
+    .orderBy(sql`to_char(${offerTracking.createdAt}, 'YYYY-MM') DESC`);
+
+  return rows.map((r) => r.month);
 }
 
 export async function updateOfferField(

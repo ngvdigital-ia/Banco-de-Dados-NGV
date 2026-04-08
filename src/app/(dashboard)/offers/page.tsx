@@ -2,7 +2,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OfferTable } from "@/components/offers/offer-table";
 import { CsvImportDialog } from "@/components/offers/csv-import-dialog";
-import { getOffers, createOffer } from "./actions";
+import { getOffers, getOfferMonths, createOffer } from "./actions";
 
 export default async function OffersPage({
   searchParams,
@@ -16,11 +16,38 @@ export default async function OffersPage({
     typeof params.validation === "string" ? params.validation : undefined;
   const copywriter =
     typeof params.copywriter === "string" ? params.copywriter : undefined;
+  const month =
+    typeof params.month === "string" ? params.month : undefined;
 
-  const offers = await getOffers({ language, validation, copywriter });
+  // Default: last 2 months if no month filter set
+  const now = new Date();
+  const defaultMonthFrom = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const defaultFrom = `${defaultMonthFrom.getFullYear()}-${String(defaultMonthFrom.getMonth() + 1).padStart(2, "0")}`;
+  const defaultTo = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-  // Extract unique values for filters
-  const allOffers = await getOffers();
+  let monthFrom: string | undefined;
+  let monthTo: string | undefined;
+
+  if (month === "all") {
+    // No month filter
+    monthFrom = undefined;
+    monthTo = undefined;
+  } else if (month) {
+    // Specific month
+    monthFrom = month;
+    monthTo = month;
+  } else {
+    // Default: last 2 months
+    monthFrom = defaultFrom;
+    monthTo = defaultTo;
+  }
+
+  const [offers, allMonths, allOffers] = await Promise.all([
+    getOffers({ language, validation, copywriter, monthFrom, monthTo }),
+    getOfferMonths(),
+    getOffers(),
+  ]);
+
   const uniqueLanguages = [
     ...new Set(allOffers.map((o) => o.language)),
   ].sort();
@@ -63,9 +90,11 @@ export default async function OffersPage({
         languages={uniqueLanguages}
         validations={uniqueValidations as string[]}
         copywriters={uniqueCopywriters as string[]}
+        months={allMonths}
         currentLanguage={language}
         currentValidation={validation}
         currentCopywriter={copywriter}
+        currentMonth={month}
       />
 
       {offers.length === 0 ? (
@@ -82,20 +111,35 @@ export default async function OffersPage({
   );
 }
 
+const MONTH_NAMES: Record<string, string> = {
+  "01": "Jan", "02": "Fev", "03": "Mar", "04": "Abr",
+  "05": "Mai", "06": "Jun", "07": "Jul", "08": "Ago",
+  "09": "Set", "10": "Out", "11": "Nov", "12": "Dez",
+};
+
+function formatMonth(ym: string) {
+  const [y, m] = ym.split("-");
+  return `${MONTH_NAMES[m] || m}/${y}`;
+}
+
 function OfferFilters({
   languages,
   validations,
   copywriters: _copywriters,
+  months,
   currentLanguage,
   currentValidation,
   currentCopywriter,
+  currentMonth,
 }: {
   languages: string[];
   validations: string[];
   copywriters: string[];
+  months: string[];
   currentLanguage?: string;
   currentValidation?: string;
   currentCopywriter?: string;
+  currentMonth?: string;
 }) {
   function buildHref(params: Record<string, string | undefined>) {
     const sp = new URLSearchParams();
@@ -106,10 +150,62 @@ function OfferFilters({
     return `/offers${qs ? `?${qs}` : ""}`;
   }
 
-  const hasFilters = currentLanguage || currentValidation || currentCopywriter;
+  const hasFilters = currentLanguage || currentValidation || currentCopywriter || currentMonth;
+
+  // Active month style
+  const monthBtnActive = "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900";
+  const monthBtnInactive = "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800";
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-sm">
+      {/* Month filter */}
+      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mr-1">Mês:</span>
+      <a
+        href={buildHref({
+          language: currentLanguage,
+          validation: currentValidation,
+          copywriter: currentCopywriter,
+          month: undefined, // default: last 2 months
+        })}
+        className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium transition-all ${
+          !currentMonth ? monthBtnActive : monthBtnInactive
+        }`}
+      >
+        Últimos 2 meses
+      </a>
+      {months.map((m) => (
+        <a
+          key={m}
+          href={buildHref({
+            language: currentLanguage,
+            validation: currentValidation,
+            copywriter: currentCopywriter,
+            month: currentMonth === m ? undefined : m,
+          })}
+          className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium transition-all ${
+            currentMonth === m ? monthBtnActive : monthBtnInactive
+          }`}
+        >
+          {formatMonth(m)}
+        </a>
+      ))}
+      <a
+        href={buildHref({
+          language: currentLanguage,
+          validation: currentValidation,
+          copywriter: currentCopywriter,
+          month: "all",
+        })}
+        className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium transition-all ${
+          currentMonth === "all" ? monthBtnActive : monthBtnInactive
+        }`}
+      >
+        Todos
+      </a>
+
+      <div className="mx-1 h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
+
+      {/* Language filter */}
       {languages.length > 1 && (
         <div className="flex items-center gap-1">
           {languages.map((lang) => (
@@ -119,11 +215,10 @@ function OfferFilters({
                 language: currentLanguage === lang ? undefined : lang,
                 validation: currentValidation,
                 copywriter: currentCopywriter,
+                month: currentMonth,
               })}
               className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-all ${
-                currentLanguage === lang
-                  ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                  : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+                currentLanguage === lang ? monthBtnActive : monthBtnInactive
               }`}
             >
               {lang}
@@ -132,30 +227,28 @@ function OfferFilters({
         </div>
       )}
 
-      {languages.length > 1 && validations.length > 1 && (
-        <div className="mx-1 h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
-      )}
-
       {validations.length > 1 && (
-        <div className="flex items-center gap-1">
-          {validations.map((val) => (
-            <a
-              key={val}
-              href={buildHref({
-                language: currentLanguage,
-                validation: currentValidation === val ? undefined : val,
-                copywriter: currentCopywriter,
-              })}
-              className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-all ${
-                currentValidation === val
-                  ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                  : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
-              }`}
-            >
-              {val}
-            </a>
-          ))}
-        </div>
+        <>
+          <div className="mx-1 h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
+          <div className="flex items-center gap-1">
+            {validations.map((val) => (
+              <a
+                key={val}
+                href={buildHref({
+                  language: currentLanguage,
+                  validation: currentValidation === val ? undefined : val,
+                  copywriter: currentCopywriter,
+                  month: currentMonth,
+                })}
+                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-all ${
+                  currentValidation === val ? monthBtnActive : monthBtnInactive
+                }`}
+              >
+                {val}
+              </a>
+            ))}
+          </div>
+        </>
       )}
 
       {hasFilters && (
@@ -165,7 +258,7 @@ function OfferFilters({
             href="/offers"
             className="rounded-md border border-dashed border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-500 transition-all hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
           >
-            Limpar filtros
+            Limpar tudo
           </a>
         </>
       )}
