@@ -12,6 +12,12 @@ import { metricsSnapshots } from "@/db/schema";
  * O webhook aceita qualquer formato de payload e extrai o que conseguir.
  */
 export async function POST(request: Request) {
+  // Verify webhook secret
+  const secret = request.headers.get("x-webhook-secret");
+  if (!secret || secret !== process.env.SALES_WEBHOOK_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
 
@@ -42,7 +48,6 @@ export async function POST(request: Request) {
       revenue: sale.price ? String(sale.price / 100) : null,
       extraData: {
         ...sale,
-        rawPayload: body,
         receivedAt: new Date().toISOString(),
       },
     });

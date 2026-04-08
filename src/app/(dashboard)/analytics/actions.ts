@@ -42,7 +42,7 @@ export async function getFilterOptions() {
       .where(
         and(
           eq(teamMembers.active, true),
-          sql`${teamMembers.role} IN ('copywriter', 'admin')`
+          sql`${teamMembers.role}::text IN ('copywriter', 'admin')`
         )
       )
       .orderBy(teamMembers.name),
@@ -52,7 +52,7 @@ export async function getFilterOptions() {
       .where(
         and(
           eq(teamMembers.active, true),
-          sql`${teamMembers.role} IN ('editor', 'admin')`
+          sql`${teamMembers.role}::text IN ('editor', 'admin')`
         )
       )
       .orderBy(teamMembers.name),
@@ -89,8 +89,7 @@ function buildProjectConditions(filters?: AnalyticsFilters) {
   }
 
   if (filters?.statuses && filters.statuses.length > 0) {
-    const vals = filters.statuses.map((s) => `'${s}'`).join(",");
-    conditions.push(sql`${projects.status} IN (${sql.raw(vals)})`);
+    conditions.push(sql`${projects.status}::text IN (${sql.join(filters.statuses.map(s => sql`${s}`), sql`, `)})`);
   }
 
   return conditions;
@@ -111,13 +110,11 @@ function buildCreativeConditions(filters?: AnalyticsFilters) {
   }
 
   if (filters?.formats && filters.formats.length > 0) {
-    const vals = filters.formats.map((f) => `'${f}'`).join(",");
-    conditions.push(sql`${creatives.format} IN (${sql.raw(vals)})`);
+    conditions.push(sql`${creatives.format}::text IN (${sql.join(filters.formats.map(f => sql`${f}`), sql`, `)})`);
   }
 
   if (filters?.statuses && filters.statuses.length > 0) {
-    const vals = filters.statuses.map((s) => `'${s}'`).join(",");
-    conditions.push(sql`${creatives.status} IN (${sql.raw(vals)})`);
+    conditions.push(sql`${creatives.status}::text IN (${sql.join(filters.statuses.map(s => sql`${s}`), sql`, `)})`);
   }
 
   return conditions;
