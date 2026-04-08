@@ -3,19 +3,30 @@ import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
 
 /**
- * Webhook universal para receber vendas de plataformas de pagamento.
- * Suporta: Cartpanda, Hotmart, PerfectPay, Monetizze, NexFy, Yampi, etc.
- *
- * Configure nas plataformas de pagamento:
- * URL: https://banco-de-dados-ngv.vercel.app/api/webhooks/sales
- *
- * O webhook aceita qualquer formato de payload e extrai o que conseguir.
+ * Webhook de vendas — PerfectPay + outras plataformas.
+ * URL: https://banco-de-dados-ngv.vercel.app/api/webhooks/sales?token=TOKEN
  */
+
+// PerfectPay sale_status_enum mapping
+const PP_STATUS: Record<number, string> = {
+  0: "none", 1: "pending", 2: "approved", 3: "in_process",
+  4: "in_mediation", 5: "rejected", 6: "cancelled", 7: "refunded",
+  8: "authorized", 9: "charged_back", 10: "completed",
+  11: "checkout_error", 12: "precheckout", 13: "expired", 16: "in_review",
+};
+
+const PP_PAYMENT: Record<number, string> = {
+  0: "none", 1: "visa", 2: "boleto", 3: "amex", 4: "elo",
+  5: "hipercard", 6: "master", 7: "melicard", 8: "free_price",
+};
+
+const PP_PAYMENT_TYPE: Record<number, string> = {
+  0: "none", 1: "credit_card", 2: "boleto", 3: "paypal",
+  4: "recurrent", 5: "free_price", 6: "upsell",
+};
+
 export async function POST(request: Request) {
-  // Auth: accept secret via header, query param, or token in body
-  // PerfectPay and others send token in the payload, not headers
   const url = new URL(request.url);
-  const headerSecret = request.headers.get("x-webhook-secret");
   const queryToken = url.searchParams.get("token");
 
   let body: Record<string, unknown>;
@@ -25,37 +36,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  // Auth: token via query param, header, or body
+  const headerSecret = request.headers.get("x-webhook-secret");
   const bodyToken = typeof body.token === "string" ? body.token : null;
   const expectedSecret = process.env.SALES_WEBHOOK_SECRET;
 
   const isAuthorized =
-    (headerSecret && headerSecret === expectedSecret) ||
     (queryToken && queryToken === expectedSecret) ||
-    (bodyToken && bodyToken === expectedSecret);
+    (headerSecret && headerSecret === expectedSecret) ||
+    (bodyToken && bodyToken === expectedSecret) ||
+    !expectedSecret; // If no secret configured, accept all (dev mode)
 
   if (!isAuthorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
+    // Detect platform
+    const isPerfectPay = body.sale_status_enum !== undefined || body.sale_amount !== undefined || (typeof body.code === "string" && String(body.code).startsWith("PPC"));
 
-    // Try to extract common fields from different platform formats
-    const sale = {
-      // Common fields across platforms
-      status: extractField(body, ["status", "transaction_status", "payment_status", "order_status"]),
-      productName: extractField(body, ["product_name", "product.name", "items.0.name", "productName", "offer_name"]),
-      productId: extractField(body, ["product_id", "product.id", "productId"]),
-      price: extractNumber(body, ["price", "amount", "value", "total", "transaction.amount", "order_value", "purchase.price"]),
-      currency: extractField(body, ["currency", "transaction.currency"]) || "USD",
-      customerEmail: extractField(body, ["email", "customer.email", "buyer.email", "customer_email"]),
-      customerCountry: extractField(body, ["country", "customer.country", "buyer.country"]),
-      paymentMethod: extractField(body, ["payment_method", "payment_type", "paymentMethod"]),
-      platform: detectPlatform(body),
-      utmSource: extractField(body, ["utm_source", "utms.utm_source", "tracking.utm_source"]),
-      utmCampaign: extractField(body, ["utm_campaign", "utms.utm_campaign", "tracking.utm_campaign"]),
-      utmContent: extractField(body, ["utm_content", "utms.utm_content", "tracking.utm_content"]),
-      transactionId: extractField(body, ["transaction_id", "transaction.id", "order_id", "id"]),
-    };
+    let sale;
+
+    if (isPerfectPay) {
+      sale = parsePerfectPay(body);
+    } else {
+      sale = parseGeneric(body);
+    }
 
     // Save to metrics_snapshots
     await db.insert(metricsSnapshots).values({
@@ -63,9 +69,10 @@ export async function POST(request: Request) {
       entityType: "sale",
       entityId: 0,
       source: "manual",
-      revenue: sale.price ? String(sale.price / 100) : null,
+      revenue: sale.price ? String(sale.price) : null,
       extraData: {
         ...sale,
+        rawPayload: body,
         receivedAt: new Date().toISOString(),
       },
     });
@@ -75,6 +82,7 @@ export async function POST(request: Request) {
       message: "Sale received",
       product: sale.productName,
       status: sale.status,
+      amount: sale.price,
     });
   } catch (err) {
     console.error("[Sales Webhook] Error:", err);
@@ -85,7 +93,60 @@ export async function POST(request: Request) {
   }
 }
 
-// Helper to extract nested fields
+function parsePerfectPay(body: Record<string, unknown>) {
+  const product = body.product as Record<string, unknown> | undefined;
+  const customer = body.customer as Record<string, unknown> | undefined;
+  const metadata = body.metadata as Record<string, unknown> | undefined;
+
+  const statusEnum = typeof body.sale_status_enum === "number" ? body.sale_status_enum : parseInt(String(body.sale_status_enum || "0"));
+  const paymentEnum = typeof body.payment_method_enum === "number" ? body.payment_method_enum : parseInt(String(body.payment_method_enum || "0"));
+  const paymentTypeEnum = typeof body.payment_type_enum === "number" ? body.payment_type_enum : parseInt(String(body.payment_type_enum || "0"));
+
+  return {
+    platform: "PerfectPay",
+    transactionCode: String(body.code || ""),
+    status: PP_STATUS[statusEnum] || String(statusEnum),
+    statusDetail: String(body.sale_status_detail || ""),
+    price: parseFloat(String(body.sale_amount || "0")),
+    currency: body.currency_enum === 1 ? "BRL" : "USD",
+    installments: Number(body.installments || 0),
+    installmentAmount: parseFloat(String(body.installment_amount || "0")),
+    paymentMethod: PP_PAYMENT[paymentEnum] || String(paymentEnum),
+    paymentType: PP_PAYMENT_TYPE[paymentTypeEnum] || String(paymentTypeEnum),
+    productName: product?.name ? String(product.name) : null,
+    productCode: product?.code ? String(product.code) : null,
+    customerName: customer?.full_name ? String(customer.full_name) : null,
+    customerEmail: customer?.email ? String(customer.email) : null,
+    customerCountry: customer?.country ? String(customer.country) : null,
+    customerPhone: customer?.phone_number ? `${customer.phone_area_code || ""}${customer.phone_number}` : null,
+    utmSource: metadata?.utm_source ? String(metadata.utm_source) : null,
+    utmMedium: metadata?.utm_medium ? String(metadata.utm_medium) : null,
+    utmCampaign: metadata?.utm_campaign ? String(metadata.utm_campaign) : null,
+    utmTerm: metadata?.utm_term ? String(metadata.utm_term) : null,
+    utmContent: metadata?.utm_content ? String(metadata.utm_content) : null,
+    dateCreated: body.date_created ? String(body.date_created) : null,
+    dateApproved: body.date_approved ? String(body.date_approved) : null,
+    quantity: Number(body.quantity || 1),
+  };
+}
+
+function parseGeneric(body: Record<string, unknown>) {
+  return {
+    platform: detectPlatform(body),
+    status: extractField(body, ["status", "transaction_status", "payment_status", "order_status"]),
+    productName: extractField(body, ["product_name", "product.name", "items.0.name", "productName"]),
+    productId: extractField(body, ["product_id", "product.id", "productId"]),
+    price: extractNumber(body, ["price", "amount", "value", "total", "sale_amount"]),
+    currency: extractField(body, ["currency", "transaction.currency"]) || "USD",
+    customerEmail: extractField(body, ["email", "customer.email", "buyer.email"]),
+    customerCountry: extractField(body, ["country", "customer.country"]),
+    paymentMethod: extractField(body, ["payment_method", "payment_type"]),
+    utmSource: extractField(body, ["utm_source", "metadata.utm_source"]),
+    utmCampaign: extractField(body, ["utm_campaign", "metadata.utm_campaign"]),
+    transactionId: extractField(body, ["transaction_id", "code", "order_id", "id"]),
+  };
+}
+
 function extractField(obj: Record<string, unknown>, paths: string[]): string | null {
   for (const path of paths) {
     const parts = path.split(".");
@@ -109,12 +170,9 @@ function extractNumber(obj: Record<string, unknown>, paths: string[]): number | 
 }
 
 function detectPlatform(body: Record<string, unknown>): string {
-  // Try to detect which platform sent the webhook
   if (body.hottok || body.hotmart_id) return "Hotmart";
   if (body.cartpanda_id || body.store_id) return "Cartpanda";
-  if (body.perfectpay_id) return "PerfectPay";
+  if (body.sale_status_enum !== undefined) return "PerfectPay";
   if (body.monetizze_id) return "Monetizze";
-  if (body.nexfy_id) return "NexFy";
-  if (body.yampi_id) return "Yampi";
   return "Unknown";
 }
