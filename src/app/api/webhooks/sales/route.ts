@@ -12,14 +12,32 @@ import { metricsSnapshots } from "@/db/schema";
  * O webhook aceita qualquer formato de payload e extrai o que conseguir.
  */
 export async function POST(request: Request) {
-  // Verify webhook secret
-  const secret = request.headers.get("x-webhook-secret");
-  if (!secret || secret !== process.env.SALES_WEBHOOK_SECRET) {
+  // Auth: accept secret via header, query param, or token in body
+  // PerfectPay and others send token in the payload, not headers
+  const url = new URL(request.url);
+  const headerSecret = request.headers.get("x-webhook-secret");
+  const queryToken = url.searchParams.get("token");
+
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const bodyToken = typeof body.token === "string" ? body.token : null;
+  const expectedSecret = process.env.SALES_WEBHOOK_SECRET;
+
+  const isAuthorized =
+    (headerSecret && headerSecret === expectedSecret) ||
+    (queryToken && queryToken === expectedSecret) ||
+    (bodyToken && bodyToken === expectedSecret);
+
+  if (!isAuthorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const body = await request.json();
 
     // Try to extract common fields from different platform formats
     const sale = {
