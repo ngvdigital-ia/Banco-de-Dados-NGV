@@ -64,23 +64,23 @@ export async function getProjectsSummary() {
 }
 
 export async function getVturbSummary() {
+  // Limit to 50 most recent to avoid exceeding Neon response size limit
   const rows = await db
     .select({
       extraData: metricsSnapshots.extraData,
     })
     .from(metricsSnapshots)
-    .where(eq(metricsSnapshots.entityType, "vturb_player"));
-
-  type VturbEvent = {
-    player_id: string;
-    event: string;
-    total: number;
-  };
+    .where(eq(metricsSnapshots.entityType, "vturb_player"))
+    .orderBy(desc(metricsSnapshots.createdAt))
+    .limit(50);
 
   type VturbExtraData = {
     playerId: string;
     playerName: string;
-    events: VturbEvent[];
+    started: number;
+    finished: number;
+    viewed: number;
+    clicked: number;
   };
 
   let totalPlays = 0;
@@ -92,16 +92,12 @@ export async function getVturbSummary() {
 
   for (const row of rows) {
     const data = row.extraData as VturbExtraData | null;
-    if (!data?.playerId || !data?.events) continue;
+    if (!data?.playerId) continue;
 
-    const playerEvents = data.events.filter(
-      (e) => e.player_id === data.playerId
-    );
-
-    const started = playerEvents.find((e) => e.event === "started")?.total ?? 0;
-    const finished = playerEvents.find((e) => e.event === "finished")?.total ?? 0;
-    const viewed = playerEvents.find((e) => e.event === "viewed")?.total ?? 0;
-    const clicked = playerEvents.find((e) => e.event === "clicked")?.total ?? 0;
+    const started = data.started ?? 0;
+    const finished = data.finished ?? 0;
+    const viewed = data.viewed ?? 0;
+    const clicked = data.clicked ?? 0;
 
     totalPlays += started;
     totalViews += viewed;

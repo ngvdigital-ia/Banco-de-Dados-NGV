@@ -442,25 +442,27 @@ export async function getOffersRanking(filters?: AnalyticsFilters) {
 
 // ========== VTURB STATS ==========
 
-type VturbEvent = {
-  player_id: string;
-  event: string;
-  total: number;
-};
-
-type VturbExtraData = {
-  playerId: string;
-  playerName: string;
-  events: VturbEvent[];
-};
-
 export async function getVturbStats() {
+  // Limit to 50 to avoid exceeding Neon response size
   const rows = await db
     .select({
       extraData: metricsSnapshots.extraData,
     })
     .from(metricsSnapshots)
-    .where(eq(metricsSnapshots.entityType, "vturb_player"));
+    .where(eq(metricsSnapshots.entityType, "vturb_player"))
+    .orderBy(desc(metricsSnapshots.createdAt))
+    .limit(50);
+
+  type VturbData = {
+    playerId: string;
+    playerName: string;
+    started: number;
+    finished: number;
+    viewed: number;
+    clicked: number;
+    playRate?: number;
+    finishRate?: number;
+  };
 
   const playerStats: {
     playerName: string;
@@ -473,20 +475,16 @@ export async function getVturbStats() {
   }[] = [];
 
   for (const row of rows) {
-    const data = row.extraData as VturbExtraData | null;
-    if (!data?.playerId || !data?.events) continue;
+    const data = row.extraData as VturbData | null;
+    if (!data?.playerId) continue;
 
-    const playerEvents = data.events.filter(
-      (e) => e.player_id === data.playerId
-    );
+    const started = data.started ?? 0;
+    const finished = data.finished ?? 0;
+    const viewed = data.viewed ?? 0;
+    const clicked = data.clicked ?? 0;
 
-    const started = playerEvents.find((e) => e.event === "started")?.total ?? 0;
-    const finished = playerEvents.find((e) => e.event === "finished")?.total ?? 0;
-    const viewed = playerEvents.find((e) => e.event === "viewed")?.total ?? 0;
-    const clicked = playerEvents.find((e) => e.event === "clicked")?.total ?? 0;
-
-    const playRate = viewed > 0 ? (started / viewed) * 100 : 0;
-    const finishRate = started > 0 ? (finished / started) * 100 : 0;
+    const playRate = data.playRate ?? (viewed > 0 ? (started / viewed) * 100 : 0);
+    const finishRate = data.finishRate ?? (started > 0 ? (finished / started) * 100 : 0);
 
     playerStats.push({
       playerName: data.playerName,
@@ -499,7 +497,6 @@ export async function getVturbStats() {
     });
   }
 
-  // Sort by started DESC and limit to top 50
   return playerStats
     .sort((a, b) => b.started - a.started)
     .slice(0, 50);

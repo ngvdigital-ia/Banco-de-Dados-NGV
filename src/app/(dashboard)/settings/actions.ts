@@ -175,7 +175,19 @@ async function syncVturb() {
     const events = await fetchEventsByPlayer(playerIds, dateFrom, dateTo);
     const sessions = await fetchSessionStats(playerIds, dateFrom, dateTo);
 
-    for (const player of playersData.players) {
+    // Extract per-player events (not the full array for each row)
+    const allEvents = Array.isArray(events) ? events : [];
+    const allSessions = Array.isArray(sessions) ? sessions : [];
+
+    for (const player of playersData.players.slice(0, 50)) {
+      const playerEvents = allEvents.filter((e: { player_id: string }) => e.player_id === player.id);
+      const playerSessions = allSessions.filter((s: { player_id?: string }) => s.player_id === player.id);
+
+      const started = playerEvents.find((e: { event: string }) => e.event === "started")?.total ?? 0;
+      const finished = playerEvents.find((e: { event: string }) => e.event === "finished")?.total ?? 0;
+      const viewed = playerEvents.find((e: { event: string }) => e.event === "viewed")?.total ?? 0;
+      const clicked = playerEvents.find((e: { event: string }) => e.event === "clicked")?.total ?? 0;
+
       await db.insert(metricsSnapshots).values({
         date: now,
         entityType: "vturb_player",
@@ -185,9 +197,14 @@ async function syncVturb() {
           source: "vturb",
           playerId: player.id,
           playerName: player.name,
-          dateRange: { from: dateFrom, to: dateTo },
-          events: events ?? null,
-          sessions: sessions ?? null,
+          duration: player.duration,
+          pitchTime: player.pitch_time,
+          started,
+          finished,
+          viewed,
+          clicked,
+          playRate: viewed > 0 ? Math.round((started / viewed) * 10000) / 100 : 0,
+          finishRate: started > 0 ? Math.round((finished / started) * 10000) / 100 : 0,
         },
       });
       synced++;
