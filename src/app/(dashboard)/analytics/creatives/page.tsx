@@ -69,7 +69,7 @@ export default async function CreativesAnalyticsPage({
   }> = {};
 
   for (const row of byFormat) {
-    const fmt = row.format;
+    const fmt = row.format ?? "sem_formato";
     if (!formatAgg[fmt]) {
       formatAgg[fmt] = { total: 0, escalou: 0, validou: 0, naoValidou: 0 };
     }
