@@ -235,7 +235,7 @@ export default async function CreativesAnalyticsPage({
                     <TableRow key={i}>
                       <TableCell>
                         <Badge variant="outline">
-                          {formatLabels[row.format] ?? row.format}
+                          {formatLabels[row.format ?? ""] ?? row.format ?? "Sem formato"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-medium">{row.count}</TableCell>
