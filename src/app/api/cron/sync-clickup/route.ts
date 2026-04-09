@@ -14,6 +14,9 @@ type ClickUpTask = {
   name: string;
   status: { status: string };
   date_updated: string;
+  due_date: string | null;
+  date_done: string | null;
+  date_closed: string | null;
   assignees: { id: number; username: string; email: string }[];
 };
 
@@ -37,7 +40,7 @@ export async function GET(request: Request) {
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
   const results: { list: string; status: string; tasksFound: number; error?: string }[] = [];
-  const memberTaskCounts: Record<string, { name: string; count: number; lists: string[] }> = {};
+  const memberTaskCounts: Record<string, { name: string; count: number; withDueDate: number; onTime: number; lists: string[] }> = {};
 
   for (const list of LISTS) {
     try {
@@ -53,16 +56,28 @@ export async function GET(request: Request) {
 
       const data = (await res.json()) as ClickUpResponse;
 
-      // Count tasks per assignee
+      // Count tasks per assignee, track due dates for on-time %
       for (const task of data.tasks) {
         for (const assignee of task.assignees) {
           const key = String(assignee.id);
           if (!memberTaskCounts[key]) {
-            memberTaskCounts[key] = { name: assignee.username, count: 0, lists: [] };
+            memberTaskCounts[key] = { name: assignee.username, count: 0, withDueDate: 0, onTime: 0, lists: [] };
           }
           memberTaskCounts[key].count += 1;
           if (!memberTaskCounts[key].lists.includes(list.name)) {
             memberTaskCounts[key].lists.push(list.name);
+          }
+
+          // Calculate on-time completion
+          if (task.due_date) {
+            memberTaskCounts[key].withDueDate += 1;
+            const dueMs = parseInt(task.due_date, 10);
+            const doneMs = task.date_done ? parseInt(task.date_done, 10)
+              : task.date_closed ? parseInt(task.date_closed, 10)
+              : parseInt(task.date_updated, 10);
+            if (doneMs <= dueMs) {
+              memberTaskCounts[key].onTime += 1;
+            }
           }
         }
       }
@@ -90,6 +105,9 @@ export async function GET(request: Request) {
           memberId,
           memberName: data.name,
           tasksCompleted: data.count,
+          tasksWithDueDate: data.withDueDate,
+          tasksOnTime: data.onTime,
+          pctOnTime: data.withDueDate > 0 ? Math.round((data.onTime / data.withDueDate) * 10000) / 100 : null,
           lists: data.lists,
           periodDays: 7,
         },

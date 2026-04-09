@@ -317,6 +317,7 @@ export async function getTeamPerformance() {
       creativesEscalouCount,
       pctEscalou,
       clickupTasks: 0,
+      clickupOnTimePct: null as number | null,
     });
   }
 
@@ -330,19 +331,30 @@ export async function getTeamPerformance() {
     .where(eq(metricsSnapshots.entityType, "clickup_member"))
     .orderBy(desc(metricsSnapshots.createdAt));
 
-  const clickupByName = new Map<string, number>();
+  type ClickUpData = {
+    memberName?: string;
+    tasksCompleted?: number;
+    taskCount?: number;
+    pctOnTime?: number | null;
+  };
+
+  const clickupByName = new Map<string, { count: number; pctOnTime: number | null }>();
   for (const row of clickupRows) {
-    const data = row.extraData as { memberName?: string; taskCount?: number } | null;
+    const data = row.extraData as ClickUpData | null;
     if (data?.memberName && !clickupByName.has(data.memberName.toLowerCase())) {
-      clickupByName.set(data.memberName.toLowerCase(), data.taskCount ?? 0);
+      clickupByName.set(data.memberName.toLowerCase(), {
+        count: data.tasksCompleted ?? data.taskCount ?? 0,
+        pctOnTime: data.pctOnTime ?? null,
+      });
     }
   }
 
   for (const member of results) {
     const memberFirstName = member.name.split(" ")[0].toLowerCase();
-    for (const [clickupName, count] of clickupByName) {
+    for (const [clickupName, data] of clickupByName) {
       if (clickupName.toLowerCase().includes(memberFirstName) || memberFirstName.includes(clickupName.split(" ")[0].toLowerCase())) {
-        member.clickupTasks = count;
+        member.clickupTasks = data.count;
+        member.clickupOnTimePct = data.pctOnTime;
         break;
       }
     }

@@ -82,6 +82,7 @@ export default async function TeamAnalyticsPage({
                     <TableHead className="text-center">Campanhas</TableHead>
                     <TableHead className="text-center">Total</TableHead>
                     <TableHead className="text-center">Tarefas ClickUp (7d)</TableHead>
+                    <TableHead className="text-center">% No Prazo</TableHead>
                     <TableHead className="text-center">% Escalou</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -118,6 +119,22 @@ export default async function TeamAnalyticsPage({
                         {member.clickupTasks > 0 ? (
                           <Badge variant="outline" className="border-purple-300 text-purple-700">
                             {member.clickupTasks}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {member.clickupOnTimePct != null ? (
+                          <Badge
+                            variant="outline"
+                            className={member.clickupOnTimePct >= 80
+                              ? "border-emerald-300 text-emerald-700"
+                              : member.clickupOnTimePct >= 50
+                              ? "border-yellow-300 text-yellow-700"
+                              : "border-red-300 text-red-700"}
+                          >
+                            {member.clickupOnTimePct}%
                           </Badge>
                         ) : (
                           <span className="text-muted-foreground">-</span>
