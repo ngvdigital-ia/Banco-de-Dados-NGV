@@ -29,6 +29,7 @@ type Offer = {
   productCreated: string | null;
   productApproved: string | null;
   siteCreated: string | null;
+  adFormat: string | null;
   observations: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -82,26 +83,7 @@ function calcProgress(offer: Offer): number {
 // ---------- Fixed options ----------
 
 // Siglas: DG=Diogo, GF=Gabriel Fischer, GL=Gabriel Lima, RO=Robert, MALU=Malu, VA=Victor Andrade, CA=Camile, LF=Luis Felipe
-const COPYWRITERS = ["DG", "GF", "GL", "RO", "MALU", "VA", "CA", "LF"];
-const EDITORS = ["DG", "GF", "GL", "RO", "MALU", "VA", "CA", "LF"];
-const LANGUAGES = ["EN", "FR", "DE", "ITA", "ES", "PT"];
-
-const SIGLA_TO_NAME: Record<string, string> = {
-  DG: "Diogo", GF: "Gabriel Fischer", GL: "Gabriel Lima", GA: "Gabriel Fischer", RO: "Robert",
-  MALU: "Malu", VA: "Victor Andrade", CA: "Camile", LF: "Luis Felipe",
-};
-// Map ALL known name variations to siglas
-const NAME_TO_SIGLA: Record<string, string> = {
-  dg: "DG", gf: "GF", gl: "GL", ga: "GF", ro: "RO", malu: "MALU", va: "VA", ca: "CA", lf: "LF",
-  diogo: "DG",
-  gabriel: "GF", "gabriel fischer": "GF", "gabriel backes fischer": "GF", fischer: "GF",
-  "gabriel lima": "GL", lima: "GL",
-  robert: "RO", "robert oliveira": "RO",
-  camile: "CA", camille: "CA",
-  luis: "LF", "luis felipe": "LF",
-  victor: "VA", "victor andrade": "VA",
-  "maria luisa": "MALU", "maria luísa": "MALU",
-};
+import { COPYWRITERS, EDITORS, LANGUAGES, SIGLA_TO_NAME, NAME_TO_SIGLA, AD_FORMATS, FORMAT_LABELS } from "@/lib/team-utils";
 
 // Convert a multi-person string like "ROBERT & GABRIEL" → "RO & GA"
 function convertNamesToSiglas(value: string | null): string {
@@ -200,11 +182,13 @@ function SelectCell({
   offerId,
   field,
   options,
+  labels,
 }: {
   value: string | null;
   offerId: number;
   field: string;
   options: string[];
+  labels?: Record<string, string>;
 }) {
   const [isPending, startTransition] = useTransition();
 
@@ -242,7 +226,7 @@ function SelectCell({
         <option value={normalizedValue}>{normalizedValue}</option>
       )}
       {options.map((opt) => (
-        <option key={opt} value={opt}>{opt}</option>
+        <option key={opt} value={opt}>{labels?.[opt] || opt}</option>
       ))}
     </select>
   );
@@ -883,6 +867,20 @@ const columns: ColumnDef[] = [
     width: "w-[80px] min-w-[80px]",
     render: (o) => (
       <StatusBadge value={o.siteCreated} offerId={o.id} field="siteCreated" />
+    ),
+  },
+  {
+    key: "adFormat",
+    label: "Formato",
+    width: "w-[120px] min-w-[120px]",
+    render: (o) => (
+      <SelectCell
+        value={o.adFormat}
+        offerId={o.id}
+        field="adFormat"
+        options={[...AD_FORMATS]}
+        labels={FORMAT_LABELS}
+      />
     ),
   },
   {

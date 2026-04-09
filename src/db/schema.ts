@@ -503,6 +503,7 @@ export const offerTracking = pgTable("offer_tracking", {
   productCreated: text("product_created").default("NAO"),
   productApproved: text("product_approved").default("NAO"),
   siteCreated: text("site_created").default("NAO"),
+  adFormat: creativeFormatEnum("ad_format"),
   observations: text("observations"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

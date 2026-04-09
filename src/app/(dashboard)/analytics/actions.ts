@@ -1,7 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { projects, vsls, creatives, campaigns, teamMembers, metricsSnapshots } from "@/db/schema";
+import { projects, vsls, creatives, campaigns, teamMembers, metricsSnapshots, offerTracking } from "@/db/schema";
+import { SIGLA_TO_NAME, NAME_TO_SIGLA, fieldContainsSigla } from "@/lib/team-utils";
 import { eq, sql, desc, and, inArray } from "drizzle-orm";
 
 // ========== TYPES ==========
@@ -57,9 +58,9 @@ export async function getFilterOptions() {
       )
       .orderBy(teamMembers.name),
     db
-      .selectDistinct({ format: creatives.format })
-      .from(creatives)
-      .orderBy(creatives.format),
+      .selectDistinct({ format: offerTracking.adFormat })
+      .from(offerTracking)
+      .where(sql`${offerTracking.adFormat} IS NOT NULL`),
   ]);
 
   return {
@@ -67,7 +68,7 @@ export async function getFilterOptions() {
     languages: languageRows.map((r) => r.language),
     copywriters,
     editors,
-    formats: formatRows.map((r) => r.format),
+    formats: formatRows.map((r) => r.format).filter(Boolean) as string[],
   };
 }
 
@@ -203,30 +204,26 @@ export async function getVslsForComparison(filters?: AnalyticsFilters) {
 
 // ========== CREATIVES BY FORMAT ==========
 
-export async function getCreativesByFormat(filters?: AnalyticsFilters) {
-  const conditions = [
-    ...buildProjectConditions(filters),
-    ...buildCreativeConditions(filters),
-  ];
-
-  const whereClause = combineConditions(conditions);
-
+export async function getCreativesByFormat() {
+  // Query offerTracking grouped by adFormat
+  // Maps: validation SIM + scale SIM/EM ANDAMENTO = escalou
+  //        validation SIM = validou
+  //        validation NAO/NÃO DEU CERTO = nao_validou
   return db
     .select({
-      format: creatives.format,
-      platform: creatives.platform,
+      format: offerTracking.adFormat,
+      platform: sql<string | null>`null`,
       count: sql<number>`count(*)`,
-      countEscalou: sql<number>`count(*) filter (where ${creatives.status} = 'escalou')`,
-      countValidou: sql<number>`count(*) filter (where ${creatives.status} = 'validou')`,
-      countNaoValidou: sql<number>`count(*) filter (where ${creatives.status} = 'nao_validou')`,
-      pctEscalou: sql<number>`round(100.0 * count(*) filter (where ${creatives.status} = 'escalou') / nullif(count(*), 0), 2)`,
-      pctValidou: sql<number>`round(100.0 * count(*) filter (where ${creatives.status} = 'validou') / nullif(count(*), 0), 2)`,
-      pctNaoValidou: sql<number>`round(100.0 * count(*) filter (where ${creatives.status} = 'nao_validou') / nullif(count(*), 0), 2)`,
+      countEscalou: sql<number>`count(*) filter (where ${offerTracking.validation} = 'SIM' and (${offerTracking.scale} = 'SIM' or ${offerTracking.scale} = 'EM ANDAMENTO'))`,
+      countValidou: sql<number>`count(*) filter (where ${offerTracking.validation} = 'SIM')`,
+      countNaoValidou: sql<number>`count(*) filter (where ${offerTracking.validation} in ('NAO', 'NÃO DEU CERTO'))`,
+      pctEscalou: sql<number>`round(100.0 * count(*) filter (where ${offerTracking.validation} = 'SIM' and (${offerTracking.scale} = 'SIM' or ${offerTracking.scale} = 'EM ANDAMENTO')) / nullif(count(*), 0), 2)`,
+      pctValidou: sql<number>`round(100.0 * count(*) filter (where ${offerTracking.validation} = 'SIM') / nullif(count(*), 0), 2)`,
+      pctNaoValidou: sql<number>`round(100.0 * count(*) filter (where ${offerTracking.validation} in ('NAO', 'NÃO DEU CERTO')) / nullif(count(*), 0), 2)`,
     })
-    .from(creatives)
-    .innerJoin(projects, eq(creatives.projectId, projects.id))
-    .where(whereClause)
-    .groupBy(creatives.format, creatives.platform)
+    .from(offerTracking)
+    .where(sql`${offerTracking.adFormat} IS NOT NULL`)
+    .groupBy(offerTracking.adFormat)
     .orderBy(sql`count(*) desc`);
 }
 
@@ -251,115 +248,76 @@ export async function getCreativesDetailed() {
 
 // ========== TEAM PERFORMANCE ==========
 
-export async function getTeamPerformance(filters?: AnalyticsFilters) {
-  const members = await db.select().from(teamMembers).where(eq(teamMembers.active, true));
-
-  const projectConditions = buildProjectConditions(filters);
-  const hasProjectFilter = projectConditions.length > 0;
+export async function getTeamPerformance() {
+  // Fetch team members and all offer tracking data in parallel
+  const [members, allOffers] = await Promise.all([
+    db.select().from(teamMembers).where(eq(teamMembers.active, true)),
+    db.select().from(offerTracking),
+  ]);
 
   const results = [];
 
   for (const member of members) {
+    // Find the sigla(s) for this team member
+    const firstName = member.name.split(" ")[0].toLowerCase();
+    const sigla = NAME_TO_SIGLA[firstName] || NAME_TO_SIGLA[member.name.toLowerCase()] || "";
+
     let vslCount = 0;
     let creativesCopyCount = 0;
     let creativesEditCount = 0;
     let campaignCount = 0;
     let creativesEscalouCount = 0;
-    let creativesTotalForConversion = 0;
 
-    if (member.role === "copywriter" || member.role === "admin") {
-      // VSL count with optional project filter
-      if (hasProjectFilter) {
-        const [v] = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(vsls)
-          .innerJoin(projects, eq(vsls.projectId, projects.id))
-          .where(combineConditions([eq(vsls.copywriterId, member.id), ...projectConditions]));
-        vslCount = Number(v.count);
-      } else {
-        const [v] = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(vsls)
-          .where(eq(vsls.copywriterId, member.id));
-        vslCount = Number(v.count);
-      }
+    if (!sigla) {
+      // No sigla mapping found — skip counting
+    } else {
+      for (const offer of allOffers) {
+        const isVslCopy = offer.copyVsl?.toUpperCase() === sigla;
+        const isCopyAds = fieldContainsSigla(offer.copyAds, sigla);
+        const isEditorAds = fieldContainsSigla(offer.editorAds, sigla);
+        const isEditorVsl = fieldContainsSigla(offer.editorVsl, sigla);
+        const isEscalou = offer.validation === "SIM" && (offer.scale === "SIM" || offer.scale === "EM ANDAMENTO");
 
-      // Creatives as copywriter with optional project filter
-      if (hasProjectFilter) {
-        const [cc] = await db
-          .select({
-            count: sql<number>`count(*)`,
-            escalouCount: sql<number>`count(*) filter (where ${creatives.status} = 'escalou')`,
-          })
-          .from(creatives)
-          .innerJoin(projects, eq(creatives.projectId, projects.id))
-          .where(combineConditions([eq(creatives.copywriterId, member.id), ...projectConditions]));
-        creativesCopyCount = Number(cc.count);
-        creativesEscalouCount += Number(cc.escalouCount);
-        creativesTotalForConversion += Number(cc.count);
-      } else {
-        const [cc] = await db
-          .select({
-            count: sql<number>`count(*)`,
-            escalouCount: sql<number>`count(*) filter (where ${creatives.status} = 'escalou')`,
-          })
-          .from(creatives)
-          .where(eq(creatives.copywriterId, member.id));
-        creativesCopyCount = Number(cc.count);
-        creativesEscalouCount += Number(cc.escalouCount);
-        creativesTotalForConversion += Number(cc.count);
-      }
-    }
+        // Copywriter metrics
+        if (member.role === "copywriter" || member.role === "admin") {
+          if (isVslCopy) vslCount++;
+          if (isCopyAds) {
+            // Sum from adsCopyByPerson JSONB if available
+            const personData = offer.adsCopyByPerson as Record<string, number> | null;
+            if (personData) {
+              // Try sigla and full name variations as keys
+              const keys = [sigla, SIGLA_TO_NAME[sigla], member.name.split(" ")[0]].filter(Boolean);
+              for (const key of keys) {
+                for (const [k, v] of Object.entries(personData)) {
+                  if (k.toUpperCase() === key!.toUpperCase()) {
+                    creativesCopyCount += v;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
 
-    if (member.role === "editor" || member.role === "admin") {
-      if (hasProjectFilter) {
-        const [ce] = await db
-          .select({
-            count: sql<number>`count(*)`,
-            escalouCount: sql<number>`count(*) filter (where ${creatives.status} = 'escalou')`,
-          })
-          .from(creatives)
-          .innerJoin(projects, eq(creatives.projectId, projects.id))
-          .where(combineConditions([eq(creatives.editorId, member.id), ...projectConditions]));
-        creativesEditCount = Number(ce.count);
-        creativesEscalouCount += Number(ce.escalouCount);
-        creativesTotalForConversion += Number(ce.count);
-      } else {
-        const [ce] = await db
-          .select({
-            count: sql<number>`count(*)`,
-            escalouCount: sql<number>`count(*) filter (where ${creatives.status} = 'escalou')`,
-          })
-          .from(creatives)
-          .where(eq(creatives.editorId, member.id));
-        creativesEditCount = Number(ce.count);
-        creativesEscalouCount += Number(ce.escalouCount);
-        creativesTotalForConversion += Number(ce.count);
-      }
-    }
+        // Editor metrics
+        if (member.role === "editor" || member.role === "admin") {
+          if (isEditorAds || isEditorVsl) {
+            creativesEditCount++;
+            if (isEscalou) creativesEscalouCount++;
+          }
+        }
 
-    if (member.role === "gestor_trafego" || member.role === "admin") {
-      if (hasProjectFilter) {
-        const [c] = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(campaigns)
-          .innerJoin(projects, eq(campaigns.projectId, projects.id))
-          .where(combineConditions([eq(campaigns.managerId, member.id), ...projectConditions]));
-        campaignCount = Number(c.count);
-      } else {
-        const [c] = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(campaigns)
-          .where(eq(campaigns.managerId, member.id));
-        campaignCount = Number(c.count);
+        // Traffic manager
+        if (member.role === "gestor_trafego" || member.role === "admin") {
+          if (offer.campaignsActive === "SIM") campaignCount++;
+        }
       }
     }
 
     const totalOutput = vslCount + creativesCopyCount + creativesEditCount + campaignCount;
-    const pctEscalou =
-      creativesTotalForConversion > 0
-        ? Math.round((creativesEscalouCount / creativesTotalForConversion) * 10000) / 100
-        : 0;
+    const pctEscalou = creativesEditCount > 0
+      ? Math.round((creativesEscalouCount / creativesEditCount) * 10000) / 100
+      : 0;
 
     results.push({
       id: member.id,
@@ -386,7 +344,6 @@ export async function getTeamPerformance(filters?: AnalyticsFilters) {
     .where(eq(metricsSnapshots.entityType, "clickup_member"))
     .orderBy(desc(metricsSnapshots.createdAt));
 
-  // Build a map of clickup member name → latest task count
   const clickupByName = new Map<string, number>();
   for (const row of clickupRows) {
     const data = row.extraData as { memberName?: string; taskCount?: number } | null;
@@ -395,7 +352,6 @@ export async function getTeamPerformance(filters?: AnalyticsFilters) {
     }
   }
 
-  // Match ClickUp members to team members by name (case-insensitive, first name match)
   for (const member of results) {
     const memberFirstName = member.name.split(" ")[0].toLowerCase();
     for (const [clickupName, count] of clickupByName) {

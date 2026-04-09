@@ -50,7 +50,7 @@ export default async function CreativesAnalyticsPage({
 
   const [options, byFormat] = await Promise.all([
     getFilterOptions(),
-    getCreativesByFormat(hasAnyFilter ? filters : undefined),
+    getCreativesByFormat(),
   ]);
 
   const totalCreatives = byFormat.reduce((sum, f) => sum + Number(f.count), 0);
@@ -208,15 +208,15 @@ export default async function CreativesAnalyticsPage({
         </CardContent>
       </Card>
 
-      {/* Platform detail table */}
+      {/* Format detail table */}
       <Card>
         <CardHeader>
-          <CardTitle>Detalhamento por Plataforma</CardTitle>
+          <CardTitle>Detalhamento por Formato</CardTitle>
         </CardHeader>
         <CardContent>
           {byFormat.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              Nenhum dado
+              Defina o formato das ofertas na tabela de Ofertas para ver dados aqui.
             </p>
           ) : (
             <div className="rounded-md border">
@@ -224,7 +224,6 @@ export default async function CreativesAnalyticsPage({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Formato</TableHead>
-                    <TableHead>Plataforma</TableHead>
                     <TableHead className="text-right">Qtd</TableHead>
                     <TableHead className="text-right">% Escalou</TableHead>
                     <TableHead className="text-right">% Validou</TableHead>
@@ -239,7 +238,6 @@ export default async function CreativesAnalyticsPage({
                           {formatLabels[row.format] ?? row.format}
                         </Badge>
                       </TableCell>
-                      <TableCell>{platformLabels[row.platform] ?? row.platform}</TableCell>
                       <TableCell className="text-right font-medium">{row.count}</TableCell>
                       <TableCell className="text-right text-emerald-600">
                         {Number(row.pctEscalou) || 0}%

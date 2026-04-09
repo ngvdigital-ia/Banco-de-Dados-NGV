@@ -80,6 +80,7 @@ export async function updateOfferField(
     "productCreated",
     "productApproved",
     "siteCreated",
+    "adFormat",
     "observations",
   ]);
 

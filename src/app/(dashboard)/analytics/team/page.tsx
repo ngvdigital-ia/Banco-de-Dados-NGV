@@ -34,7 +34,7 @@ export default async function TeamAnalyticsPage({
 
   const [options, performance] = await Promise.all([
     getFilterOptions(),
-    getTeamPerformance(hasAnyFilter ? filters : undefined),
+    getTeamPerformance(),
   ]);
 
   return (
