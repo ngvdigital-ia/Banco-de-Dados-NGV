@@ -16,6 +16,7 @@ const formatLabels: Record<string, string> = {
   youtuber: "YouTuber",
   autoridade: "Autoridade",
   podcast: "Podcast",
+  sem_formato: "Sem Formato",
 };
 
 const platformLabels: Record<string, string> = {

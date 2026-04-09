@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { projects, vsls, creatives, campaigns, teamMembers, metricsSnapshots, offerTracking } from "@/db/schema";
-import { SIGLA_TO_NAME, NAME_TO_SIGLA, fieldContainsSigla } from "@/lib/team-utils";
+import { fieldContainsMember, fieldMatchesMember, getMemberAliases } from "@/lib/team-utils";
 import { eq, sql, desc, and, inArray } from "drizzle-orm";
 
 // ========== TYPES ==========
@@ -205,13 +205,10 @@ export async function getVslsForComparison(filters?: AnalyticsFilters) {
 // ========== CREATIVES BY FORMAT ==========
 
 export async function getCreativesByFormat() {
-  // Query offerTracking grouped by adFormat
-  // Maps: validation SIM + scale SIM/EM ANDAMENTO = escalou
-  //        validation SIM = validou
-  //        validation NAO/NÃO DEU CERTO = nao_validou
+  // Query offerTracking grouped by adFormat (includes offers without format as "sem_formato")
   return db
     .select({
-      format: offerTracking.adFormat,
+      format: sql<string>`coalesce(${offerTracking.adFormat}::text, 'sem_formato')`,
       platform: sql<string | null>`null`,
       count: sql<number>`count(*)`,
       countEscalou: sql<number>`count(*) filter (where ${offerTracking.validation} = 'SIM' and (${offerTracking.scale} = 'SIM' or ${offerTracking.scale} = 'EM ANDAMENTO'))`,
@@ -222,8 +219,7 @@ export async function getCreativesByFormat() {
       pctNaoValidou: sql<number>`round(100.0 * count(*) filter (where ${offerTracking.validation} in ('NAO', 'NÃO DEU CERTO')) / nullif(count(*), 0), 2)`,
     })
     .from(offerTracking)
-    .where(sql`${offerTracking.adFormat} IS NOT NULL`)
-    .groupBy(offerTracking.adFormat)
+    .groupBy(sql`coalesce(${offerTracking.adFormat}::text, 'sem_formato')`)
     .orderBy(sql`count(*) desc`);
 }
 
@@ -258,9 +254,7 @@ export async function getTeamPerformance() {
   const results = [];
 
   for (const member of members) {
-    // Find the sigla(s) for this team member
-    const firstName = member.name.split(" ")[0].toLowerCase();
-    const sigla = NAME_TO_SIGLA[firstName] || NAME_TO_SIGLA[member.name.toLowerCase()] || "";
+    const aliases = getMemberAliases(member.name);
 
     let vslCount = 0;
     let creativesCopyCount = 0;
@@ -268,49 +262,41 @@ export async function getTeamPerformance() {
     let campaignCount = 0;
     let creativesEscalouCount = 0;
 
-    if (!sigla) {
-      // No sigla mapping found — skip counting
-    } else {
-      for (const offer of allOffers) {
-        const isVslCopy = offer.copyVsl?.toUpperCase() === sigla;
-        const isCopyAds = fieldContainsSigla(offer.copyAds, sigla);
-        const isEditorAds = fieldContainsSigla(offer.editorAds, sigla);
-        const isEditorVsl = fieldContainsSigla(offer.editorVsl, sigla);
-        const isEscalou = offer.validation === "SIM" && (offer.scale === "SIM" || offer.scale === "EM ANDAMENTO");
+    for (const offer of allOffers) {
+      const isVslCopy = fieldMatchesMember(offer.copyVsl, member.name);
+      const isCopyAds = fieldContainsMember(offer.copyAds, member.name);
+      const isEditorAds = fieldContainsMember(offer.editorAds, member.name);
+      const isEditorVsl = fieldContainsMember(offer.editorVsl, member.name);
+      const isEscalou = offer.validation === "SIM" && (offer.scale === "SIM" || offer.scale === "EM ANDAMENTO");
 
-        // Copywriter metrics
-        if (member.role === "copywriter" || member.role === "admin") {
-          if (isVslCopy) vslCount++;
-          if (isCopyAds) {
-            // Sum from adsCopyByPerson JSONB if available
-            const personData = offer.adsCopyByPerson as Record<string, number> | null;
-            if (personData) {
-              // Try sigla and full name variations as keys
-              const keys = [sigla, SIGLA_TO_NAME[sigla], member.name.split(" ")[0]].filter(Boolean);
-              for (const key of keys) {
-                for (const [k, v] of Object.entries(personData)) {
-                  if (k.toUpperCase() === key!.toUpperCase()) {
-                    creativesCopyCount += v;
-                    break;
-                  }
-                }
+      // Copywriter metrics
+      if (member.role === "copywriter" || member.role === "admin") {
+        if (isVslCopy) vslCount++;
+        if (isCopyAds) {
+          // Sum from adsCopyByPerson JSONB if available
+          const personData = offer.adsCopyByPerson as Record<string, number> | null;
+          if (personData) {
+            for (const [k, v] of Object.entries(personData)) {
+              if (aliases.some((a) => a === k.toUpperCase())) {
+                creativesCopyCount += v;
+                break;
               }
             }
           }
         }
+      }
 
-        // Editor metrics
-        if (member.role === "editor" || member.role === "admin") {
-          if (isEditorAds || isEditorVsl) {
-            creativesEditCount++;
-            if (isEscalou) creativesEscalouCount++;
-          }
+      // Editor metrics
+      if (member.role === "editor" || member.role === "admin") {
+        if (isEditorAds || isEditorVsl) {
+          creativesEditCount++;
+          if (isEscalou) creativesEscalouCount++;
         }
+      }
 
-        // Traffic manager
-        if (member.role === "gestor_trafego" || member.role === "admin") {
-          if (offer.campaignsActive === "SIM") campaignCount++;
-        }
+      // Traffic manager
+      if (member.role === "gestor_trafego" || member.role === "admin") {
+        if (offer.campaignsActive === "SIM") campaignCount++;
       }
     }
 

@@ -61,9 +61,61 @@ export function getFullName(sigla: string): string {
 }
 
 /**
- * Check if a multi-person field (e.g. "RO & GF") contains a specific sigla.
+ * Build all name variations for a team member (sigla, first name, full name).
+ * Used to match against offer fields that may use any format.
  */
-export function fieldContainsSigla(field: string | null, sigla: string): boolean {
+export function getMemberAliases(memberName: string): string[] {
+  const firstName = memberName.split(" ")[0].toLowerCase();
+  const fullName = memberName.toLowerCase();
+  // IMPORTANT: check full name FIRST to avoid ambiguity (e.g., "gabriel" maps to GF but "gabriel lima" maps to GL)
+  const sigla = NAME_TO_SIGLA[fullName] || NAME_TO_SIGLA[firstName] || "";
+
+  const aliases = new Set<string>();
+  if (sigla) aliases.add(sigla.toUpperCase());
+  // Only add bare first name if it's not ambiguous (i.e., only one person has that first name)
+  const isAmbiguousFirstName = firstName === "gabriel"; // Two Gabriels in team
+  if (!isAmbiguousFirstName) {
+    aliases.add(firstName.toUpperCase());
+  }
+  aliases.add(fullName.toUpperCase());
+
+  // Also add SIGLA_TO_NAME reverse
+  if (sigla && SIGLA_TO_NAME[sigla]) {
+    aliases.add(SIGLA_TO_NAME[sigla].toUpperCase());
+  }
+
+  // Special cases for known name variations in the data
+  if (firstName === "luis") aliases.add("LUIS FELIPE");
+  if (firstName === "victor") aliases.add("VICTOR ANDRADE");
+  if (fullName.includes("fischer")) { aliases.add("GABRIEL FISCHER"); aliases.add("GABRIEL"); }
+  if (fullName.includes("lima")) aliases.add("GABRIEL LIMA");
+  if (firstName === "malu" || fullName.includes("malu")) {
+    aliases.add("MARIA LUISA");
+    aliases.add("MARIA LUÍSA");
+    aliases.add("MALU");
+  }
+  if (firstName === "camile") aliases.add("CAMILLE");
+
+  return Array.from(aliases).filter(Boolean);
+}
+
+/**
+ * Check if a field value (single or multi-person like "ROBERT & GABRIEL")
+ * contains a reference to a specific team member.
+ * Matches by sigla, first name, or full name.
+ */
+export function fieldContainsMember(field: string | null, memberName: string): boolean {
   if (!field) return false;
-  return field.split(/\s*&\s*/).some((part) => part.trim().toUpperCase() === sigla.toUpperCase());
+  const aliases = getMemberAliases(memberName);
+  const parts = field.split(/\s*[&\-]\s*/).map((p) => p.trim().toUpperCase());
+  return parts.some((part) => aliases.some((alias) => part === alias));
+}
+
+/**
+ * Check if a single-value field matches a team member.
+ */
+export function fieldMatchesMember(field: string | null, memberName: string): boolean {
+  if (!field) return false;
+  const aliases = getMemberAliases(memberName);
+  return aliases.some((alias) => field.trim().toUpperCase() === alias);
 }
