@@ -4,9 +4,26 @@ import { metricsSnapshots } from "@/db/schema";
 
 const CLICKUP_API_BASE = "https://api.clickup.com/api/v2";
 
+// All lists in the NGV Digital workspace
 const LISTS = [
-  { id: "901323138754", name: "Outros" },
-  { id: "901325026428", name: "Sites" },
+  // Copy
+  { id: "901321719582", name: "Copy > Produto" },
+  { id: "901304977280", name: "Copy > Copy" },
+  { id: "901326732014", name: "Copy > Outros" },
+  // Edição de Video
+  { id: "901305226239", name: "Edição > Criativos" },
+  { id: "901305822758", name: "Edição > VSL" },
+  { id: "901323967307", name: "Edição > Produtos" },
+  { id: "901326732017", name: "Edição > Outros" },
+  // Recuperação de Vendas
+  { id: "901305422324", name: "Recuperação > Tarefas" },
+  // Dev
+  { id: "901323138754", name: "Dev > Outros" },
+  { id: "901325026428", name: "Dev > Sites" },
+  // Tráfego Pago
+  { id: "901323524276", name: "Tráfego > Tarefas" },
+  // Diogo
+  { id: "901306192613", name: "Diogo > List" },
 ];
 
 type ClickUpTask = {
