@@ -439,8 +439,94 @@ export async function getOffersRanking(filters?: AnalyticsFilters) {
 
 // ========== VTURB STATS ==========
 
+/**
+ * Extract offer/folder name from a VTurb player name.
+ * Patterns:
+ *   VSL-ATVFACTORY-LEAD1-...       → ATV Factory
+ *   VSL-LEAD4-OGMRIDES-...         → Orgasmic Rides
+ *   LEAD3-VSL-ONLYMONEY-...        → Only Money
+ *   KingSolomon-LEAD5-...           → King Solomon
+ *   ChiaSeed-LEAD2-...             → Chia Seed
+ *   CGT-LEAD3-...                  → CGT
+ *   VSl-LeCodedelaFemme-LEAD1-...  → Le Code de la Femme
+ */
+function extractOfferName(playerName: string): string {
+  // Known offer name mappings (normalized key → display name)
+  const knownOffers: Record<string, string> = {
+    atvfactory: "FVA",
+    vigormax: "Vigor Max",
+    alphaflow: "Alpha Flow",
+    ogmrides: "Orgasmic Rides",
+    onlymoney: "Only Money",
+    kingsolomon: "Salomao",
+    chiaseed: "Chia Seed",
+    sciaticshield: "Sciatic Shield",
+    skyvault: "SkyVault",
+    mestredacama: "Mestre da Cama",
+    lecodedelafemme: "Le Code de la Femme",
+    "penna-naturale": "Penna Naturale",
+    pennanaturale: "Penna Naturale",
+    cgt: "CGT",
+    davinci: "DaVinci Frequency",
+    "african water": "African Water",
+    africanwater: "African Water",
+    "god fingers": "God Fingers",
+    godfingers: "God Fingers",
+    "guardian angel": "Guardian Angel",
+  };
+
+  const name = playerName.replace(/\.mp4$/i, "").trim();
+
+  // Remove common prefixes: "VSL-", "VSl-", "Cópia de VSL-", "Cópia de "
+  const cleaned = name
+    .replace(/^Cópia de\s*/i, "")
+    .replace(/^VSL[\s-]*/i, "")
+    .replace(/^vls?\s*/i, "");
+
+  // Try to find offer between LEAD patterns
+  // Pattern: OFFERNAME-LEAD# or LEAD#-OFFERNAME
+  const parts = cleaned.split(/[-\s]+/);
+  const leadIdx = parts.findIndex((p) => /^LEAD\d/i.test(p));
+
+  let candidate = "";
+  if (leadIdx > 0) {
+    // Offer name is before LEAD
+    candidate = parts.slice(0, leadIdx).join("").toLowerCase();
+  } else if (leadIdx === 0 && parts.length > 1) {
+    // LEAD is first, skip VSL if next, then take offer
+    let startIdx = 1;
+    if (/^vsl$/i.test(parts[1]) && parts.length > 2) startIdx = 2;
+    // Take until next known delimiter (EN, FR, ITA, DE, CA, LF, $, £, €, digit pattern)
+    const offerParts: string[] = [];
+    for (let i = startIdx; i < parts.length; i++) {
+      if (/^(EN|FR|ITA|DE|ALE|CA|LF|DG|GA|GL|IC|RO|MALU|VA|\$|£|€|\d+[;:.])/i.test(parts[i])) break;
+      offerParts.push(parts[i]);
+    }
+    candidate = offerParts.join("").toLowerCase();
+  }
+
+  // Check known offers
+  if (candidate && knownOffers[candidate]) return knownOffers[candidate];
+
+  // Fuzzy match: check if candidate contains a known offer key
+  for (const [key, display] of Object.entries(knownOffers)) {
+    if (candidate.includes(key) || key.includes(candidate)) return display;
+  }
+
+  // Also check the original name for known offers
+  const nameLower = name.toLowerCase();
+  for (const [key, display] of Object.entries(knownOffers)) {
+    if (nameLower.includes(key)) return display;
+  }
+
+  // Fallback: return candidate or "Outros"
+  if (candidate && candidate.length > 1) {
+    return candidate.charAt(0).toUpperCase() + candidate.slice(1);
+  }
+  return "Outros";
+}
+
 export async function getVturbStats() {
-  // Limit to 50 to avoid exceeding Neon response size
   const rows = await db
     .select({
       extraData: metricsSnapshots.extraData,
@@ -448,7 +534,7 @@ export async function getVturbStats() {
     .from(metricsSnapshots)
     .where(eq(metricsSnapshots.entityType, "vturb_player"))
     .orderBy(desc(metricsSnapshots.createdAt))
-    .limit(50);
+    .limit(100);
 
   type VturbData = {
     playerId: string;
@@ -463,6 +549,7 @@ export async function getVturbStats() {
 
   const playerStats: {
     playerName: string;
+    offerName: string;
     started: number;
     finished: number;
     viewed: number;
@@ -471,9 +558,14 @@ export async function getVturbStats() {
     finishRate: number;
   }[] = [];
 
+  // Deduplicate by playerId (keep most recent)
+  const seen = new Set<string>();
+
   for (const row of rows) {
     const data = row.extraData as VturbData | null;
     if (!data?.playerId) continue;
+    if (seen.has(data.playerId)) continue;
+    seen.add(data.playerId);
 
     const started = data.started ?? 0;
     const finished = data.finished ?? 0;
@@ -485,6 +577,7 @@ export async function getVturbStats() {
 
     playerStats.push({
       playerName: data.playerName,
+      offerName: extractOfferName(data.playerName),
       started,
       finished,
       viewed,

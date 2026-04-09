@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
-import { fetchPlayers, fetchEventsByPlayer, fetchSessionStats, fetchUserEngagement } from "@/lib/vturb";
+import { fetchPlayers, fetchEventsByPlayer } from "@/lib/vturb";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -23,8 +23,8 @@ export async function GET(request: Request) {
   const results: { player: string; status: string; error?: string }[] = [];
 
   try {
-    // 1. List all players
-    const playersData = await fetchPlayers(dateFrom, dateTo);
+    // 1. List all players (single bulk GET)
+    const playersData = await fetchPlayers();
     if (!playersData?.players?.length) {
       return NextResponse.json({
         success: true,
@@ -33,36 +33,59 @@ export async function GET(request: Request) {
       });
     }
 
-    const playerHashes = playersData.players.map((p) => p.id);
+    const playerIds = playersData.players.map((p) => p.id);
 
-    // 2. Get events per player
-    const events = await fetchEventsByPlayer(playerHashes, dateFrom, dateTo);
+    // 2. Get events per player (single bulk POST — returns Map)
+    const eventsMap = await fetchEventsByPlayer(playerIds, dateFrom, dateTo);
 
-    // 3. Get session stats
-    const sessions = await fetchSessionStats(playerHashes, dateFrom, dateTo);
+    // 3. Only save players that have activity (avoid 300+ empty rows)
+    const playersWithData = playersData.players.filter((p) => {
+      const ev = eventsMap?.get(p.id);
+      return ev && (ev.started > 0 || ev.viewed > 0);
+    });
 
-    // 4. Get engagement/retention
-    const engagement = await fetchUserEngagement(playerHashes, dateFrom, dateTo);
+    // Also save players without data but limit to avoid bloat
+    const playersWithoutData = playersData.players
+      .filter((p) => !playersWithData.find((pw) => pw.id === p.id))
+      .slice(0, 20); // keep only 20 recent inactive
 
-    // 5. Save each player's data
-    for (const player of playersData.players) {
+    const allToSave = [...playersWithData, ...playersWithoutData];
+
+    for (const player of allToSave) {
       try {
+        const events = eventsMap?.get(player.id) ?? { started: 0, finished: 0, viewed: 0, clicked: 0 };
+
+        const playRate = events.viewed > 0
+          ? Math.round((events.started / events.viewed) * 10000) / 100
+          : 0;
+        const finishRate = events.started > 0
+          ? Math.round((events.finished / events.started) * 10000) / 100
+          : 0;
+
         await db.insert(metricsSnapshots).values({
           date: now,
           entityType: "vturb_player",
           entityId: 0,
-          source: "manual", // closest available enum
+          source: "manual",
           extraData: {
             source: "vturb",
             playerId: player.id,
             playerName: player.name,
+            duration: player.duration ?? 0,
+            pitchTime: player.pitch_time ?? 0,
             dateRange: { from: dateFrom, to: dateTo },
-            events: events ?? null,
-            sessions: sessions ?? null,
-            engagement: engagement ?? null,
+            started: events.started,
+            finished: events.finished,
+            viewed: events.viewed,
+            clicked: events.clicked,
+            playRate,
+            finishRate,
           },
         });
-        results.push({ player: player.name, status: "ok" });
+        results.push({
+          player: player.name,
+          status: `ok (plays: ${events.started}, views: ${events.viewed})`,
+        });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown";
         results.push({ player: player.name, status: "error", error: msg });
@@ -76,6 +99,8 @@ export async function GET(request: Request) {
   return NextResponse.json({
     success: true,
     syncedAt: now.toISOString(),
+    totalPlayers: results.length,
+    withActivity: results.filter((r) => !r.status.includes("plays: 0, views: 0")).length,
     results,
   });
 }

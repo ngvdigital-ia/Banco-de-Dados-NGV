@@ -162,7 +162,7 @@ export default async function VslComparisonPage({
         ))
       )}
 
-      {/* VTurb Section */}
+      {/* VTurb Section — grouped by offer */}
       <div className="space-y-4 pt-4">
         <h2 className="text-2xl font-bold">Metricas VTurb (ultimos 7 dias)</h2>
         {vturbStats.length === 0 ? (
@@ -174,58 +174,96 @@ export default async function VslComparisonPage({
             </CardContent>
           </Card>
         ) : (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Player</TableHead>
-                      <TableHead className="text-right">Views</TableHead>
-                      <TableHead className="text-right">Plays</TableHead>
-                      <TableHead className="text-right">Finishes</TableHead>
-                      <TableHead className="text-right">Clicks</TableHead>
-                      <TableHead>Play Rate (%)</TableHead>
-                      <TableHead>Finish Rate (%)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {vturbStats.map((player) => (
-                      <TableRow key={player.playerName}>
-                        <TableCell className="font-medium">{player.playerName}</TableCell>
-                        <TableCell className="text-right">{player.viewed.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{player.started.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{player.finished.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{player.clicked.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-24 rounded-full bg-muted">
-                              <div
-                                className="h-2 rounded-full bg-blue-500"
-                                style={{ width: `${Math.min(player.playRate, 100)}%` }}
-                              />
-                            </div>
-                            <span className="text-sm">{player.playRate}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-24 rounded-full bg-muted">
-                              <div
-                                className="h-2 rounded-full bg-green-500"
-                                style={{ width: `${Math.min(player.finishRate, 100)}%` }}
-                              />
-                            </div>
-                            <span className="text-sm">{player.finishRate}%</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+          (() => {
+            // Group players by offer
+            const grouped = vturbStats.reduce((acc, player) => {
+              const offer = player.offerName;
+              if (!acc[offer]) acc[offer] = [];
+              acc[offer].push(player);
+              return acc;
+            }, {} as Record<string, typeof vturbStats>);
+
+            // Sort offers by total plays (descending)
+            const sortedOffers = Object.entries(grouped).sort(
+              ([, a], [, b]) =>
+                b.reduce((s, p) => s + p.started, 0) - a.reduce((s, p) => s + p.started, 0)
+            );
+
+            return sortedOffers.map(([offerName, players]) => {
+              const totalViews = players.reduce((s, p) => s + p.viewed, 0);
+              const totalPlays = players.reduce((s, p) => s + p.started, 0);
+              const totalFinishes = players.reduce((s, p) => s + p.finished, 0);
+              const totalClicks = players.reduce((s, p) => s + p.clicked, 0);
+              const avgPlayRate = totalViews > 0 ? Math.round((totalPlays / totalViews) * 10000) / 100 : 0;
+              const avgFinishRate = totalPlays > 0 ? Math.round((totalFinishes / totalPlays) * 10000) / 100 : 0;
+
+              return (
+                <Card key={offerName}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle>{offerName}</CardTitle>
+                      <div className="flex gap-4 text-sm text-muted-foreground">
+                        <span>{totalPlays} plays</span>
+                        <span>{totalViews} views</span>
+                        <span>Play Rate: {avgPlayRate}%</span>
+                        <span>Finish Rate: {avgFinishRate}%</span>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Player</TableHead>
+                            <TableHead className="text-right">Views</TableHead>
+                            <TableHead className="text-right">Plays</TableHead>
+                            <TableHead className="text-right">Finishes</TableHead>
+                            <TableHead className="text-right">Clicks</TableHead>
+                            <TableHead>Play Rate (%)</TableHead>
+                            <TableHead>Finish Rate (%)</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {players.map((player) => (
+                            <TableRow key={player.playerName}>
+                              <TableCell className="font-medium">{player.playerName}</TableCell>
+                              <TableCell className="text-right">{player.viewed.toLocaleString()}</TableCell>
+                              <TableCell className="text-right">{player.started.toLocaleString()}</TableCell>
+                              <TableCell className="text-right">{player.finished.toLocaleString()}</TableCell>
+                              <TableCell className="text-right">{player.clicked.toLocaleString()}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-24 rounded-full bg-muted">
+                                    <div
+                                      className="h-2 rounded-full bg-blue-500"
+                                      style={{ width: `${Math.min(player.playRate, 100)}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-sm">{player.playRate}%</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-24 rounded-full bg-muted">
+                                    <div
+                                      className="h-2 rounded-full bg-green-500"
+                                      style={{ width: `${Math.min(player.finishRate, 100)}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-sm">{player.finishRate}%</span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            });
+          })()
         )}
       </div>
     </div>

@@ -2,12 +2,15 @@
 // Docs: https://vturb.gitbook.io/analytics-api/pt
 const VTURB_BASE_URL = "https://analytics.vturb.net";
 
-function getHeaders() {
-  return {
+function getHeaders(includeContentType = true) {
+  const headers: Record<string, string> = {
     "X-Api-Token": process.env.VTURB_API_KEY!,
     "X-Api-Version": "v1",
-    "Content-Type": "application/json",
   };
+  if (includeContentType) {
+    headers["Content-Type"] = "application/json";
+  }
+  return headers;
 }
 
 export type VturbPlayer = {
@@ -43,11 +46,12 @@ export async function fetchPlayers(dateFrom?: string, dateTo?: string) {
   try {
     let url = `${VTURB_BASE_URL}/players/list`;
     const params = new URLSearchParams();
-    if (dateFrom) params.set("date_start", dateFrom);
-    if (dateTo) params.set("date_end", dateTo);
+    if (dateFrom) params.set("start_date", dateFrom);
+    if (dateTo) params.set("end_date", dateTo);
     if (params.toString()) url += `?${params}`;
 
-    const res = await fetch(url, { headers: getHeaders() });
+    // GET request — do NOT send Content-Type header
+    const res = await fetch(url, { headers: getHeaders(false) });
 
     if (!res.ok) {
       const text = await res.text();
@@ -55,7 +59,7 @@ export async function fetchPlayers(dateFrom?: string, dateTo?: string) {
       return null;
     }
 
-    // API returns array directly, not { players: [...] }
+    // API returns array directly
     const data = await res.json();
     const players = Array.isArray(data) ? data : data.players || [];
     return { players } as { players: VturbPlayer[] };
@@ -66,14 +70,26 @@ export async function fetchPlayers(dateFrom?: string, dateTo?: string) {
 }
 
 /**
- * Get event totals (plays, views, finishes, clicks) per player
+ * Raw event row from VTurb API
+ */
+export type VturbEventRow = {
+  player_id: string;
+  event: string;
+  total: number;
+  total_uniq_sessions: number;
+  total_uniq_device: number;
+};
+
+/**
+ * Get event totals (plays, views, finishes, clicks) per player.
+ * Returns a Map<playerId, { started, finished, viewed, clicked }> for easy lookup.
  */
 export async function fetchEventsByPlayer(
-  playerHashes: string[],
+  playerIds: string[],
   dateFrom: string,
   dateTo: string,
   timezone = "America/Sao_Paulo"
-) {
+): Promise<Map<string, { started: number; finished: number; viewed: number; clicked: number }> | null> {
   const apiKey = process.env.VTURB_API_KEY;
   if (!apiKey) return null;
 
@@ -82,10 +98,9 @@ export async function fetchEventsByPlayer(
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({
-        player_hashes: playerHashes,
         events: ["started", "finished", "viewed", "clicked"],
-        date_start: dateFrom,
-        date_end: dateTo,
+        start_date: dateFrom,
+        end_date: dateTo,
         timezone,
       }),
     });
@@ -96,7 +111,28 @@ export async function fetchEventsByPlayer(
       return null;
     }
 
-    return res.json();
+    // API returns: [{ player_id, event, total, total_uniq_sessions, total_uniq_device }, ...]
+    const rows: VturbEventRow[] = await res.json();
+    const playerMap = new Map<string, { started: number; finished: number; viewed: number; clicked: number }>();
+
+    // Only include players we asked for
+    const playerSet = new Set(playerIds);
+
+    for (const row of rows) {
+      if (!playerSet.has(row.player_id)) continue;
+
+      if (!playerMap.has(row.player_id)) {
+        playerMap.set(row.player_id, { started: 0, finished: 0, viewed: 0, clicked: 0 });
+      }
+      const entry = playerMap.get(row.player_id)!;
+
+      if (row.event === "started") entry.started = row.total;
+      else if (row.event === "finished") entry.finished = row.total;
+      else if (row.event === "viewed") entry.viewed = row.total;
+      else if (row.event === "clicked") entry.clicked = row.total;
+    }
+
+    return playerMap;
   } catch (err) {
     console.error("[VTurb] Events by player error:", err);
     return null;
@@ -104,10 +140,11 @@ export async function fetchEventsByPlayer(
 }
 
 /**
- * Get user engagement (retention) - users reaching specific timestamps
+ * Get user engagement (retention) for a single player
  */
 export async function fetchUserEngagement(
-  playerHashes: string[],
+  playerId: string,
+  videoDuration: number,
   dateFrom: string,
   dateTo: string,
   timezone = "America/Sao_Paulo"
@@ -120,9 +157,10 @@ export async function fetchUserEngagement(
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({
-        player_hashes: playerHashes,
-        date_start: dateFrom,
-        date_end: dateTo,
+        player_id: playerId,
+        video_duration: videoDuration,
+        start_date: dateFrom,
+        end_date: dateTo,
         timezone,
       }),
     });
@@ -141,10 +179,10 @@ export async function fetchUserEngagement(
 }
 
 /**
- * Get session stats (play rate, avg watch time, etc.)
+ * Get session stats (play rate, avg watch time, etc.) for a single player
  */
 export async function fetchSessionStats(
-  playerHashes: string[],
+  playerId: string,
   dateFrom: string,
   dateTo: string,
   timezone = "America/Sao_Paulo"
@@ -157,9 +195,9 @@ export async function fetchSessionStats(
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({
-        player_hashes: playerHashes,
-        date_start: dateFrom,
-        date_end: dateTo,
+        player_id: playerId,
+        start_date: dateFrom,
+        end_date: dateTo,
         timezone,
       }),
     });
@@ -185,8 +223,9 @@ export async function fetchLiveUsers(minutes = 5) {
   if (!apiKey) return null;
 
   try {
+    // GET request — no Content-Type
     const res = await fetch(`${VTURB_BASE_URL}/sessions/live_users?minutes=${minutes}`, {
-      headers: getHeaders(),
+      headers: getHeaders(false),
     });
 
     if (!res.ok) return null;
