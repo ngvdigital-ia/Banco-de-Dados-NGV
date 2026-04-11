@@ -349,10 +349,29 @@ export async function getTeamPerformance() {
     }
   }
 
+  // Match ClickUp members using aliases (handles Malu↔Maria Luisa, etc.)
+  // Build a map of clickup name → best matching team member
   for (const member of results) {
-    const memberFirstName = member.name.split(" ")[0].toLowerCase();
+    const aliases = getMemberAliases(member.name).map((a) => a.toLowerCase());
     for (const [clickupName, data] of clickupByName) {
-      if (clickupName.toLowerCase().includes(memberFirstName) || memberFirstName.includes(clickupName.split(" ")[0].toLowerCase())) {
+      const clickupLower = clickupName.toLowerCase();
+      const clickupParts = clickupLower.split(/\s+/);
+
+      // Precise matching: check if any alias matches the clickup name exactly or as first/full name
+      const matched = aliases.some((alias) => {
+        const aliasLower = alias.toLowerCase();
+        // Exact full match
+        if (clickupLower === aliasLower) return true;
+        // ClickUp first name matches alias exactly
+        if (clickupParts[0] === aliasLower) return true;
+        // Alias is a multi-word name that matches start of clickup name
+        if (aliasLower.includes(" ") && clickupLower.startsWith(aliasLower)) return true;
+        // ClickUp full name starts with alias (only for aliases >= 4 chars to avoid false positives)
+        if (aliasLower.length >= 4 && clickupLower.startsWith(aliasLower)) return true;
+        return false;
+      });
+
+      if (matched) {
         member.clickupTasks = data.count;
         member.clickupOnTimePct = data.pctOnTime;
         break;

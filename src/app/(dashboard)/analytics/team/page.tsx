@@ -81,7 +81,7 @@ export default async function TeamAnalyticsPage({
                     <TableHead className="text-center">Criativos (edicao)</TableHead>
                     <TableHead className="text-center">Campanhas</TableHead>
                     <TableHead className="text-center">Total</TableHead>
-                    <TableHead className="text-center">Tarefas ClickUp (7d)</TableHead>
+                    <TableHead className="text-center">Tarefas ClickUp (30d)</TableHead>
                     <TableHead className="text-center">% No Prazo</TableHead>
                     <TableHead className="text-center">% Escalou</TableHead>
                   </TableRow>
