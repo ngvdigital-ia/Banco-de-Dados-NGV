@@ -129,7 +129,8 @@ export async function GET(request: Request) {
               const dueMs = parseInt(task.due_date, 10);
               memberTaskCounts[key].withDueDate += 1;
               // Give 24h grace period (due_date is usually end of day)
-              if (doneMs <= dueMs + 24 * 60 * 60 * 1000) {
+              // 48h grace: ClickUp due_date is midnight, so "next day delivery" counts as on time
+              if (doneMs <= dueMs + 48 * 60 * 60 * 1000) {
                 memberTaskCounts[key].onTime += 1;
               } else {
                 memberTaskCounts[key].late += 1;
