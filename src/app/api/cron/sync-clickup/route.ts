@@ -53,8 +53,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "CLICKUP_API_KEY not configured" }, { status: 500 });
   }
 
-  // Last 30 days for broader coverage
-  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  // Current month only (1st of month at 00:00)
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthStartMs = monthStart.getTime();
 
   const results: { list: string; status: string; tasksFound: number; error?: string }[] = [];
   const memberTaskCounts: Record<string, {
@@ -95,7 +97,7 @@ export async function GET(request: Request) {
             : 0;
 
           // Skip tasks completed before our window
-          if (doneMs > 0 && doneMs < thirtyDaysAgo) continue;
+          if (doneMs > 0 && doneMs < monthStartMs) continue;
           // Skip tasks not completed yet (shouldn't happen with status filter, but safety)
           if (doneMs === 0) continue;
 
@@ -174,7 +176,8 @@ export async function GET(request: Request) {
             ? Math.round((data.onTime / data.withDueDate) * 10000) / 100
             : null,
           lists: data.lists,
-          periodDays: 30,
+          period: "month",
+          periodMonth: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
         },
       });
     } catch (err) {

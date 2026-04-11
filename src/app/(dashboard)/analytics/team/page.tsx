@@ -80,7 +80,7 @@ export default async function TeamAnalyticsPage({
                     <TableHead className="text-center">Edicao</TableHead>
                     <TableHead className="text-center">Sites/Dev</TableHead>
                     <TableHead className="text-center">Trafego</TableHead>
-                    <TableHead className="text-center">Total (30d)</TableHead>
+                    <TableHead className="text-center">Total (mes)</TableHead>
                     <TableHead className="text-center">% No Prazo</TableHead>
                     <TableHead className="text-center">% Escalou</TableHead>
                   </TableRow>
