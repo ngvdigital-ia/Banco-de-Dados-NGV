@@ -80,6 +80,7 @@ export default async function TeamAnalyticsPage({
                     <TableHead className="text-center">Edicao</TableHead>
                     <TableHead className="text-center">Sites/Dev</TableHead>
                     <TableHead className="text-center">Trafego</TableHead>
+                    <TableHead className="text-center">Outros</TableHead>
                     <TableHead className="text-center">Total (mes)</TableHead>
                     <TableHead className="text-center">% No Prazo</TableHead>
                     <TableHead className="text-center">% Escalou</TableHead>
@@ -116,6 +117,15 @@ export default async function TeamAnalyticsPage({
                         {(member.clickupByCategory?.["Tráfego"] ?? 0) > 0
                           ? member.clickupByCategory["Tráfego"]
                           : "-"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {(() => {
+                          const cat = member.clickupByCategory ?? {};
+                          const outros = Object.entries(cat)
+                            .filter(([k]) => !["Copy", "Edição", "Dev", "Tráfego"].includes(k))
+                            .reduce((sum, [, v]) => sum + v, 0);
+                          return outros > 0 ? outros : "-";
+                        })()}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant={member.clickupTasks > 0 ? "default" : "secondary"}>

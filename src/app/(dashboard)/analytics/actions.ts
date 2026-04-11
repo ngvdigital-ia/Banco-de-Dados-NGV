@@ -383,7 +383,7 @@ export async function getTeamPerformance() {
     }
   }
 
-  return results.sort((a, b) => b.totalOutput - a.totalOutput);
+  return results.sort((a, b) => b.clickupTasks - a.clickupTasks);
 }
 
 // ========== OFFERS RANKING ==========
