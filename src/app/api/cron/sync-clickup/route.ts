@@ -60,6 +60,7 @@ export async function GET(request: Request) {
   const memberTaskCounts: Record<string, {
     name: string;
     count: number;
+    byCategory: Record<string, number>;
     withDueDate: number;
     onTime: number;
     late: number;
@@ -106,6 +107,7 @@ export async function GET(request: Request) {
               memberTaskCounts[key] = {
                 name: assignee.username,
                 count: 0,
+                byCategory: {},
                 withDueDate: 0,
                 onTime: 0,
                 late: 0,
@@ -113,6 +115,9 @@ export async function GET(request: Request) {
               };
             }
             memberTaskCounts[key].count += 1;
+            // Track by category (folder prefix before ">")
+            const category = list.name.split(" > ")[0];
+            memberTaskCounts[key].byCategory[category] = (memberTaskCounts[key].byCategory[category] || 0) + 1;
             if (!memberTaskCounts[key].lists.includes(list.name)) {
               memberTaskCounts[key].lists.push(list.name);
             }
@@ -161,6 +166,7 @@ export async function GET(request: Request) {
           memberId,
           memberName: data.name,
           tasksCompleted: data.count,
+          tasksByCategory: data.byCategory,
           tasksWithDueDate: data.withDueDate,
           tasksOnTime: data.onTime,
           tasksLate: data.late,

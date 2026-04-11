@@ -317,6 +317,7 @@ export async function getTeamPerformance() {
       creativesEscalouCount,
       pctEscalou,
       clickupTasks: 0,
+      clickupByCategory: {} as Record<string, number>,
       clickupOnTimePct: null as number | null,
     });
   }
@@ -335,15 +336,17 @@ export async function getTeamPerformance() {
     memberName?: string;
     tasksCompleted?: number;
     taskCount?: number;
+    tasksByCategory?: Record<string, number>;
     pctOnTime?: number | null;
   };
 
-  const clickupByName = new Map<string, { count: number; pctOnTime: number | null }>();
+  const clickupByName = new Map<string, { count: number; byCategory: Record<string, number>; pctOnTime: number | null }>();
   for (const row of clickupRows) {
     const data = row.extraData as ClickUpData | null;
     if (data?.memberName && !clickupByName.has(data.memberName.toLowerCase())) {
       clickupByName.set(data.memberName.toLowerCase(), {
         count: data.tasksCompleted ?? data.taskCount ?? 0,
+        byCategory: data.tasksByCategory ?? {},
         pctOnTime: data.pctOnTime ?? null,
       });
     }
@@ -373,6 +376,7 @@ export async function getTeamPerformance() {
 
       if (matched) {
         member.clickupTasks = data.count;
+        member.clickupByCategory = data.byCategory;
         member.clickupOnTimePct = data.pctOnTime;
         break;
       }

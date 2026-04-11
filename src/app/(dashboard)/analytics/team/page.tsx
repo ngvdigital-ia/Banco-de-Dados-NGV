@@ -76,12 +76,11 @@ export default async function TeamAnalyticsPage({
                     <TableHead>#</TableHead>
                     <TableHead>Nome</TableHead>
                     <TableHead>Funcao</TableHead>
-                    <TableHead className="text-center">VSLs (copy)</TableHead>
-                    <TableHead className="text-center">Criativos (copy)</TableHead>
-                    <TableHead className="text-center">Criativos (edicao)</TableHead>
-                    <TableHead className="text-center">Campanhas</TableHead>
-                    <TableHead className="text-center">Total</TableHead>
-                    <TableHead className="text-center">Tarefas ClickUp (30d)</TableHead>
+                    <TableHead className="text-center">Copy</TableHead>
+                    <TableHead className="text-center">Edicao</TableHead>
+                    <TableHead className="text-center">Sites/Dev</TableHead>
+                    <TableHead className="text-center">Trafego</TableHead>
+                    <TableHead className="text-center">Total (30d)</TableHead>
                     <TableHead className="text-center">% No Prazo</TableHead>
                     <TableHead className="text-center">% Escalou</TableHead>
                   </TableRow>
@@ -99,30 +98,29 @@ export default async function TeamAnalyticsPage({
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        {member.vslCount > 0 ? member.vslCount : "-"}
+                        {(member.clickupByCategory?.["Copy"] ?? 0) > 0
+                          ? member.clickupByCategory["Copy"]
+                          : "-"}
                       </TableCell>
                       <TableCell className="text-center">
-                        {member.creativesCopyCount > 0 ? member.creativesCopyCount : "-"}
+                        {(member.clickupByCategory?.["Edição"] ?? 0) > 0
+                          ? member.clickupByCategory["Edição"]
+                          : "-"}
                       </TableCell>
                       <TableCell className="text-center">
-                        {member.creativesEditCount > 0 ? member.creativesEditCount : "-"}
+                        {(member.clickupByCategory?.["Dev"] ?? 0) > 0
+                          ? member.clickupByCategory["Dev"]
+                          : "-"}
                       </TableCell>
                       <TableCell className="text-center">
-                        {member.campaignCount > 0 ? member.campaignCount : "-"}
+                        {(member.clickupByCategory?.["Tráfego"] ?? 0) > 0
+                          ? member.clickupByCategory["Tráfego"]
+                          : "-"}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant={member.totalOutput > 0 ? "default" : "secondary"}>
-                          {member.totalOutput}
+                        <Badge variant={member.clickupTasks > 0 ? "default" : "secondary"}>
+                          {member.clickupTasks}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {member.clickupTasks > 0 ? (
-                          <Badge variant="outline" className="border-purple-300 text-purple-700">
-                            {member.clickupTasks}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
                       </TableCell>
                       <TableCell className="text-center">
                         {member.clickupOnTimePct != null ? (
