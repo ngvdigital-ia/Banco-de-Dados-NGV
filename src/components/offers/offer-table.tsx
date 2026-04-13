@@ -15,6 +15,7 @@ type Offer = {
   editorVsl: string | null;
   ticket: string | null;
   language: string;
+  gender: string | null;
   copyVslStatus: string | null;
   copyCriativosStatus: string | null;
   vslInVturb: string | null;
@@ -690,6 +691,14 @@ const columns: ColumnDef[] = [
     width: "w-[70px] min-w-[70px]",
     render: (o) => (
       <SelectCell value={o.language} offerId={o.id} field="language" options={LANGUAGES} />
+    ),
+  },
+  {
+    key: "gender",
+    label: "Gênero",
+    width: "w-[100px] min-w-[100px]",
+    render: (o) => (
+      <SelectCell value={o.gender} offerId={o.id} field="gender" options={["Homens", "Mulheres", "Todos"]} />
     ),
   },
   {
