@@ -7,7 +7,7 @@ import { DateRangeFilter } from "@/components/filters/date-range-filter";
 import { getDateRange } from "@/lib/date-utils";
 import { OfferFilter } from "@/components/filters/offer-filter";
 import { getVturbStats } from "../actions";
-import { DASHBOARDS, fetchDashboardSummary } from "@/lib/utmify";
+import { DASHBOARDS, fetchDashboardSummary, fetchAllOfferMetrics, type OfferMetrics } from "@/lib/utmify";
 
 function formatDuration(seconds: number | null) {
   if (!seconds) return "-";
@@ -36,12 +36,19 @@ export default async function VslPerformancePage({
   const dateFrom = from.toISOString().split("T")[0];
   const dateTo = to.toISOString().split("T")[0];
 
-  // Fetch VTurb data live with date range + UTMify summary (all with error handling)
-  const [vturbStats, utmifyBRL, utmifyUSD] = await Promise.all([
+  // Fetch VTurb data live + UTMify per-offer metrics (all with error handling)
+  const [vturbStats, utmifyBRL, utmifyUSD, offerMetrics] = await Promise.all([
     getVturbStats(dateFrom, dateTo).catch(() => [] as Awaited<ReturnType<typeof getVturbStats>>),
     fetchDashboardSummary(DASHBOARDS[0].id, DASHBOARDS[0].timeZone).catch(() => null),
     fetchDashboardSummary(DASHBOARDS[1].id, DASHBOARDS[1].timeZone).catch(() => null),
+    fetchAllOfferMetrics(dateFrom, dateTo).catch(() => [] as OfferMetrics[]),
   ]);
+
+  // Build a map of offer name → UTMify metrics
+  const offerMetricsMap = new Map<string, OfferMetrics>();
+  for (const m of offerMetrics) {
+    offerMetricsMap.set(m.offerName, m);
+  }
 
   // Filter by offer if selected
   const filteredStats = offerFilter
@@ -202,16 +209,31 @@ export default async function VslPerformancePage({
           const offerPlays = players.reduce((s, p) => s + p.started, 0);
           const offerClicks = players.reduce((s, p) => s + p.clicked, 0);
           const offerPlayRate = offerViews > 0 ? Math.round((offerPlays / offerViews) * 10000) / 100 : 0;
+          const utm = offerMetricsMap.get(offerName);
 
           return (
             <Card key={offerName}>
               <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <CardTitle>{offerName}</CardTitle>
-                  <div className="flex gap-4 text-sm text-muted-foreground">
+                  <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
                     <span>{offerPlays} plays</span>
                     <span>{offerViews} views</span>
                     <span>Play Rate: {offerPlayRate}%</span>
+                    {utm && (
+                      <>
+                        <span className="text-red-500">Gasto: {formatCurrency(utm.spend, utm.currency)}</span>
+                        <span className="text-emerald-600">Fatur: {formatCurrency(utm.revenue, utm.currency)}</span>
+                        <span className={utm.profit >= 0 ? "text-emerald-600" : "text-red-500"}>
+                          Lucro: {formatCurrency(utm.profit, utm.currency)}
+                        </span>
+                        {utm.costPerCheckout && (
+                          <span className="text-blue-600">
+                            Custo/Checkout: {formatCurrency(utm.costPerCheckout, utm.currency)}
+                          </span>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               </CardHeader>
