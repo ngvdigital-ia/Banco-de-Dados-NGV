@@ -504,6 +504,7 @@ function extractOfferName(playerName: string): string {
 }
 
 export async function getVturbStats(dateFrom?: string, dateTo?: string) {
+  try {
   const { fetchPlayers, fetchEventsByPlayer } = await import("@/lib/vturb");
 
   // Default: last 7 days
@@ -567,6 +568,10 @@ export async function getVturbStats(dateFrom?: string, dateTo?: string) {
   return playerStats
     .sort((a, b) => b.started - a.started)
     .slice(0, 100);
+  } catch (err) {
+    console.error("[getVturbStats] Error:", err);
+    return [];
+  }
 }
 
 // ========== COMPARISON DATA ==========

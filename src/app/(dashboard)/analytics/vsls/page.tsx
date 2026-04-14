@@ -35,9 +35,9 @@ export default async function VslPerformancePage({
   const dateFrom = from.toISOString().split("T")[0];
   const dateTo = to.toISOString().split("T")[0];
 
-  // Fetch VTurb data live with date range + UTMify summary
+  // Fetch VTurb data live with date range + UTMify summary (all with error handling)
   const [vturbStats, utmifyBRL, utmifyUSD] = await Promise.all([
-    getVturbStats(dateFrom, dateTo),
+    getVturbStats(dateFrom, dateTo).catch(() => [] as Awaited<ReturnType<typeof getVturbStats>>),
     fetchDashboardSummary(DASHBOARDS[0].id, DASHBOARDS[0].timeZone).catch(() => null),
     fetchDashboardSummary(DASHBOARDS[1].id, DASHBOARDS[1].timeZone).catch(() => null),
   ]);
