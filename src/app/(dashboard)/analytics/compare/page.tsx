@@ -18,7 +18,7 @@ type Dimension = "niche" | "language" | "copywriter" | "editor";
 type FilterOptions = Awaited<ReturnType<typeof getFilterOptions>>;
 
 const dimensionLabels: Record<Dimension, string> = {
-  niche: "Nicho",
+  niche: "Oferta",
   language: "Idioma",
   copywriter: "Copywriter",
   editor: "Editor",
@@ -153,7 +153,7 @@ export default function ComparePage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Filtros base (aplicados aos dois lados)</label>
               <div className="flex flex-wrap gap-3">
-                {dimension !== "niche" && (
+                {dimension !== "niche" && filterOpts.niches.length > 0 && (
                   <Select
                     value={baseFilterNiche ?? "__all__"}
                     onValueChange={(val: string | null) => {
@@ -162,10 +162,10 @@ export default function ComparePage() {
                     }}
                   >
                     <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="Nicho" />
+                      <SelectValue placeholder="Oferta" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__all__">Todos os Nichos</SelectItem>
+                      <SelectItem value="__all__">Todas as Ofertas</SelectItem>
                       {filterOpts.niches.map((n) => (
                         <SelectItem key={n} value={n}>{n}</SelectItem>
                       ))}

@@ -222,28 +222,34 @@ export function AnalyticsFilters({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <MultiSelectDropdown
-        label="Nicho"
-        options={nicheOpts}
-        selected={selected.niche}
-        onChange={(v) => updateParam(PARAM_KEYS.niche, v)}
-      />
+      {nicheOpts.length > 0 && (
+        <MultiSelectDropdown
+          label="Nicho"
+          options={nicheOpts}
+          selected={selected.niche}
+          onChange={(v) => updateParam(PARAM_KEYS.niche, v)}
+        />
+      )}
 
-      <MultiSelectDropdown
-        label="Idioma"
-        options={languageOpts}
-        selected={selected.language}
-        onChange={(v) => updateParam(PARAM_KEYS.language, v)}
-      />
+      {languageOpts.length > 0 && (
+        <MultiSelectDropdown
+          label="Idioma"
+          options={languageOpts}
+          selected={selected.language}
+          onChange={(v) => updateParam(PARAM_KEYS.language, v)}
+        />
+      )}
 
-      <MultiSelectDropdown
-        label="Copywriter"
-        options={copyOpts}
-        selected={selected.copy}
-        onChange={(v) => updateParam(PARAM_KEYS.copy, v)}
-      />
+      {copyOpts.length > 0 && (
+        <MultiSelectDropdown
+          label="Copywriter"
+          options={copyOpts}
+          selected={selected.copy}
+          onChange={(v) => updateParam(PARAM_KEYS.copy, v)}
+        />
+      )}
 
-      {showEditors && (
+      {showEditors && editorOpts.length > 0 && (
         <MultiSelectDropdown
           label="Editor"
           options={editorOpts}
@@ -252,7 +258,7 @@ export function AnalyticsFilters({
         />
       )}
 
-      {showFormats && (
+      {showFormats && formatOpts.length > 0 && (
         <MultiSelectDropdown
           label="Formato"
           options={formatOpts}
@@ -261,12 +267,14 @@ export function AnalyticsFilters({
         />
       )}
 
-      <MultiSelectDropdown
-        label="Status"
-        options={statusOpts}
-        selected={selected.status}
-        onChange={(v) => updateParam(PARAM_KEYS.status, v)}
-      />
+      {statusOpts.length > 0 && (
+        <MultiSelectDropdown
+          label="Status"
+          options={statusOpts}
+          selected={selected.status}
+          onChange={(v) => updateParam(PARAM_KEYS.status, v)}
+        />
+      )}
 
       {hasAnyFilter && (
         <Button

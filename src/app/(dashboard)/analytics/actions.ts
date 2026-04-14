@@ -30,9 +30,10 @@ export type ComparisonData = {
 export async function getFilterOptions() {
   const [nicheRows, languageRows, copywriters, editors, formatRows] = await Promise.all([
     db
-      .selectDistinct({ niche: projects.niche })
-      .from(projects)
-      .orderBy(projects.niche),
+      .selectDistinct({ niche: offerTracking.name })
+      .from(offerTracking)
+      .where(sql`${offerTracking.name} IS NOT NULL`)
+      .orderBy(offerTracking.name),
     db
       .selectDistinct({ language: offerTracking.language })
       .from(offerTracking)
@@ -667,8 +668,8 @@ export async function getComparisonData(
         break;
       }
       case "niche":
-        // offerTracking doesn't have niche — use name pattern as fallback
-        conditions.push(sql`${offerTracking.name} ILIKE ${`%${value}%`}`);
+        // value é o nome exato da oferta (vindo do selectDistinct de offerTracking.name)
+        conditions.push(eq(offerTracking.name, value));
         break;
     }
 

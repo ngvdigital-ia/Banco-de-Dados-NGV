@@ -183,7 +183,7 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              VTurb - Finish Rate Medio
+              VTurb - Retencao ao Pitch
             </CardTitle>
             <Play className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
