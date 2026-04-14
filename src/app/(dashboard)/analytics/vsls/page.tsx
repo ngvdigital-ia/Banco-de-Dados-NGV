@@ -6,8 +6,7 @@ import {
 import { DateRangeFilter } from "@/components/filters/date-range-filter";
 import { getDateRange } from "@/lib/date-utils";
 import { OfferFilter } from "@/components/filters/offer-filter";
-import { getVturbStats } from "../actions";
-import { DASHBOARDS, fetchDashboardSummary, fetchAllOfferMetrics, type OfferMetrics } from "@/lib/utmify";
+import { getVturbStats, getUtmifyOfferMetrics } from "../actions";
 
 function formatDuration(seconds: number | null) {
   if (!seconds) return "-";
@@ -36,17 +35,15 @@ export default async function VslPerformancePage({
   const dateFrom = from.toISOString().split("T")[0];
   const dateTo = to.toISOString().split("T")[0];
 
-  // Fetch VTurb data live + UTMify per-offer metrics (all with error handling)
-  const [vturbStats, utmifyBRL, utmifyUSD, offerMetrics] = await Promise.all([
+  // Fetch VTurb data live + UTMify from DB cache
+  const [vturbStats, utmifyOffers] = await Promise.all([
     getVturbStats(dateFrom, dateTo).catch(() => [] as Awaited<ReturnType<typeof getVturbStats>>),
-    fetchDashboardSummary(DASHBOARDS[0].id, DASHBOARDS[0].timeZone).catch(() => null),
-    fetchDashboardSummary(DASHBOARDS[1].id, DASHBOARDS[1].timeZone).catch(() => null),
-    fetchAllOfferMetrics(dateFrom, dateTo).catch(() => [] as OfferMetrics[]),
+    getUtmifyOfferMetrics(),
   ]);
 
-  // Build a map of offer name → UTMify metrics
-  const offerMetricsMap = new Map<string, OfferMetrics>();
-  for (const m of offerMetrics) {
+  // Build a map of offer name → UTMify metrics from DB
+  const offerMetricsMap = new Map<string, typeof utmifyOffers[number]>();
+  for (const m of utmifyOffers) {
     offerMetricsMap.set(m.offerName, m);
   }
 
@@ -161,34 +158,37 @@ export default async function VslPerformancePage({
         </Card>
       </div>
 
-      {/* UTMify summary */}
-      {(utmifyBRL || utmifyUSD) && (
+      {/* UTMify per-offer summary from DB */}
+      {utmifyOffers.length > 0 && (
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Gastos (ontem)</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Gastos Total (UTMify)</CardTitle>
             </CardHeader>
             <CardContent>
-              {utmifyBRL && <div className="text-lg font-bold">{formatCurrency(utmifyBRL.adSpend, "BRL")}</div>}
-              {utmifyUSD && <div className="text-sm text-muted-foreground">{formatCurrency(utmifyUSD.adSpend, "USD")}</div>}
+              <div className="text-2xl font-bold">
+                {formatCurrency(utmifyOffers.reduce((s, o) => s + o.spend, 0), "USD")}
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Faturamento (ontem)</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Faturamento Total</CardTitle>
             </CardHeader>
             <CardContent>
-              {utmifyBRL && <div className="text-lg font-bold">{formatCurrency(utmifyBRL.revenue, "BRL")}</div>}
-              {utmifyUSD && <div className="text-sm text-muted-foreground">{formatCurrency(utmifyUSD.revenue, "USD")}</div>}
+              <div className="text-2xl font-bold">
+                {formatCurrency(utmifyOffers.reduce((s, o) => s + o.revenue, 0), "USD")}
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Lucro (ontem)</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Lucro Total</CardTitle>
             </CardHeader>
             <CardContent>
-              {utmifyBRL && <div className="text-lg font-bold">{formatCurrency(utmifyBRL.profit, "BRL")}</div>}
-              {utmifyUSD && <div className="text-sm text-muted-foreground">{formatCurrency(utmifyUSD.profit, "USD")}</div>}
+              <div className="text-2xl font-bold">
+                {formatCurrency(utmifyOffers.reduce((s, o) => s + o.profit, 0), "USD")}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -222,14 +222,14 @@ export default async function VslPerformancePage({
                     <span>Play Rate: {offerPlayRate}%</span>
                     {utm && (
                       <>
-                        <span className="text-red-500">Gasto: {formatCurrency(utm.spend, utm.currency)}</span>
-                        <span className="text-emerald-600">Fatur: {formatCurrency(utm.revenue, utm.currency)}</span>
+                        <span className="text-red-500">Gasto: {formatCurrency(utm.spend, "USD")}</span>
+                        <span className="text-emerald-600">Fatur: {formatCurrency(utm.revenue, "USD")}</span>
                         <span className={utm.profit >= 0 ? "text-emerald-600" : "text-red-500"}>
-                          Lucro: {formatCurrency(utm.profit, utm.currency)}
+                          Lucro: {formatCurrency(utm.profit, "USD")}
                         </span>
                         {utm.costPerCheckout && (
                           <span className="text-blue-600">
-                            Custo/Checkout: {formatCurrency(utm.costPerCheckout, utm.currency)}
+                            Custo/Checkout: {formatCurrency(utm.costPerCheckout, "USD")}
                           </span>
                         )}
                       </>

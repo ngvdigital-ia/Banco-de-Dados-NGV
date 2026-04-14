@@ -574,6 +574,43 @@ export async function getVturbStats(dateFrom?: string, dateTo?: string) {
   }
 }
 
+// ========== UTMIFY OFFER METRICS (from DB cache) ==========
+
+export async function getUtmifyOfferMetrics() {
+  const rows = await db
+    .select({ extraData: metricsSnapshots.extraData })
+    .from(metricsSnapshots)
+    .where(eq(metricsSnapshots.entityType, "utmify_offer"))
+    .orderBy(desc(metricsSnapshots.createdAt))
+    .limit(50);
+
+  type UtmOfferData = {
+    offerName: string;
+    spend: number;
+    revenue: number;
+    profit: number;
+    orders: number;
+    clicks: number;
+    checkouts: number;
+    costPerCheckout: number | null;
+    cpa: number | null;
+    roas: number | null;
+    currency: string;
+  };
+
+  const seen = new Set<string>();
+  const results: UtmOfferData[] = [];
+
+  for (const row of rows) {
+    const data = row.extraData as UtmOfferData | null;
+    if (!data?.offerName || seen.has(data.offerName)) continue;
+    seen.add(data.offerName);
+    results.push(data);
+  }
+
+  return results;
+}
+
 // ========== COMPARISON DATA ==========
 
 export async function getComparisonData(
