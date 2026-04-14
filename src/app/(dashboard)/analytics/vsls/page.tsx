@@ -1,98 +1,130 @@
 import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { AnalyticsFilters } from "@/components/filters/analytics-filters";
-import { parseMultiParam } from "@/lib/filter-utils";
-import { getFilterOptions, getVslsForComparison, getVturbStats } from "../actions";
+import { DateRangeFilter, getDateRange } from "@/components/filters/date-range-filter";
+import { OfferFilter } from "@/components/filters/offer-filter";
+import { getVturbStats } from "../actions";
+import { DASHBOARDS, fetchDashboardSummary } from "@/lib/utmify";
 
-function formatMinutes(val: number | null) {
-  if (val == null) return "-";
-  return `${val} min`;
+function formatDuration(seconds: number | null) {
+  if (!seconds) return "-";
+  const min = Math.floor(seconds / 60);
+  const sec = seconds % 60;
+  return `${min}:${String(sec).padStart(2, "0")}`;
 }
 
-export default async function VslComparisonPage({
+function formatCurrency(value: number, currency: string) {
+  if (!value) return "-";
+  const num = value / 100; // UTMify returns centavos
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(num);
+}
+
+export default async function VslPerformancePage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const params = await searchParams;
-  const filters = {
-    niches: parseMultiParam(params.niche),
-    languages: parseMultiParam(params.language),
-    copywriterIds: parseMultiParam(params.copy).map(Number).filter((n) => !isNaN(n)),
-    statuses: parseMultiParam(params.status),
-  };
+  const period = typeof params.period === "string" ? params.period : "7d";
+  const offerFilter = typeof params.offer === "string" ? params.offer : undefined;
 
-  const hasFilters =
-    (filters.niches.length > 0 ? filters : undefined) !== undefined;
+  // Calculate date range
+  const { from, to } = getDateRange(period);
+  const dateFrom = from.toISOString().split("T")[0];
+  const dateTo = to.toISOString().split("T")[0];
 
-  const [options, allVsls, vturbStats] = await Promise.all([
-    getFilterOptions(),
-    getVslsForComparison(
-      filters.niches.length > 0 ||
-      filters.languages.length > 0 ||
-      filters.copywriterIds.length > 0 ||
-      filters.statuses.length > 0
-        ? filters
-        : undefined
-    ),
-    getVturbStats(),
+  // Fetch VTurb data live with date range + UTMify summary
+  const [vturbStats, utmifyBRL, utmifyUSD] = await Promise.all([
+    getVturbStats(dateFrom, dateTo),
+    fetchDashboardSummary(DASHBOARDS[0].id, DASHBOARDS[0].timeZone).catch(() => null),
+    fetchDashboardSummary(DASHBOARDS[1].id, DASHBOARDS[1].timeZone).catch(() => null),
   ]);
 
-  // Summary stats
-  const totalVsls = allVsls.length;
-  const durationsValid = allVsls.filter((v) => v.duration != null);
-  const avgDuration =
-    durationsValid.length > 0
-      ? Math.round(durationsValid.reduce((s, v) => s + v.duration!, 0) / durationsValid.length)
-      : null;
-  const pitsValid = allVsls.filter((v) => v.priceRevealSecond != null);
-  const avgPit =
-    pitsValid.length > 0
-      ? Math.round(pitsValid.reduce((s, v) => s + v.priceRevealSecond!, 0) / pitsValid.length)
-      : null;
+  // Filter by offer if selected
+  const filteredStats = offerFilter
+    ? vturbStats.filter((p) => p.offerName === offerFilter)
+    : vturbStats;
 
-  // Group by project
-  const grouped = allVsls.reduce((acc, vsl) => {
-    const key = vsl.projectName;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(vsl);
+  // Extract unique offer names for the filter
+  const offerNames = [...new Set(vturbStats.map((p) => p.offerName))].sort();
+
+  // Summary cards from VTurb data
+  const totalPlayers = filteredStats.length;
+  const totalViews = filteredStats.reduce((s, p) => s + p.viewed, 0);
+  const totalPlays = filteredStats.reduce((s, p) => s + p.started, 0);
+  const avgPlayRate = totalViews > 0 ? Math.round((totalPlays / totalViews) * 10000) / 100 : 0;
+  const durations = filteredStats.filter((p) => p.duration > 0);
+  const avgDuration = durations.length > 0
+    ? Math.round(durations.reduce((s, p) => s + p.duration, 0) / durations.length)
+    : null;
+  const pitches = filteredStats.filter((p) => p.pitchTime > 0);
+  const avgPitch = pitches.length > 0
+    ? Math.round(pitches.reduce((s, p) => s + p.pitchTime, 0) / pitches.length)
+    : null;
+
+  // Group players by offer
+  const grouped = filteredStats.reduce((acc, player) => {
+    const offer = player.offerName;
+    if (!acc[offer]) acc[offer] = [];
+    acc[offer].push(player);
     return acc;
-  }, {} as Record<string, typeof allVsls>);
+  }, {} as Record<string, typeof filteredStats>);
+
+  const sortedOffers = Object.entries(grouped).sort(
+    ([, a], [, b]) =>
+      b.reduce((s, p) => s + p.started, 0) - a.reduce((s, p) => s + p.started, 0)
+  );
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Performance de VSLs</h1>
-      <p className="text-muted-foreground">
-        Analise a performance das VSLs por projeto, copywriter e metricas de pit de vendas.
-      </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Performance de VSLs</h1>
+          <p className="text-muted-foreground mt-1">
+            Metricas VTurb ao vivo por oferta — views, plays, play rate e retencao ao pitch.
+          </p>
+        </div>
+      </div>
 
-      <Suspense fallback={<div className="h-8" />}>
-        <AnalyticsFilters
-          options={{
-            niches: options.niches,
-            languages: options.languages,
-            copywriters: options.copywriters,
-            editors: options.editors,
-            formats: [],
-            statuses: options.niches.length > 0 ? ["escalou", "nao_escalou", "em_teste", "rodando", "pausado"] : [],
-          }}
-          showFormats={false}
-          showEditors={false}
-        />
-      </Suspense>
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-4">
+        <Suspense fallback={<div className="h-8" />}>
+          <DateRangeFilter />
+        </Suspense>
+
+        {/* Offer filter */}
+        <Suspense fallback={<div className="h-8" />}>
+          <OfferFilter offers={offerNames} />
+        </Suspense>
+      </div>
 
       {/* Summary cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Total VSLs</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalVsls}</div>
+            <div className="text-2xl font-bold">{totalPlayers}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">Views</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalViews.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">Plays</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalPlays.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Play Rate: {avgPlayRate}%</p>
           </CardContent>
         </Card>
         <Card>
@@ -100,172 +132,144 @@ export default async function VslComparisonPage({
             <CardTitle className="text-sm text-muted-foreground">Duracao Media</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatMinutes(avgDuration)}</div>
+            <div className="text-2xl font-bold">{formatDuration(avgDuration)}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Pit Medio</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">Pitch Medio</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatMinutes(avgPit)}</div>
+            <div className="text-2xl font-bold">{formatDuration(avgPitch)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">Ofertas Ativas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{offerNames.length}</div>
           </CardContent>
         </Card>
       </div>
 
-      {Object.keys(grouped).length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">
-          Nenhuma VSL cadastrada ainda. Cadastre VSLs nos projetos para comparar.
-        </p>
-      ) : (
-        Object.entries(grouped).map(([projectName, vsls]) => (
-          <Card key={projectName}>
-            <CardHeader>
-              <CardTitle>{projectName}</CardTitle>
+      {/* UTMify summary */}
+      {(utmifyBRL || utmifyUSD) && (
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground">Gastos (ontem)</CardTitle>
             </CardHeader>
             <CardContent>
-              {vsls.length < 2 ? (
-                <p className="text-sm text-muted-foreground">
-                  Apenas 1 VSL. Cadastre mais versoes para comparar.
-                </p>
-              ) : null}
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Versao</TableHead>
-                      <TableHead>Copywriter</TableHead>
-                      <TableHead>Duracao</TableHead>
-                      <TableHead>Pit de Vendas (min)</TableHead>
-                      <TableHead>Back Redirect</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {vsls.map((vsl) => (
-                        <TableRow key={vsl.id}>
-                          <TableCell className="font-bold">{vsl.version}</TableCell>
-                          <TableCell>{vsl.copywriterName ?? "-"}</TableCell>
-                          <TableCell>{formatMinutes(vsl.duration)}</TableCell>
-                          <TableCell>{formatMinutes(vsl.priceRevealSecond)}</TableCell>
-                          <TableCell>
-                            <Badge variant={vsl.backRedirectActive ? "default" : "outline"}>
-                              {vsl.backRedirectActive ? "Sim" : "Nao"}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </div>
+              {utmifyBRL && <div className="text-lg font-bold">{formatCurrency(utmifyBRL.adSpend, "BRL")}</div>}
+              {utmifyUSD && <div className="text-sm text-muted-foreground">{formatCurrency(utmifyUSD.adSpend, "USD")}</div>}
             </CardContent>
           </Card>
-        ))
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground">Faturamento (ontem)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {utmifyBRL && <div className="text-lg font-bold">{formatCurrency(utmifyBRL.revenue, "BRL")}</div>}
+              {utmifyUSD && <div className="text-sm text-muted-foreground">{formatCurrency(utmifyUSD.revenue, "USD")}</div>}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground">Lucro (ontem)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {utmifyBRL && <div className="text-lg font-bold">{formatCurrency(utmifyBRL.profit, "BRL")}</div>}
+              {utmifyUSD && <div className="text-sm text-muted-foreground">{formatCurrency(utmifyUSD.profit, "USD")}</div>}
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {/* VTurb Section — grouped by offer */}
-      <div className="space-y-4 pt-4">
-        <h2 className="text-2xl font-bold">Metricas VTurb (ultimos 7 dias)</h2>
-        {vturbStats.length === 0 ? (
-          <Card>
-            <CardContent className="py-8">
-              <p className="text-center text-muted-foreground">
-                Sync VTurb na pagina Integracoes para ver dados.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          (() => {
-            // Group players by offer
-            const grouped = vturbStats.reduce((acc, player) => {
-              const offer = player.offerName;
-              if (!acc[offer]) acc[offer] = [];
-              acc[offer].push(player);
-              return acc;
-            }, {} as Record<string, typeof vturbStats>);
+      {/* VTurb players grouped by offer */}
+      {filteredStats.length === 0 ? (
+        <Card>
+          <CardContent className="py-8">
+            <p className="text-center text-muted-foreground">
+              Nenhum player com atividade no periodo selecionado.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        sortedOffers.map(([offerName, players]) => {
+          const offerViews = players.reduce((s, p) => s + p.viewed, 0);
+          const offerPlays = players.reduce((s, p) => s + p.started, 0);
+          const offerClicks = players.reduce((s, p) => s + p.clicked, 0);
+          const offerPlayRate = offerViews > 0 ? Math.round((offerPlays / offerViews) * 10000) / 100 : 0;
 
-            // Sort offers by total plays (descending)
-            const sortedOffers = Object.entries(grouped).sort(
-              ([, a], [, b]) =>
-                b.reduce((s, p) => s + p.started, 0) - a.reduce((s, p) => s + p.started, 0)
-            );
-
-            return sortedOffers.map(([offerName, players]) => {
-              const totalViews = players.reduce((s, p) => s + p.viewed, 0);
-              const totalPlays = players.reduce((s, p) => s + p.started, 0);
-              const totalFinishes = players.reduce((s, p) => s + p.finished, 0);
-              const totalClicks = players.reduce((s, p) => s + p.clicked, 0);
-              const avgPlayRate = totalViews > 0 ? Math.round((totalPlays / totalViews) * 10000) / 100 : 0;
-              const avgFinishRate = totalPlays > 0 ? Math.round((totalFinishes / totalPlays) * 10000) / 100 : 0;
-
-              return (
-                <Card key={offerName}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle>{offerName}</CardTitle>
-                      <div className="flex gap-4 text-sm text-muted-foreground">
-                        <span>{totalPlays} plays</span>
-                        <span>{totalViews} views</span>
-                        <span>Play Rate: {avgPlayRate}%</span>
-                        <span>Finish Rate: {avgFinishRate}%</span>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Player</TableHead>
-                            <TableHead className="text-right">Views</TableHead>
-                            <TableHead className="text-right">Plays</TableHead>
-                            <TableHead className="text-right">Finishes</TableHead>
-                            <TableHead className="text-right">Clicks</TableHead>
-                            <TableHead>Play Rate (%)</TableHead>
-                            <TableHead>Finish Rate (%)</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {players.map((player) => (
-                            <TableRow key={player.playerName}>
-                              <TableCell className="font-medium">{player.playerName}</TableCell>
-                              <TableCell className="text-right">{player.viewed.toLocaleString()}</TableCell>
-                              <TableCell className="text-right">{player.started.toLocaleString()}</TableCell>
-                              <TableCell className="text-right">{player.finished.toLocaleString()}</TableCell>
-                              <TableCell className="text-right">{player.clicked.toLocaleString()}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <div className="h-2 w-24 rounded-full bg-muted">
-                                    <div
-                                      className="h-2 rounded-full bg-blue-500"
-                                      style={{ width: `${Math.min(player.playRate, 100)}%` }}
-                                    />
-                                  </div>
-                                  <span className="text-sm">{player.playRate}%</span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <div className="h-2 w-24 rounded-full bg-muted">
-                                    <div
-                                      className="h-2 rounded-full bg-green-500"
-                                      style={{ width: `${Math.min(player.finishRate, 100)}%` }}
-                                    />
-                                  </div>
-                                  <span className="text-sm">{player.finishRate}%</span>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            });
-          })()
-        )}
-      </div>
+          return (
+            <Card key={offerName}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle>{offerName}</CardTitle>
+                  <div className="flex gap-4 text-sm text-muted-foreground">
+                    <span>{offerPlays} plays</span>
+                    <span>{offerViews} views</span>
+                    <span>Play Rate: {offerPlayRate}%</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Player</TableHead>
+                        <TableHead className="text-right">Views</TableHead>
+                        <TableHead className="text-right">Plays</TableHead>
+                        <TableHead className="text-right">Clicks</TableHead>
+                        <TableHead>Play Rate (%)</TableHead>
+                        <TableHead>Retencao Pitch (%)</TableHead>
+                        <TableHead className="text-right">Duracao</TableHead>
+                        <TableHead className="text-right">Pitch</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {players.map((player) => (
+                        <TableRow key={player.playerName}>
+                          <TableCell className="font-medium max-w-[300px] truncate">{player.playerName}</TableCell>
+                          <TableCell className="text-right">{player.viewed.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">{player.started.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">{player.clicked.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-20 rounded-full bg-muted">
+                                <div
+                                  className="h-2 rounded-full bg-blue-500"
+                                  style={{ width: `${Math.min(player.playRate, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-sm">{player.playRate}%</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-20 rounded-full bg-muted">
+                                <div
+                                  className="h-2 rounded-full bg-emerald-500"
+                                  style={{ width: `${Math.min(player.pitchRetention, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-sm">{player.pitchRetention}%</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right text-sm">{formatDuration(player.duration)}</TableCell>
+                          <TableCell className="text-right text-sm">{formatDuration(player.pitchTime)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const periods = [
   { label: "Hoje", value: "today" },
   { label: "7 dias", value: "7d" },
+  { label: "15 dias", value: "15d" },
   { label: "30 dias", value: "30d" },
   { label: "Este mês", value: "month" },
   { label: "Tudo", value: "all" },
@@ -30,6 +31,12 @@ export function getDateRange(period: string): { from: Date; to: Date } {
     case "7d": {
       const from = new Date(to);
       from.setDate(from.getDate() - 6);
+      from.setHours(0, 0, 0, 0);
+      return { from, to };
+    }
+    case "15d": {
+      const from = new Date(to);
+      from.setDate(from.getDate() - 14);
       from.setHours(0, 0, 0, 0);
       return { from, to };
     }

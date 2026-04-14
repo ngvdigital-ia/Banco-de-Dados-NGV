@@ -503,27 +503,26 @@ function extractOfferName(playerName: string): string {
   return "Outros";
 }
 
-export async function getVturbStats() {
-  const rows = await db
-    .select({
-      extraData: metricsSnapshots.extraData,
-    })
-    .from(metricsSnapshots)
-    .where(eq(metricsSnapshots.entityType, "vturb_player"))
-    .orderBy(desc(metricsSnapshots.createdAt))
-    .limit(100);
+export async function getVturbStats(dateFrom?: string, dateTo?: string) {
+  const { fetchPlayers, fetchEventsByPlayer } = await import("@/lib/vturb");
 
-  type VturbData = {
-    playerId: string;
-    playerName: string;
-    started: number;
-    finished: number;
-    viewed: number;
-    clicked: number;
-    playRate?: number;
-    finishRate?: number;
-  };
+  // Default: last 7 days
+  const now = new Date();
+  const defaultFrom = new Date(now);
+  defaultFrom.setDate(defaultFrom.getDate() - 7);
+  const from = dateFrom || defaultFrom.toISOString().split("T")[0];
+  const to = dateTo || now.toISOString().split("T")[0];
 
+  // 1. Get all players (includes pitch_time and duration)
+  const playersData = await fetchPlayers();
+  if (!playersData?.players?.length) return [];
+
+  const playerIds = playersData.players.map((p) => p.id);
+
+  // 2. Get events per player for the date range
+  const eventsMap = await fetchEventsByPlayer(playerIds, from, to);
+
+  // 3. Build stats per player
   const playerStats: {
     playerName: string;
     offerName: string;
@@ -532,41 +531,42 @@ export async function getVturbStats() {
     viewed: number;
     clicked: number;
     playRate: number;
-    finishRate: number;
+    pitchRetention: number;
+    duration: number;
+    pitchTime: number;
   }[] = [];
 
-  // Deduplicate by playerId (keep most recent)
-  const seen = new Set<string>();
+  for (const player of playersData.players) {
+    const events = eventsMap?.get(player.id);
+    if (!events || (events.started === 0 && events.viewed === 0)) continue;
 
-  for (const row of rows) {
-    const data = row.extraData as VturbData | null;
-    if (!data?.playerId) continue;
-    if (seen.has(data.playerId)) continue;
-    seen.add(data.playerId);
+    const playRate = events.viewed > 0
+      ? Math.round((events.started / events.viewed) * 10000) / 100
+      : 0;
 
-    const started = data.started ?? 0;
-    const finished = data.finished ?? 0;
-    const viewed = data.viewed ?? 0;
-    const clicked = data.clicked ?? 0;
-
-    const playRate = data.playRate ?? (viewed > 0 ? (started / viewed) * 100 : 0);
-    const finishRate = data.finishRate ?? (started > 0 ? (finished / started) * 100 : 0);
+    // Pitch retention: approximate from finished/started if over_pitch not available
+    // finished = people who watched past the pitch point in most cases
+    const pitchRetention = events.started > 0
+      ? Math.round((events.finished / events.started) * 10000) / 100
+      : 0;
 
     playerStats.push({
-      playerName: data.playerName,
-      offerName: extractOfferName(data.playerName),
-      started,
-      finished,
-      viewed,
-      clicked,
-      playRate: Math.round(playRate * 100) / 100,
-      finishRate: Math.round(finishRate * 100) / 100,
+      playerName: player.name,
+      offerName: extractOfferName(player.name),
+      started: events.started,
+      finished: events.finished,
+      viewed: events.viewed,
+      clicked: events.clicked,
+      playRate,
+      pitchRetention,
+      duration: player.duration ?? 0,
+      pitchTime: player.pitch_time ?? 0,
     });
   }
 
   return playerStats
     .sort((a, b) => b.started - a.started)
-    .slice(0, 50);
+    .slice(0, 100);
 }
 
 // ========== COMPARISON DATA ==========
