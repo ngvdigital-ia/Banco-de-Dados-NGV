@@ -107,12 +107,9 @@ export default function ComparePage() {
     if (!dimension || !valueA || !valueB) return;
 
     startTransition(async () => {
-      const filters = buildBaseFilters();
-      const hasFilters = Object.keys(filters).length > 0;
       const data = await getComparisonData(
         dimension,
         [valueA, valueB],
-        hasFilters ? filters : undefined
       );
       if (data.length === 2) {
         setResult([data[0], data[1]]);

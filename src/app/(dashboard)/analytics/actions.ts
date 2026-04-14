@@ -630,77 +630,28 @@ export async function getUtmifyOfferMetrics() {
 export async function getComparisonData(
   dimension: "niche" | "language" | "copywriter" | "editor",
   values: [string, string],
-  filters?: AnalyticsFilters
 ) {
   const results: ComparisonData[] = [];
 
   for (const value of values) {
     let label = value;
-    let creativesWhereConditions: unknown[] = [];
-    let vslsWhereConditions: unknown[] = [];
-
-    // Base project-level filters from baseFilters
-    const projectConds = buildProjectConditions(filters);
-
-    // Base creative-level filters (copywriterIds, editorIds) from baseFilters
-    const baseCreativeConds = buildCreativeConditions(filters);
-
-    // Base VSL-level conditions from filters (copywriterIds apply to VSLs too)
-    const baseVslConds: unknown[] = [];
-    if (filters?.copywriterIds && filters.copywriterIds.length > 0) {
-      baseVslConds.push(inArray(vsls.copywriterId, filters.copywriterIds));
-    }
+    const conditions = [];
 
     switch (dimension) {
-      case "niche": {
-        // Remove niche filter from projectConds since we override it with the specific value
-        const filteredProjectConds = filters?.niches?.length
-          ? projectConds.filter((c) => c !== inArray(projects.niche, filters.niches!))
-          : projectConds;
-        creativesWhereConditions = [
-          ...filteredProjectConds,
-          ...baseCreativeConds,
-          eq(projects.niche, value),
-        ];
-        vslsWhereConditions = [
-          ...filteredProjectConds,
-          ...baseVslConds,
-          eq(projects.niche, value),
-        ];
+      case "language":
+        conditions.push(eq(offerTracking.language, value));
         break;
-      }
-      case "language": {
-        const filteredProjectConds = filters?.languages?.length
-          ? projectConds.filter((c) => c !== inArray(projects.language, filters.languages!))
-          : projectConds;
-        creativesWhereConditions = [
-          ...filteredProjectConds,
-          ...baseCreativeConds,
-          eq(projects.language, value),
-        ];
-        vslsWhereConditions = [
-          ...filteredProjectConds,
-          ...baseVslConds,
-          eq(projects.language, value),
-        ];
-        break;
-      }
       case "copywriter": {
         const memberId = parseInt(value, 10);
-        // Resolve name for label
         const [member] = await db
           .select({ name: teamMembers.name })
           .from(teamMembers)
           .where(eq(teamMembers.id, memberId));
-        if (member) label = member.name;
-
-        // Remove copywriterIds from base creative conditions since we override it
-        const filteredCreativeConds = filters?.copywriterIds?.length
-          ? baseCreativeConds.filter((c) => c !== inArray(creatives.copywriterId, filters.copywriterIds!))
-          : baseCreativeConds;
-
-        creativesWhereConditions = [...projectConds, ...filteredCreativeConds, eq(creatives.copywriterId, memberId)];
-        vslsWhereConditions = [...projectConds, eq(vsls.copywriterId, memberId)];
+        if (member) {
+          label = member.name;
+          // Match by name in copyVsl field
+          conditions.push(sql`(${offerTracking.copyVsl} ILIKE ${`%${member.name.split(" ")[0]}%`})`);
+        }
         break;
       }
       case "editor": {
@@ -709,51 +660,46 @@ export async function getComparisonData(
           .select({ name: teamMembers.name })
           .from(teamMembers)
           .where(eq(teamMembers.id, memberId));
-        if (member) label = member.name;
-
-        // Remove editorIds from base creative conditions since we override it
-        const filteredCreativeConds = filters?.editorIds?.length
-          ? baseCreativeConds.filter((c) => c !== inArray(creatives.editorId, filters.editorIds!))
-          : baseCreativeConds;
-
-        creativesWhereConditions = [...projectConds, ...filteredCreativeConds, eq(creatives.editorId, memberId)];
-        vslsWhereConditions = [...projectConds, ...baseVslConds];
+        if (member) {
+          label = member.name;
+          conditions.push(sql`(${offerTracking.editorAds} ILIKE ${`%${member.name.split(" ")[0]}%`} OR ${offerTracking.editorVsl} ILIKE ${`%${member.name.split(" ")[0]}%`})`);
+        }
         break;
       }
+      case "niche":
+        // offerTracking doesn't have niche — use name pattern as fallback
+        conditions.push(sql`${offerTracking.name} ILIKE ${`%${value}%`}`);
+        break;
     }
 
-    // Creatives stats
-    const [creativesStats] = await db
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [stats] = await db
       .select({
         total: sql<number>`count(*)`,
-        escalou: sql<number>`count(*) filter (where ${creatives.status} = 'escalou')`,
-        validou: sql<number>`count(*) filter (where ${creatives.status} = 'validou')`,
-        naoValidou: sql<number>`count(*) filter (where ${creatives.status} = 'nao_validou')`,
+        escalou: sql<number>`count(*) filter (where ${offerTracking.validation} = 'SIM' and (${offerTracking.scale} = 'SIM' or ${offerTracking.scale} = 'EM ANDAMENTO'))`,
+        validou: sql<number>`count(*) filter (where ${offerTracking.validation} = 'SIM')`,
+        naoValidou: sql<number>`count(*) filter (where ${offerTracking.validation} in ('NAO', 'NÃO DEU CERTO'))`,
+        totalAds: sql<number>`coalesce(sum(${offerTracking.adsEditedCount}), 0)`,
       })
-      .from(creatives)
-      .innerJoin(projects, eq(creatives.projectId, projects.id))
-      .where(combineConditions(creativesWhereConditions));
+      .from(offerTracking)
+      .where(whereClause);
 
-    // VSLs count
-    const [vslStats] = await db
+    // Count VSLs: offers where copyVslStatus = 'SIM'
+    const [vslCount] = await db
       .select({ total: sql<number>`count(*)` })
-      .from(vsls)
-      .innerJoin(projects, eq(vsls.projectId, projects.id))
-      .where(combineConditions(vslsWhereConditions));
+      .from(offerTracking)
+      .where(whereClause ? and(whereClause, eq(offerTracking.copyVslStatus, "SIM")) : eq(offerTracking.copyVslStatus, "SIM"));
 
-    const totalCreatives = Number(creativesStats.total);
-    const totalVsls = Number(vslStats.total);
-    const escalou = Number(creativesStats.escalou);
-    const validou = Number(creativesStats.validou);
-    const naoValidou = Number(creativesStats.naoValidou);
+    const total = Number(stats.total);
 
     results.push({
       label,
-      totalCreatives,
-      totalVsls,
-      pctEscalou: totalCreatives > 0 ? Math.round((escalou / totalCreatives) * 10000) / 100 : 0,
-      pctValidou: totalCreatives > 0 ? Math.round((validou / totalCreatives) * 10000) / 100 : 0,
-      pctNaoValidou: totalCreatives > 0 ? Math.round((naoValidou / totalCreatives) * 10000) / 100 : 0,
+      totalCreatives: total,
+      totalVsls: Number(vslCount.total),
+      pctEscalou: total > 0 ? Math.round((Number(stats.escalou) / total) * 10000) / 100 : 0,
+      pctValidou: total > 0 ? Math.round((Number(stats.validou) / total) * 10000) / 100 : 0,
+      pctNaoValidou: total > 0 ? Math.round((Number(stats.naoValidou) / total) * 10000) / 100 : 0,
     });
   }
 
