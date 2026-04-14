@@ -204,8 +204,21 @@ export async function getVslsForComparison(filters?: AnalyticsFilters) {
 
 // ========== CREATIVES BY FORMAT ==========
 
-export async function getCreativesByFormat() {
-  // Query offerTracking grouped by adFormat (includes offers without format as "sem_formato")
+export async function getCreativesByFormat(filters?: { language?: string; format?: string; validation?: string }) {
+  const conditions = [];
+
+  if (filters?.language) {
+    conditions.push(eq(offerTracking.language, filters.language));
+  }
+  if (filters?.format) {
+    conditions.push(sql`${offerTracking.adFormat}::text = ${filters.format}`);
+  }
+  if (filters?.validation) {
+    conditions.push(eq(offerTracking.validation, filters.validation));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
   return db
     .select({
       format: sql<string>`coalesce(${offerTracking.adFormat}::text, 'sem_formato')`,
@@ -219,6 +232,7 @@ export async function getCreativesByFormat() {
       pctNaoValidou: sql<number>`round(100.0 * count(*) filter (where ${offerTracking.validation} in ('NAO', 'NÃO DEU CERTO')) / nullif(count(*), 0), 2)`,
     })
     .from(offerTracking)
+    .where(whereClause)
     .groupBy(sql`coalesce(${offerTracking.adFormat}::text, 'sem_formato')`)
     .orderBy(sql`count(*) desc`);
 }

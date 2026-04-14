@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getDashboardStats, getProjectsSummary, getMetricsTrend, getVturbSummary } from "./dashboard-actions";
+import { getDashboardStats, getProjectsSummary, getMetricsTrend, getVturbSummary, getLatestUtmifySummary } from "./dashboard-actions";
 import { SpendRevenueChart } from "@/components/charts/spend-revenue-chart";
 import { RoasChart } from "@/components/charts/roas-chart";
 
@@ -36,11 +36,12 @@ const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
 };
 
 export default async function DashboardPage() {
-  const [stats, recentProjects, metricsTrend, vturbSummary] = await Promise.all([
+  const [stats, recentProjects, metricsTrend, vturbSummary, utmifySummary] = await Promise.all([
     getDashboardStats(),
     getProjectsSummary(),
     getMetricsTrend(30),
     getVturbSummary(),
+    getLatestUtmifySummary(),
   ]);
 
   return (
@@ -112,17 +113,34 @@ export default async function DashboardPage() {
             <p className="text-xs text-muted-foreground">ativas</p>
           </CardContent>
         </Card>
-        <Card className="bg-muted/50">
+        <Card className={utmifySummary ? "" : "bg-muted/50"}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Gasto / Receita
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-muted-foreground">-</div>
-            <p className="text-xs text-muted-foreground">
-              Integre UTMify para ver
-            </p>
+            {utmifySummary ? (
+              <>
+                <div className="text-lg font-bold">
+                  <span className="text-red-500">
+                    {new Intl.NumberFormat("pt-BR", { style: "currency", currency: utmifySummary.currency }).format(utmifySummary.totalSpend / 100)}
+                  </span>
+                  {" / "}
+                  <span className="text-emerald-600">
+                    {new Intl.NumberFormat("pt-BR", { style: "currency", currency: utmifySummary.currency }).format(utmifySummary.totalRevenue / 100)}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {utmifySummary.offersCount} ofertas rastreadas
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-muted-foreground">-</div>
+                <p className="text-xs text-muted-foreground">Sem dados UTMify</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

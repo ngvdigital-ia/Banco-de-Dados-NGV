@@ -125,6 +125,36 @@ export async function getVturbSummary() {
   };
 }
 
+export async function getLatestUtmifySummary() {
+  // Read latest UTMify offer data from DB (saved via MCP)
+  const rows = await db
+    .select({ extraData: metricsSnapshots.extraData, spend: metricsSnapshots.spend, revenue: metricsSnapshots.revenue })
+    .from(metricsSnapshots)
+    .where(eq(metricsSnapshots.entityType, "utmify_offer"))
+    .orderBy(desc(metricsSnapshots.createdAt))
+    .limit(20);
+
+  type OfferData = { offerName: string; spend: number; revenue: number; profit: number; currency?: string };
+  const seen = new Set<string>();
+  let totalSpend = 0;
+  let totalRevenue = 0;
+  let totalProfit = 0;
+  let currency = "USD";
+
+  for (const row of rows) {
+    const data = row.extraData as OfferData | null;
+    if (!data?.offerName || seen.has(data.offerName)) continue;
+    seen.add(data.offerName);
+    totalSpend += data.spend ?? 0;
+    totalRevenue += data.revenue ?? 0;
+    totalProfit += data.profit ?? 0;
+    if (data.currency) currency = data.currency;
+  }
+
+  if (seen.size === 0) return null;
+  return { totalSpend, totalRevenue, totalProfit, currency, offersCount: seen.size };
+}
+
 export async function getMetricsTrend(days: number) {
   const since = new Date();
   since.setDate(since.getDate() - days);

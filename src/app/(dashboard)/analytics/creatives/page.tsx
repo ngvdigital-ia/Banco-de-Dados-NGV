@@ -49,9 +49,15 @@ export default async function CreativesAnalyticsPage({
     filters.formats.length > 0 ||
     filters.statuses.length > 0;
 
+  const creativeFilters = {
+    language: filters.languages.length > 0 ? filters.languages[0] : undefined,
+    format: filters.formats.length > 0 ? filters.formats[0] : undefined,
+    validation: filters.statuses.length > 0 ? filters.statuses[0] : undefined,
+  };
+
   const [options, byFormat] = await Promise.all([
     getFilterOptions(),
-    getCreativesByFormat(),
+    getCreativesByFormat(creativeFilters),
   ]);
 
   const totalCreatives = byFormat.reduce((sum, f) => sum + Number(f.count), 0);
