@@ -17,8 +17,7 @@ export type ComparisonData = {
   totalCreatives: number;
   totalVsls: number;
   pctEscalou: number;
-  pctValidou: number;
-  pctNaoValidou: number;
+  pctNaoEscalou: number;
 };
 
 type ComparisonViewProps = {
@@ -61,13 +60,8 @@ function ComparisonCard({
             isGood
           />
           <PctRow
-            label="Validou"
-            value={data.pctValidou}
-            barColor="bg-blue-500"
-          />
-          <PctRow
-            label="Nao Validou"
-            value={data.pctNaoValidou}
+            label="Nao Escalou"
+            value={data.pctNaoEscalou}
             barColor="bg-red-400"
           />
         </div>
@@ -200,16 +194,9 @@ export function ComparisonView({ dataA, dataB }: ComparisonViewProps) {
           <ComparisonBar
             labelA={dataA.label}
             labelB={dataB.label}
-            valueA={dataA.pctValidou}
-            valueB={dataB.pctValidou}
-            metric="% Validou"
-          />
-          <ComparisonBar
-            labelA={dataA.label}
-            labelB={dataB.label}
-            valueA={dataA.pctNaoValidou}
-            valueB={dataB.pctNaoValidou}
-            metric="% Nao Validou"
+            valueA={dataA.pctNaoEscalou}
+            valueB={dataB.pctNaoEscalou}
+            metric="% Nao Escalou"
           />
         </CardContent>
       </Card>

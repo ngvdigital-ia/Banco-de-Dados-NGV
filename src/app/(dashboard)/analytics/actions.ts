@@ -21,8 +21,7 @@ export type ComparisonData = {
   totalCreatives: number;
   totalVsls: number;
   pctEscalou: number;
-  pctValidou: number;
-  pctNaoValidou: number;
+  pctNaoEscalou: number;
 };
 
 // ========== FILTER OPTIONS ==========
@@ -220,22 +219,28 @@ export async function getCreativesByFormat(filters?: { language?: string; format
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+  // Group by offer name to show which offers/ads exist
   return db
     .select({
-      format: sql<string>`coalesce(${offerTracking.adFormat}::text, 'sem_formato')`,
-      platform: sql<string | null>`null`,
-      count: sql<number>`count(*)`,
-      countEscalou: sql<number>`count(*) filter (where ${offerTracking.validation} = 'SIM' and (${offerTracking.scale} = 'SIM' or ${offerTracking.scale} = 'EM ANDAMENTO'))`,
-      countValidou: sql<number>`count(*) filter (where ${offerTracking.validation} = 'SIM')`,
-      countNaoValidou: sql<number>`count(*) filter (where ${offerTracking.validation} in ('NAO', 'NÃO DEU CERTO'))`,
-      pctEscalou: sql<number>`round(100.0 * count(*) filter (where ${offerTracking.validation} = 'SIM' and (${offerTracking.scale} = 'SIM' or ${offerTracking.scale} = 'EM ANDAMENTO')) / nullif(count(*), 0), 2)`,
-      pctValidou: sql<number>`round(100.0 * count(*) filter (where ${offerTracking.validation} = 'SIM') / nullif(count(*), 0), 2)`,
-      pctNaoValidou: sql<number>`round(100.0 * count(*) filter (where ${offerTracking.validation} in ('NAO', 'NÃO DEU CERTO')) / nullif(count(*), 0), 2)`,
+      format: offerTracking.name,
+      platform: sql<string | null>`coalesce(${offerTracking.adFormat}::text, null)`,
+      count: sql<number>`1`,
+      countEscalou: sql<number>`case when ${offerTracking.validation} = 'SIM' and (${offerTracking.scale} = 'SIM' or ${offerTracking.scale} = 'EM ANDAMENTO') then 1 else 0 end`,
+      countValidou: sql<number>`case when ${offerTracking.validation} = 'SIM' and (${offerTracking.scale} = 'SIM' or ${offerTracking.scale} = 'EM ANDAMENTO') then 1 else 0 end`,
+      countNaoValidou: sql<number>`case when ${offerTracking.scale} in ('NAO', 'NÃO') or ${offerTracking.validation} in ('NÃO DEU CERTO') then 1 else 0 end`,
+      pctEscalou: sql<number>`0`,
+      pctEscalouX: sql<number>`0`,
+      pctNaoEscalou: sql<number>`0`,
+      // Extra fields for the offer view
+      language: offerTracking.language,
+      adsEdited: offerTracking.adsEditedCount,
+      validation: offerTracking.validation,
+      scale: offerTracking.scale,
+      copyVsl: offerTracking.copyVsl,
     })
     .from(offerTracking)
     .where(whereClause)
-    .groupBy(sql`coalesce(${offerTracking.adFormat}::text, 'sem_formato')`)
-    .orderBy(sql`count(*) desc`);
+    .orderBy(desc(offerTracking.adsEditedCount));
 }
 
 export async function getCreativesDetailed() {
@@ -421,7 +426,7 @@ export async function getOffersRanking(filters?: AnalyticsFilters) {
       creativesValidou: sql<number>`(SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id} AND creatives.status = 'validou')`,
       creativesNaoValidou: sql<number>`(SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id} AND creatives.status = 'nao_validou')`,
       pctEscalou: sql<number>`round(100.0 * (SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id} AND creatives.status = 'escalou') / nullif((SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id}), 0), 2)`,
-      pctValidou: sql<number>`round(100.0 * (SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id} AND creatives.status = 'validou') / nullif((SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id}), 0), 2)`,
+      pctEscalouX: sql<number>`round(100.0 * (SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id} AND creatives.status = 'validou') / nullif((SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id}), 0), 2)`,
       createdAt: projects.createdAt,
     })
     .from(projects)
@@ -699,8 +704,7 @@ export async function getComparisonData(
       totalCreatives: total,
       totalVsls: Number(vslCount.total),
       pctEscalou: total > 0 ? Math.round((Number(stats.escalou) / total) * 10000) / 100 : 0,
-      pctValidou: total > 0 ? Math.round((Number(stats.validou) / total) * 10000) / 100 : 0,
-      pctNaoValidou: total > 0 ? Math.round((Number(stats.naoValidou) / total) * 10000) / 100 : 0,
+      pctNaoEscalou: total > 0 ? Math.round((Number(stats.naoValidou) / total) * 10000) / 100 : 0,
     });
   }
 
