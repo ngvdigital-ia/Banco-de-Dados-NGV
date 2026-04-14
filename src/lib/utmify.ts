@@ -171,24 +171,32 @@ export async function fetchOfferMetrics(
 
     if (!res.ok) return null;
 
-    const data = await res.json() as UtmifyDashboardSummary & {
-      ads?: { spent?: number; clicks?: number; pageViews?: number; initiateCheckouts?: number };
-    };
+    // The UTMify API response has nested structure:
+    // ads.spent, comissions.net/gross, analytics.profit/cpa/roas
+    const raw = await res.json() as Record<string, unknown>;
 
-    const spend = data.ads?.spent ?? data.adSpend ?? 0;
-    const checkouts = data.ads?.initiateCheckouts ?? 0;
+    const ads = raw.ads as { spent?: number; clicks?: number; pageViews?: number; initiateCheckouts?: number } | undefined;
+    const analytics = raw.analytics as { profit?: number; cpa?: number; roas?: number } | undefined;
+    const comissions = raw.comissions as { net?: number; gross?: number } | undefined;
+    const ordersCount = raw.ordersCount as { approved?: number; total?: number } | undefined;
+
+    const spend = ads?.spent ?? (raw.adSpend as number) ?? 0;
+    const revenue = comissions?.gross ?? (raw.revenue as number) ?? 0;
+    const profit = analytics?.profit ?? (raw.profit as number) ?? 0;
+    const clicks = ads?.clicks ?? 0;
+    const checkouts = ads?.initiateCheckouts ?? 0;
 
     return {
       offerName,
       spend,
-      revenue: data.revenue ?? 0,
-      profit: data.profit ?? 0,
-      orders: data.ordersCount?.approved ?? 0,
-      clicks: data.ads?.clicks ?? 0,
+      revenue,
+      profit,
+      orders: ordersCount?.approved ?? 0,
+      clicks,
       checkouts,
       costPerCheckout: checkouts > 0 ? Math.round(spend / checkouts) : null,
-      cpa: data.cpa,
-      roas: data.roas,
+      cpa: analytics?.cpa ?? null,
+      roas: analytics?.roas ?? null,
       currency,
     };
   } catch {
