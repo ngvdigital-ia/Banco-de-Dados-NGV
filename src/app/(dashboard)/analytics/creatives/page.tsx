@@ -98,14 +98,15 @@ export default async function CreativesAnalyticsPage({
       <Suspense fallback={<div className="h-8" />}>
         <AnalyticsFilters
           options={{
-            niches: options.niches,
+            niches: [],
             languages: options.languages,
-            copywriters: options.copywriters,
-            editors: options.editors,
+            copywriters: [],
+            editors: [],
             formats: options.formats,
-            statuses: ["rascunho", "validou", "nao_validou", "escalou", "nao_escalou"],
+            statuses: ["SIM", "NAO", "EM ANDAMENTO", "NÃO DEU CERTO"],
           }}
           showFormats={true}
+          showEditors={false}
         />
       </Suspense>
 

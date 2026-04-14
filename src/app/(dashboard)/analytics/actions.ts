@@ -34,9 +34,9 @@ export async function getFilterOptions() {
       .from(projects)
       .orderBy(projects.niche),
     db
-      .selectDistinct({ language: projects.language })
-      .from(projects)
-      .orderBy(projects.language),
+      .selectDistinct({ language: offerTracking.language })
+      .from(offerTracking)
+      .orderBy(offerTracking.language),
     db
       .select({ id: teamMembers.id, name: teamMembers.name })
       .from(teamMembers)
