@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { DateRangeFilter, getDateRange } from "@/components/filters/date-range-filter";
+import { DateRangeFilter } from "@/components/filters/date-range-filter";
+import { getDateRange } from "@/lib/date-utils";
 import { OfferFilter } from "@/components/filters/offer-filter";
 import { getVturbStats } from "../actions";
 import { DASHBOARDS, fetchDashboardSummary } from "@/lib/utmify";
