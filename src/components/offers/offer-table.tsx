@@ -233,6 +233,88 @@ function SelectCell({
   );
 }
 
+// ---------- MultiSelectCell (for multi-person fields like editorAds, copyAds) ----------
+
+function MultiSelectCell({
+  value,
+  offerId,
+  field,
+  options,
+}: {
+  value: string | null;
+  offerId: number;
+  field: string;
+  options: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Parse current value into selected options
+  const selected = (value ?? "")
+    .split(/\s*[&,]\s*/)
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
+
+  function toggle(opt: string) {
+    const upper = opt.toUpperCase();
+    let newSelected: string[];
+    if (selected.includes(upper)) {
+      newSelected = selected.filter((s) => s !== upper);
+    } else {
+      newSelected = [...selected, upper];
+    }
+    const newValue = newSelected.join(" & ");
+    startTransition(async () => {
+      await updateOfferField(offerId, field, newValue || null);
+    });
+  }
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  const display = selected.length > 0 ? selected.join(" & ") : "-";
+
+  return (
+    <div ref={ref} className="relative">
+      <div
+        onClick={() => setOpen(!open)}
+        className={`cursor-pointer truncate rounded px-1 py-0.5 text-xs font-medium hover:bg-muted ${isPending ? "opacity-50" : ""}`}
+        title={value ?? ""}
+      >
+        {display}
+      </div>
+      {open && (
+        <div className="absolute z-50 mt-1 w-28 rounded-md border bg-background shadow-lg">
+          {options.map((opt) => (
+            <label
+              key={opt}
+              className="flex cursor-pointer items-center gap-2 px-2 py-1 text-xs hover:bg-muted"
+            >
+              <input
+                type="checkbox"
+                checked={selected.includes(opt.toUpperCase())}
+                onChange={() => toggle(opt)}
+                className="h-3 w-3"
+              />
+              {opt}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- Sub-components ----------
 
 function EditableCell({
@@ -713,24 +795,17 @@ const columns: ColumnDef[] = [
     key: "copyAds",
     label: "Copy ADS",
     width: "w-[120px] min-w-[120px]",
-    render: (o) => {
-      // Single person → select, multiple → multi-person display
-      const hasMultiple = o.copyAds && /[&,\-]/.test(o.copyAds);
-      return hasMultiple
-        ? <MultiPersonCell value={o.copyAds} offerId={o.id} field="copyAds" />
-        : <SelectCell value={o.copyAds} offerId={o.id} field="copyAds" options={COPYWRITERS} />;
-    },
+    render: (o) => (
+      <MultiSelectCell value={o.copyAds} offerId={o.id} field="copyAds" options={COPYWRITERS} />
+    ),
   },
   {
     key: "editorAds",
     label: "Editor Ads",
     width: "w-[130px] min-w-[130px]",
-    render: (o) => {
-      const hasMultiple = o.editorAds && /[&,\-]/.test(o.editorAds);
-      return hasMultiple
-        ? <MultiPersonCell value={o.editorAds} offerId={o.id} field="editorAds" />
-        : <SelectCell value={o.editorAds} offerId={o.id} field="editorAds" options={EDITORS} />;
-    },
+    render: (o) => (
+      <MultiSelectCell value={o.editorAds} offerId={o.id} field="editorAds" options={EDITORS} />
+    ),
   },
   {
     key: "editorVsl",
