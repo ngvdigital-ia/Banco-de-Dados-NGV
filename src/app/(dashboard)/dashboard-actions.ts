@@ -1,18 +1,19 @@
 "use server";
 
 import { db } from "@/db";
-import { projects, teamMembers, vsls, creatives, campaigns, metricsSnapshots } from "@/db/schema";
+import { projects, teamMembers, vsls, creatives, campaigns, metricsSnapshots, offerTracking } from "@/db/schema";
 import { eq, sql, desc, gte } from "drizzle-orm";
 
 export async function getDashboardStats() {
-  const [projectCount] = await db
+  // Count from offerTracking (real data) instead of empty tables
+  const [offerCount] = await db
     .select({ count: sql<number>`count(*)` })
-    .from(projects);
+    .from(offerTracking);
 
-  const [activeProjectCount] = await db
+  const [activeOfferCount] = await db
     .select({ count: sql<number>`count(*)` })
-    .from(projects)
-    .where(eq(projects.status, "rodando"));
+    .from(offerTracking)
+    .where(eq(offerTracking.validation, "EM ANDAMENTO"));
 
   const [teamCount] = await db
     .select({ count: sql<number>`count(*)` })
@@ -21,22 +22,24 @@ export async function getDashboardStats() {
 
   const [vslCount] = await db
     .select({ count: sql<number>`count(*)` })
-    .from(vsls);
+    .from(offerTracking)
+    .where(eq(offerTracking.copyVslStatus, "SIM"));
 
   const [creativeCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(creatives);
+    .select({ total: sql<number>`coalesce(sum(${offerTracking.adsEditedCount}), 0)` })
+    .from(offerTracking);
 
   const [campaignCount] = await db
     .select({ count: sql<number>`count(*)` })
-    .from(campaigns);
+    .from(offerTracking)
+    .where(eq(offerTracking.campaignsActive, "SIM"));
 
   return {
-    totalProjects: Number(projectCount.count),
-    activeProjects: Number(activeProjectCount.count),
+    totalProjects: Number(offerCount.count),
+    activeProjects: Number(activeOfferCount.count),
     teamSize: Number(teamCount.count),
     totalVsls: Number(vslCount.count),
-    totalCreatives: Number(creativeCount.count),
+    totalCreatives: Number(creativeCount.total),
     totalCampaigns: Number(campaignCount.count),
   };
 }

@@ -54,14 +54,14 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Projetos
+              Ofertas
             </CardTitle>
             <FolderOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalProjects}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.activeProjects} rodando
+              {stats.activeProjects} em andamento
             </p>
           </CardContent>
         </Card>
@@ -86,19 +86,19 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalVsls}</div>
-            <p className="text-xs text-muted-foreground">cadastradas</p>
+            <p className="text-xs text-muted-foreground">com copy pronta</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Criativos
+              Ads Editados
             </CardTitle>
             <Megaphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalCreatives}</div>
-            <p className="text-xs text-muted-foreground">cadastrados</p>
+            <p className="text-xs text-muted-foreground">total</p>
           </CardContent>
         </Card>
         <Card>
@@ -110,7 +110,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalCampaigns}</div>
-            <p className="text-xs text-muted-foreground">ativas</p>
+            <p className="text-xs text-muted-foreground">ofertas ativas</p>
           </CardContent>
         </Card>
         <Card className={utmifySummary ? "" : "bg-muted/50"}>
