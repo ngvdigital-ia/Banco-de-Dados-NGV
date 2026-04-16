@@ -36,6 +36,20 @@ export type VturbEngagement = {
   percentage: number;
 };
 
+export type VturbSessionStats = {
+  total_viewed: number;
+  total_started: number;
+  total_finished: number;
+  total_clicked: number;
+  total_over_pitch: number;
+  total_under_pitch: number;
+  over_pitch_rate: string; // e.g. "10.85"
+  play_rate: string; // e.g. "92.29"
+  engagement_rate: string; // e.g. "18.36"
+  total_conversions: number;
+  overall_conversion_rate: number;
+};
+
 /**
  * List all players (videos) in the account
  */
@@ -179,16 +193,22 @@ export async function fetchUserEngagement(
 }
 
 /**
- * Get session stats (play rate, avg watch time, etc.) for a single player
+ * Get session stats (play rate, over_pitch_rate, etc.) for a single player.
+ * Dates must include time component (YYYY-MM-DD HH:MM:SS).
+ * If only date is provided (YYYY-MM-DD), time is appended automatically.
  */
 export async function fetchSessionStats(
   playerId: string,
   dateFrom: string,
   dateTo: string,
   timezone = "America/Sao_Paulo"
-) {
+): Promise<VturbSessionStats | null> {
   const apiKey = process.env.VTURB_API_KEY;
   if (!apiKey) return null;
+
+  // API requires datetime with time component
+  const startDate = dateFrom.includes(" ") ? dateFrom : `${dateFrom} 00:00:00`;
+  const endDate = dateTo.includes(" ") ? dateTo : `${dateTo} 23:59:59`;
 
   try {
     const res = await fetch(`${VTURB_BASE_URL}/sessions/stats`, {
@@ -196,8 +216,8 @@ export async function fetchSessionStats(
       headers: getHeaders(),
       body: JSON.stringify({
         player_id: playerId,
-        start_date: dateFrom,
-        end_date: dateTo,
+        start_date: startDate,
+        end_date: endDate,
         timezone,
       }),
     });
@@ -208,7 +228,7 @@ export async function fetchSessionStats(
       return null;
     }
 
-    return res.json();
+    return res.json() as Promise<VturbSessionStats>;
   } catch (err) {
     console.error("[VTurb] Session stats error:", err);
     return null;

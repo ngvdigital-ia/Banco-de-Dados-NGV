@@ -183,18 +183,27 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              VTurb - Finish Rate
+              VTurb - Retencao ao Pitch
             </CardTitle>
             <Play className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{vturbSummary.avgFinishRate}%</div>
-            <div className="mt-2 h-2 w-full rounded-full bg-muted">
-              <div
-                className="h-2 rounded-full bg-green-500"
-                style={{ width: `${Math.min(vturbSummary.avgFinishRate, 100)}%` }}
-              />
-            </div>
+            {vturbSummary.avgPitchRetention != null ? (
+              <>
+                <div className="text-2xl font-bold">{vturbSummary.avgPitchRetention}%</div>
+                <div className="mt-2 h-2 w-full rounded-full bg-muted">
+                  <div
+                    className="h-2 rounded-full bg-green-500"
+                    style={{ width: `${Math.min(vturbSummary.avgPitchRetention, 100)}%` }}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-muted-foreground">-</div>
+                <p className="text-xs text-muted-foreground">Sem dados recentes</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

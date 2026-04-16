@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/table";
 import { AnalyticsFilters } from "@/components/filters/analytics-filters";
 import { parseMultiParam } from "@/lib/filter-utils";
-import { getFilterOptions, getCreativesByFormat } from "../actions";
+import { getFilterOptions, getCreativesByFormat, getOfferCampaignSummary } from "../actions";
 
 const formatLabels: Record<string, string> = {
   especialista: "Especialista",
@@ -36,10 +36,24 @@ export default async function CreativesAnalyticsPage({
     validation: filters.statuses.length > 0 ? filters.statuses[0] : undefined,
   };
 
-  const [options, offers] = await Promise.all([
+  const [options, offers, campaignData] = await Promise.all([
     getFilterOptions(),
     getCreativesByFormat(creativeFilters),
+    getOfferCampaignSummary(),
   ]);
+
+  // Build lookup map: offerName → campaign summary
+  const campaignMap = new Map(
+    campaignData.offers.map((c) => [c.offerName, c])
+  );
+  const hasCampaignData = campaignData.offers.length > 0;
+  const totalCampaigns = campaignData.offers.reduce((sum, c) => sum + c.activeCampaigns, 0);
+  const totalCampaignSpend = campaignData.offers.reduce((sum, c) => sum + c.totalSpend, 0);
+
+  function formatCurrency(value: number, currency: string) {
+    if (!value) return "-";
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
+  }
 
   const totalOffers = offers.length;
   const totalEscalou = offers.filter((o) => Number(o.countEscalou) > 0).length;
@@ -70,7 +84,7 @@ export default async function CreativesAnalyticsPage({
       </Suspense>
 
       {/* Summary cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Total Ofertas</CardTitle>
@@ -97,6 +111,34 @@ export default async function CreativesAnalyticsPage({
             <p className="text-xs text-muted-foreground">{totalNaoEscalou} ofertas</p>
           </CardContent>
         </Card>
+        {hasCampaignData && (
+          <>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground">Campanhas Ativas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalCampaigns}</div>
+                <p className="text-xs text-muted-foreground">via UTMify</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground">Gasto Total</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-500">
+                  {formatCurrency(totalCampaignSpend, campaignData.offers[0]?.currency ?? "USD")}
+                </div>
+                {campaignData.lastSync && (
+                  <p className="text-xs text-muted-foreground">
+                    Atualizado: {campaignData.lastSync.toLocaleDateString("pt-BR")}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Offers table */}
@@ -121,12 +163,21 @@ export default async function CreativesAnalyticsPage({
                     <TableHead className="text-right">Ads Editados</TableHead>
                     <TableHead>Validacao</TableHead>
                     <TableHead>Escala</TableHead>
+                    {hasCampaignData && (
+                      <>
+                        <TableHead className="text-right">Campanhas</TableHead>
+                        <TableHead className="text-right">Gasto</TableHead>
+                        <TableHead className="text-right">Receita</TableHead>
+                        <TableHead className="text-right">ROAS</TableHead>
+                      </>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {offers.map((row, i) => {
                     const isEscalou = row.validation === "SIM" && (row.scale === "SIM" || row.scale === "EM ANDAMENTO");
                     const isNaoEscalou = row.scale === "NAO" || row.scale === "NÃO" || row.validation === "NÃO DEU CERTO";
+                    const campaign = campaignMap.get(row.format);
                     return (
                       <TableRow key={i}>
                         <TableCell className="font-medium">{row.format}</TableCell>
@@ -164,6 +215,20 @@ export default async function CreativesAnalyticsPage({
                             <Badge variant="outline" className="border-amber-300 text-amber-700">{row.scale ?? "EM ANDAMENTO"}</Badge>
                           )}
                         </TableCell>
+                        {hasCampaignData && (
+                          <>
+                            <TableCell className="text-right">{campaign?.activeCampaigns ?? "-"}</TableCell>
+                            <TableCell className="text-right text-red-500">
+                              {campaign ? formatCurrency(campaign.totalSpend, campaign.currency) : "-"}
+                            </TableCell>
+                            <TableCell className="text-right text-emerald-600">
+                              {campaign ? formatCurrency(campaign.totalRevenue, campaign.currency) : "-"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {campaign?.roas != null ? `${campaign.roas}x` : "-"}
+                            </TableCell>
+                          </>
+                        )}
                       </TableRow>
                     );
                   })}

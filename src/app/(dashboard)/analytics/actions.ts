@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { projects, vsls, creatives, campaigns, teamMembers, metricsSnapshots, offerTracking } from "@/db/schema";
 import { fieldContainsMember, fieldMatchesMember, getMemberAliases } from "@/lib/team-utils";
+import { extractOfferFromCampaignName } from "@/lib/utmify";
 import { eq, sql, desc, and, inArray } from "drizzle-orm";
 
 // ========== TYPES ==========
@@ -709,4 +710,132 @@ export async function getComparisonData(
   }
 
   return results;
+}
+
+// ========== UTMIFY CAMPAIGN DATA ==========
+
+export type CampaignInput = {
+  id: string;
+  name: string;
+  spend: number;
+  revenue: number;
+  impressions: number;
+  clicks: number;
+  ctr: number | null;
+  cpc: number | null;
+  cpa: number | null;
+  roas: number | null;
+  dashboardId: string;
+  currency: string;
+};
+
+/**
+ * Save UTMify campaign data fetched via MCP to DB cache.
+ * Automatically extracts offer name from campaign name.
+ */
+export async function saveUtmifyCampaignData(campaignList: CampaignInput[]) {
+  const now = new Date();
+
+  // Clear old campaign data before inserting fresh
+  await db
+    .delete(metricsSnapshots)
+    .where(eq(metricsSnapshots.entityType, "utmify_campaign_by_offer"));
+
+  for (const campaign of campaignList) {
+    const offerName = extractOfferFromCampaignName(campaign.name);
+
+    await db.insert(metricsSnapshots).values({
+      date: now,
+      entityType: "utmify_campaign_by_offer",
+      entityId: 0,
+      source: "utmify",
+      impressions: campaign.impressions ?? null,
+      clicks: campaign.clicks ?? null,
+      spend: campaign.spend != null ? String(campaign.spend / 100) : null,
+      revenue: campaign.revenue != null ? String(campaign.revenue / 100) : null,
+      cpa: campaign.cpa != null ? String(campaign.cpa / 100) : null,
+      roas: campaign.roas != null ? String(campaign.roas) : null,
+      extraData: {
+        campaignName: campaign.name,
+        campaignId: campaign.id,
+        offerName,
+        dashboardId: campaign.dashboardId,
+        currency: campaign.currency,
+      },
+    });
+  }
+
+  return { saved: campaignList.length };
+}
+
+export type OfferCampaignSummary = {
+  offerName: string;
+  activeCampaigns: number;
+  totalSpend: number;
+  totalRevenue: number;
+  roas: number | null;
+  currency: string;
+};
+
+/**
+ * Read campaign data from DB cache, grouped by offer.
+ */
+export async function getOfferCampaignSummary(): Promise<{ offers: OfferCampaignSummary[]; lastSync: Date | null }> {
+  const rows = await db
+    .select({
+      extraData: metricsSnapshots.extraData,
+      spend: metricsSnapshots.spend,
+      revenue: metricsSnapshots.revenue,
+      createdAt: metricsSnapshots.createdAt,
+    })
+    .from(metricsSnapshots)
+    .where(eq(metricsSnapshots.entityType, "utmify_campaign_by_offer"))
+    .orderBy(desc(metricsSnapshots.createdAt))
+    .limit(500);
+
+  type CampaignRow = {
+    offerName: string;
+    campaignName: string;
+    campaignId: string;
+    currency: string;
+  };
+
+  const offerMap = new Map<
+    string,
+    { totalSpend: number; totalRevenue: number; currency: string; campaignIds: Set<string> }
+  >();
+
+  let lastSync: Date | null = null;
+
+  for (const row of rows) {
+    if (!lastSync && row.createdAt) lastSync = new Date(row.createdAt);
+
+    const data = row.extraData as CampaignRow | null;
+    if (!data?.offerName || !data.campaignId) continue;
+
+    let entry = offerMap.get(data.offerName);
+    if (!entry) {
+      entry = { totalSpend: 0, totalRevenue: 0, currency: data.currency ?? "USD", campaignIds: new Set() };
+      offerMap.set(data.offerName, entry);
+    }
+
+    if (entry.campaignIds.has(data.campaignId)) continue;
+    entry.campaignIds.add(data.campaignId);
+    entry.totalSpend += Number(row.spend ?? 0);
+    entry.totalRevenue += Number(row.revenue ?? 0);
+  }
+
+  const offers: OfferCampaignSummary[] = [];
+  for (const [offerName, entry] of offerMap) {
+    offers.push({
+      offerName,
+      activeCampaigns: entry.campaignIds.size,
+      totalSpend: entry.totalSpend,
+      totalRevenue: entry.totalRevenue,
+      roas: entry.totalSpend > 0 ? Math.round((entry.totalRevenue / entry.totalSpend) * 100) / 100 : null,
+      currency: entry.currency,
+    });
+  }
+
+  return { offers: offers.sort((a, b) => b.totalSpend - a.totalSpend), lastSync };
 }

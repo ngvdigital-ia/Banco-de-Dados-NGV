@@ -230,6 +230,52 @@ export async function fetchAllOfferMetrics(dateFrom: string, dateTo: string): Pr
   return results.sort((a, b) => b.spend - a.spend);
 }
 
+// Abbreviations used in UTMify campaign names (pattern: DD/MM-TIPO-OFERTA-IDIOMA)
+const CAMPAIGN_OFFER_KEYWORDS: Record<string, string> = {
+  "FVA": "FVA",
+  "VIGORMAX": "Vigor Max",
+  "VIGOR MAX": "Vigor Max",
+  "VIGOR-MAX": "Vigor Max",
+  "VM": "Vigor Max",
+  "SKYVAULT": "SkyVault",
+  "SKY VAULT": "SkyVault",
+  "LECODE": "Le Code de la Femme",
+  "LE CODE": "Le Code de la Femme",
+  "SOLOMON": "Salomao",
+  "SALOMAO": "Salomao",
+  "ORS": "Salomao",
+  "CHIASEED": "Chia Seed",
+  "CHIA SEED": "Chia Seed",
+  "CHIA": "Chia Seed",
+  "SCIATIC": "Sciatic Shield",
+  "DAVINCI": "DaVinci Frequency",
+  "DA VINCI": "DaVinci Frequency",
+  "GUARDIAN": "Guardian Angel",
+  "AFRICAN": "African Water",
+  "GODFINGERS": "God Fingers",
+  "GOD FINGERS": "God Fingers",
+  "ORGASMIC": "Orgasmic Rides",
+  "PENNA": "Penna Naturale",
+  "NEUROPEAK": "NeuroPeak",
+  "ALPHA": "Alpha Flow",
+  "ALPHA FLOW": "Alpha Flow",
+  "AMERICAN": "American System",
+};
+
+/**
+ * Extract offer name from UTMify campaign name.
+ * Campaign names follow pattern: DD/MM-TIPO-OFERTA-IDIOMA (e.g. "07/04-TESTE-FVA-EN")
+ */
+export function extractOfferFromCampaignName(campaignName: string): string {
+  const upper = campaignName.toUpperCase();
+  // Check longer keywords first to avoid partial matches (e.g. "ALPHA FLOW" before "ALPHA")
+  const sorted = Object.entries(CAMPAIGN_OFFER_KEYWORDS).sort((a, b) => b[0].length - a[0].length);
+  for (const [keyword, offer] of sorted) {
+    if (upper.includes(keyword)) return offer;
+  }
+  return "Outros";
+}
+
 export async function fetchMetaAdObjects(dashboardId: string, timezone: number) {
   const dateRange = buildDateRange(timezone);
 

@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { projects, teamMembers, vsls, creatives, campaigns, metricsSnapshots, offerTracking } from "@/db/schema";
 import { eq, sql, desc, gte } from "drizzle-orm";
+import { fetchEventsByPlayer, fetchPlayers, fetchSessionStats } from "@/lib/vturb";
 
 export async function getDashboardStats() {
   // Count from offerTracking (real data) instead of empty tables
@@ -67,55 +68,81 @@ export async function getProjectsSummary() {
 }
 
 export async function getVturbSummary() {
-  // Limit to 50 most recent to avoid exceeding Neon response size limit
-  const rows = await db
-    .select({
-      extraData: metricsSnapshots.extraData,
-    })
-    .from(metricsSnapshots)
-    .where(eq(metricsSnapshots.entityType, "vturb_player"))
-    .orderBy(desc(metricsSnapshots.createdAt))
-    .limit(50);
+  // Fetch live data from VTurb API (last 30 days)
+  const now = new Date();
+  const ago = new Date(now);
+  ago.setDate(ago.getDate() - 30);
+  const dateFrom = ago.toISOString().split("T")[0];
+  const dateTo = now.toISOString().split("T")[0];
 
-  type VturbExtraData = {
-    playerId: string;
-    playerName: string;
-    started: number;
-    finished: number;
-    viewed: number;
-    clicked: number;
-  };
+  const playersResult = await fetchPlayers(dateFrom, dateTo);
+  const players = playersResult?.players ?? [];
+  const playerIds = players.map((p) => p.id);
+
+  // Fetch events for all players in one bulk call
+  const eventsMap = playerIds.length > 0
+    ? await fetchEventsByPlayer(playerIds, dateFrom, dateTo)
+    : null;
 
   let totalPlays = 0;
   let totalViews = 0;
   let totalFinishes = 0;
   let totalClicks = 0;
 
-  const playerList: { name: string; plays: number }[] = [];
+  const playerList: { id: string; name: string; plays: number }[] = [];
 
-  for (const row of rows) {
-    const data = row.extraData as VturbExtraData | null;
-    if (!data?.playerId) continue;
-
-    const started = data.started ?? 0;
-    const finished = data.finished ?? 0;
-    const viewed = data.viewed ?? 0;
-    const clicked = data.clicked ?? 0;
+  for (const player of players) {
+    const events = eventsMap?.get(player.id);
+    const started = events?.started ?? 0;
+    const finished = events?.finished ?? 0;
+    const viewed = events?.viewed ?? 0;
+    const clicked = events?.clicked ?? 0;
 
     totalPlays += started;
     totalViews += viewed;
     totalFinishes += finished;
     totalClicks += clicked;
 
-    playerList.push({ name: data.playerName, plays: started });
+    if (started > 0) {
+      playerList.push({ id: player.id, name: player.name, plays: started });
+    }
   }
 
   const avgPlayRate = totalViews > 0 ? Math.round((totalPlays / totalViews) * 10000) / 100 : 0;
   const avgFinishRate = totalPlays > 0 ? Math.round((totalFinishes / totalPlays) * 10000) / 100 : 0;
 
-  const topPlayers = playerList
+  // Fetch real pitch retention from session stats for top 10 active players
+  const topForPitch = playerList
     .sort((a, b) => b.plays - a.plays)
-    .slice(0, 5);
+    .slice(0, 10);
+
+  let avgPitchRetention: number | null = null;
+
+  if (topForPitch.length > 0) {
+    const sessionResults = await Promise.allSettled(
+      topForPitch.map((p) => fetchSessionStats(p.id, dateFrom, dateTo))
+    );
+
+    let weightedSum = 0;
+    let totalWeight = 0;
+
+    for (let i = 0; i < sessionResults.length; i++) {
+      const result = sessionResults[i];
+      if (result.status === "fulfilled" && result.value?.over_pitch_rate != null) {
+        const rate = parseFloat(String(result.value.over_pitch_rate));
+        if (!isNaN(rate)) {
+          weightedSum += rate * topForPitch[i].plays;
+          totalWeight += topForPitch[i].plays;
+        }
+      }
+    }
+
+    if (totalWeight > 0) {
+      avgPitchRetention = Math.round((weightedSum / totalWeight) * 100) / 100;
+    }
+  }
+
+  const topPlayers = playerList.slice(0, 5).map((p) => ({ name: p.name, plays: p.plays }));
 
   return {
     totalPlays,
@@ -124,6 +151,7 @@ export async function getVturbSummary() {
     totalClicks,
     avgPlayRate,
     avgFinishRate,
+    avgPitchRetention,
     topPlayers,
   };
 }
