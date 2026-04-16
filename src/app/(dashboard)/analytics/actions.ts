@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { projects, vsls, creatives, campaigns, teamMembers, metricsSnapshots, offerTracking } from "@/db/schema";
 import { fieldContainsMember, fieldMatchesMember, getMemberAliases } from "@/lib/team-utils";
 import { extractOfferFromCampaignName } from "@/lib/utmify";
-import { eq, sql, desc, and, inArray } from "drizzle-orm";
+import { eq, sql, desc, and, inArray, gte, lte } from "drizzle-orm";
 
 // ========== TYPES ==========
 
@@ -23,6 +23,12 @@ export type ComparisonData = {
   totalVsls: number;
   pctEscalou: number;
   pctNaoEscalou: number;
+  totalSpend: number;
+  totalRevenue: number;
+  totalProfit: number;
+  roas: number | null;
+  currency: string;
+  hasCampaignData: boolean;
 };
 
 // ========== FILTER OPTIONS ==========
@@ -205,7 +211,11 @@ export async function getVslsForComparison(filters?: AnalyticsFilters) {
 
 // ========== CREATIVES BY FORMAT ==========
 
-export async function getCreativesByFormat(filters?: { language?: string; format?: string; validation?: string }) {
+export async function getCreativesByFormat(
+  filters?: { language?: string; format?: string; validation?: string },
+  dateFrom?: string,
+  dateTo?: string,
+) {
   const conditions = [];
 
   if (filters?.language) {
@@ -217,6 +227,8 @@ export async function getCreativesByFormat(filters?: { language?: string; format
   if (filters?.validation) {
     conditions.push(eq(offerTracking.validation, filters.validation));
   }
+  if (dateFrom) conditions.push(gte(offerTracking.updatedAt, new Date(dateFrom)));
+  if (dateTo) conditions.push(lte(offerTracking.updatedAt, new Date(dateTo)));
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -265,11 +277,16 @@ export async function getCreativesDetailed() {
 
 // ========== TEAM PERFORMANCE ==========
 
-export async function getTeamPerformance() {
+export async function getTeamPerformance(dateFrom?: string, dateTo?: string) {
+  const offerConditions = [];
+  if (dateFrom) offerConditions.push(gte(offerTracking.updatedAt, new Date(dateFrom)));
+  if (dateTo) offerConditions.push(lte(offerTracking.updatedAt, new Date(dateTo)));
+  const offerWhere = offerConditions.length > 0 ? and(...offerConditions) : undefined;
+
   // Fetch team members and all offer tracking data in parallel
   const [members, allOffers] = await Promise.all([
     db.select().from(teamMembers).where(eq(teamMembers.active, true)),
-    db.select().from(offerTracking),
+    offerWhere ? db.select().from(offerTracking).where(offerWhere) : db.select().from(offerTracking),
   ]);
 
   const results = [];
@@ -409,8 +426,14 @@ export async function getTeamPerformance() {
 
 // ========== OFFERS RANKING ==========
 
-export async function getOffersRanking(filters?: AnalyticsFilters) {
+export async function getOffersRanking(
+  filters?: AnalyticsFilters,
+  dateFrom?: string,
+  dateTo?: string,
+) {
   const conditions = buildProjectConditions(filters);
+  if (dateFrom) conditions.push(gte(projects.createdAt, new Date(dateFrom)));
+  if (dateTo) conditions.push(lte(projects.createdAt, new Date(dateTo)));
   const whereClause = combineConditions(conditions);
 
   return db
@@ -637,8 +660,46 @@ export async function getUtmifyOfferMetrics() {
 export async function getComparisonData(
   dimension: "niche" | "language" | "copywriter" | "editor",
   values: [string, string],
+  dateFrom?: string,
+  dateTo?: string,
 ) {
   const results: ComparisonData[] = [];
+
+  // Pre-fetch all utmify campaign snapshots once for efficiency
+  const campaignConditions = [eq(metricsSnapshots.entityType, "utmify_campaign_by_offer")];
+  if (dateFrom) campaignConditions.push(gte(metricsSnapshots.date, new Date(dateFrom)));
+  if (dateTo) campaignConditions.push(lte(metricsSnapshots.date, new Date(dateTo)));
+
+  const campaignRows = await db
+    .select({
+      extraData: metricsSnapshots.extraData,
+      spend: metricsSnapshots.spend,
+      revenue: metricsSnapshots.revenue,
+    })
+    .from(metricsSnapshots)
+    .where(and(...campaignConditions))
+    .orderBy(desc(metricsSnapshots.createdAt))
+    .limit(2000);
+
+  // Dedup por campaignId mantendo max spend
+  type CampaignRow = { offerName: string; campaignId: string; currency: string };
+  const campaignByOffer = new Map<string, { spend: number; revenue: number; currency: string }[]>();
+  const seenCampaignId = new Map<string, { spend: number; revenue: number; offerName: string; currency: string }>();
+
+  for (const row of campaignRows) {
+    const d = row.extraData as CampaignRow | null;
+    if (!d?.offerName || !d.campaignId) continue;
+    const spend = Number(row.spend ?? 0);
+    const revenue = Number(row.revenue ?? 0);
+    const existing = seenCampaignId.get(d.campaignId);
+    if (!existing || spend > existing.spend) {
+      seenCampaignId.set(d.campaignId, { spend, revenue, offerName: d.offerName, currency: d.currency ?? "USD" });
+    }
+  }
+  for (const c of seenCampaignId.values()) {
+    if (!campaignByOffer.has(c.offerName)) campaignByOffer.set(c.offerName, []);
+    campaignByOffer.get(c.offerName)!.push({ spend: c.spend, revenue: c.revenue, currency: c.currency });
+  }
 
   for (const value of values) {
     let label = value;
@@ -656,7 +717,6 @@ export async function getComparisonData(
           .where(eq(teamMembers.id, memberId));
         if (member) {
           label = member.name;
-          // Match by name in copyVsl field
           conditions.push(sql`(${offerTracking.copyVsl} ILIKE ${`%${member.name.split(" ")[0]}%`})`);
         }
         break;
@@ -674,10 +734,12 @@ export async function getComparisonData(
         break;
       }
       case "niche":
-        // value é o nome exato da oferta (vindo do selectDistinct de offerTracking.name)
         conditions.push(eq(offerTracking.name, value));
         break;
     }
+
+    if (dateFrom) conditions.push(gte(offerTracking.updatedAt, new Date(dateFrom)));
+    if (dateTo) conditions.push(lte(offerTracking.updatedAt, new Date(dateTo)));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -692,11 +754,34 @@ export async function getComparisonData(
       .from(offerTracking)
       .where(whereClause);
 
-    // Count VSLs: offers where copyVslStatus = 'SIM'
     const [vslCount] = await db
       .select({ total: sql<number>`count(*)` })
       .from(offerTracking)
       .where(whereClause ? and(whereClause, eq(offerTracking.copyVslStatus, "SIM")) : eq(offerTracking.copyVslStatus, "SIM"));
+
+    // Puxar nomes de ofertas distintos pra agregar UTMify
+    const offerNameRows = await db
+      .selectDistinct({ name: offerTracking.name })
+      .from(offerTracking)
+      .where(whereClause);
+
+    let totalSpend = 0;
+    let totalRevenue = 0;
+    const currencyTally = new Map<string, number>();
+    let hasCampaignData = false;
+    for (const { name } of offerNameRows) {
+      const camps = campaignByOffer.get(name);
+      if (!camps) continue;
+      hasCampaignData = true;
+      for (const c of camps) {
+        totalSpend += c.spend;
+        totalRevenue += c.revenue;
+        currencyTally.set(c.currency, (currencyTally.get(c.currency) ?? 0) + 1);
+      }
+    }
+    const currency = Array.from(currencyTally.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "USD";
+    const totalProfit = totalRevenue - totalSpend;
+    const roas = totalSpend > 0 ? Math.round((totalRevenue / totalSpend) * 100) / 100 : null;
 
     const total = Number(stats.total);
 
@@ -706,6 +791,12 @@ export async function getComparisonData(
       totalVsls: Number(vslCount.total),
       pctEscalou: total > 0 ? Math.round((Number(stats.escalou) / total) * 10000) / 100 : 0,
       pctNaoEscalou: total > 0 ? Math.round((Number(stats.naoValidou) / total) * 10000) / 100 : 0,
+      totalSpend,
+      totalRevenue,
+      totalProfit,
+      roas,
+      currency,
+      hasCampaignData,
     });
   }
 
@@ -780,7 +871,14 @@ export type OfferCampaignSummary = {
 /**
  * Read campaign data from DB cache, grouped by offer.
  */
-export async function getOfferCampaignSummary(): Promise<{ offers: OfferCampaignSummary[]; lastSync: Date | null }> {
+export async function getOfferCampaignSummary(
+  dateFrom?: string,
+  dateTo?: string,
+): Promise<{ offers: OfferCampaignSummary[]; lastSync: Date | null }> {
+  const conditions = [eq(metricsSnapshots.entityType, "utmify_campaign_by_offer")];
+  if (dateFrom) conditions.push(gte(metricsSnapshots.date, new Date(dateFrom)));
+  if (dateTo) conditions.push(lte(metricsSnapshots.date, new Date(dateTo)));
+
   const rows = await db
     .select({
       extraData: metricsSnapshots.extraData,
@@ -789,9 +887,9 @@ export async function getOfferCampaignSummary(): Promise<{ offers: OfferCampaign
       createdAt: metricsSnapshots.createdAt,
     })
     .from(metricsSnapshots)
-    .where(eq(metricsSnapshots.entityType, "utmify_campaign_by_offer"))
+    .where(and(...conditions))
     .orderBy(desc(metricsSnapshots.createdAt))
-    .limit(500);
+    .limit(2000);
 
   type CampaignRow = {
     offerName: string;
@@ -800,9 +898,9 @@ export async function getOfferCampaignSummary(): Promise<{ offers: OfferCampaign
     currency: string;
   };
 
-  const offerMap = new Map<
+  const campaignData = new Map<
     string,
-    { totalSpend: number; totalRevenue: number; currency: string; campaignIds: Set<string> }
+    { spend: number; revenue: number; offerName: string; currency: string }
   >();
 
   let lastSync: Date | null = null;
@@ -813,23 +911,40 @@ export async function getOfferCampaignSummary(): Promise<{ offers: OfferCampaign
     const data = row.extraData as CampaignRow | null;
     if (!data?.offerName || !data.campaignId) continue;
 
-    let entry = offerMap.get(data.offerName);
-    if (!entry) {
-      entry = { totalSpend: 0, totalRevenue: 0, currency: data.currency ?? "USD", campaignIds: new Set() };
-      offerMap.set(data.offerName, entry);
+    const spend = Number(row.spend ?? 0);
+    const revenue = Number(row.revenue ?? 0);
+    const existing = campaignData.get(data.campaignId);
+    if (!existing || spend > existing.spend) {
+      campaignData.set(data.campaignId, {
+        spend,
+        revenue,
+        offerName: data.offerName,
+        currency: data.currency ?? "USD",
+      });
     }
+  }
 
-    if (entry.campaignIds.has(data.campaignId)) continue;
-    entry.campaignIds.add(data.campaignId);
-    entry.totalSpend += Number(row.spend ?? 0);
-    entry.totalRevenue += Number(row.revenue ?? 0);
+  const offerMap = new Map<
+    string,
+    { totalSpend: number; totalRevenue: number; currency: string; count: number }
+  >();
+
+  for (const entry of campaignData.values()) {
+    let offer = offerMap.get(entry.offerName);
+    if (!offer) {
+      offer = { totalSpend: 0, totalRevenue: 0, currency: entry.currency, count: 0 };
+      offerMap.set(entry.offerName, offer);
+    }
+    offer.totalSpend += entry.spend;
+    offer.totalRevenue += entry.revenue;
+    offer.count++;
   }
 
   const offers: OfferCampaignSummary[] = [];
   for (const [offerName, entry] of offerMap) {
     offers.push({
       offerName,
-      activeCampaigns: entry.campaignIds.size,
+      activeCampaigns: entry.count,
       totalSpend: entry.totalSpend,
       totalRevenue: entry.totalRevenue,
       roas: entry.totalSpend > 0 ? Math.round((entry.totalRevenue / entry.totalSpend) * 100) / 100 : null,
@@ -857,7 +972,14 @@ export type OfferAd = {
 /**
  * Read all individual ads from DB cache, grouped by offer name.
  */
-export async function getOfferAdsSummary(): Promise<Map<string, OfferAd[]>> {
+export async function getOfferAdsSummary(
+  dateFrom?: string,
+  dateTo?: string,
+): Promise<Map<string, OfferAd[]>> {
+  const conditions = [eq(metricsSnapshots.entityType, "utmify_ad_by_offer")];
+  if (dateFrom) conditions.push(gte(metricsSnapshots.date, new Date(dateFrom)));
+  if (dateTo) conditions.push(lte(metricsSnapshots.date, new Date(dateTo)));
+
   const rows = await db
     .select({
       extraData: metricsSnapshots.extraData,
@@ -865,8 +987,8 @@ export async function getOfferAdsSummary(): Promise<Map<string, OfferAd[]>> {
       revenue: metricsSnapshots.revenue,
     })
     .from(metricsSnapshots)
-    .where(eq(metricsSnapshots.entityType, "utmify_ad_by_offer"))
-    .limit(500);
+    .where(and(...conditions))
+    .limit(2000);
 
   const map = new Map<string, OfferAd[]>();
 

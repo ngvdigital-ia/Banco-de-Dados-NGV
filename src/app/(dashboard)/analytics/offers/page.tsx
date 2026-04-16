@@ -6,7 +6,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { AnalyticsFilters } from "@/components/filters/analytics-filters";
+import { DateRangeFilter } from "@/components/filters/date-range-filter";
 import { parseMultiParam } from "@/lib/filter-utils";
+import { getDateRange } from "@/lib/date-utils";
 import { getFilterOptions, getOffersRanking } from "../actions";
 
 const statusLabels: Record<string, string> = {
@@ -42,9 +44,14 @@ export default async function OffersRankingPage({
     filters.languages.length > 0 ||
     filters.statuses.length > 0;
 
+  const period = typeof params.period === "string" ? params.period : "all";
+  const { from, to } = getDateRange(period);
+  const dateFrom = period === "all" ? undefined : from.toISOString();
+  const dateTo = period === "all" ? undefined : to.toISOString();
+
   const [options, offers] = await Promise.all([
     getFilterOptions(),
-    getOffersRanking(hasAnyFilter ? filters : undefined),
+    getOffersRanking(hasAnyFilter ? filters : undefined, dateFrom, dateTo),
   ]);
 
   const total = offers.length;
@@ -60,18 +67,21 @@ export default async function OffersRankingPage({
       </p>
 
       <Suspense fallback={<div className="h-8" />}>
-        <AnalyticsFilters
-          options={{
-            niches: options.niches,
-            languages: options.languages,
-            copywriters: options.copywriters,
-            editors: options.editors,
-            formats: [],
-            statuses: ["escalou", "nao_escalou", "em_teste", "rodando", "pausado"],
-          }}
-          showFormats={false}
-          showEditors={false}
-        />
+        <div className="space-y-3">
+          <DateRangeFilter />
+          <AnalyticsFilters
+            options={{
+              niches: options.niches,
+              languages: options.languages,
+              copywriters: options.copywriters,
+              editors: options.editors,
+              formats: [],
+              statuses: ["escalou", "nao_escalou", "em_teste", "rodando", "pausado"],
+            }}
+            showFormats={false}
+            showEditors={false}
+          />
+        </div>
       </Suspense>
 
       <div className="grid gap-4 md:grid-cols-4">

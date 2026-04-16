@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnalyticsFilters } from "@/components/filters/analytics-filters";
+import { DateRangeFilter } from "@/components/filters/date-range-filter";
 import { parseMultiParam } from "@/lib/filter-utils";
+import { getDateRange } from "@/lib/date-utils";
 import { getFilterOptions, getCreativesByFormat, getOfferCampaignSummary, getOfferAdsSummary } from "../actions";
 import { CreativesTable } from "@/components/analytics/creatives-table";
 
@@ -17,6 +19,11 @@ export default async function CreativesAnalyticsPage({
     statuses: parseMultiParam(params.status),
   };
 
+  const period = typeof params.period === "string" ? params.period : "all";
+  const { from, to } = getDateRange(period);
+  const dateFrom = period === "all" ? undefined : from.toISOString();
+  const dateTo = period === "all" ? undefined : to.toISOString();
+
   const creativeFilters = {
     language: filters.languages.length > 0 ? filters.languages[0] : undefined,
     format: filters.formats.length > 0 ? filters.formats[0] : undefined,
@@ -25,9 +32,9 @@ export default async function CreativesAnalyticsPage({
 
   const [options, offers, campaignData, adsSummary] = await Promise.all([
     getFilterOptions(),
-    getCreativesByFormat(creativeFilters),
-    getOfferCampaignSummary(),
-    getOfferAdsSummary(),
+    getCreativesByFormat(creativeFilters, dateFrom, dateTo),
+    getOfferCampaignSummary(dateFrom, dateTo),
+    getOfferAdsSummary(dateFrom, dateTo),
   ]);
 
   const campaignMap: Record<string, { activeCampaigns: number; totalSpend: number; totalRevenue: number; roas: number | null; currency: string }> = {};
@@ -75,18 +82,21 @@ export default async function CreativesAnalyticsPage({
       </p>
 
       <Suspense fallback={<div className="h-8" />}>
-        <AnalyticsFilters
-          options={{
-            niches: [],
-            languages: options.languages,
-            copywriters: [],
-            editors: [],
-            formats: options.formats,
-            statuses: ["SIM", "NAO", "EM ANDAMENTO", "NÃO DEU CERTO"],
-          }}
-          showFormats={true}
-          showEditors={false}
-        />
+        <div className="space-y-3">
+          <DateRangeFilter />
+          <AnalyticsFilters
+            options={{
+              niches: [],
+              languages: options.languages,
+              copywriters: [],
+              editors: [],
+              formats: options.formats,
+              statuses: ["SIM", "NAO", "EM ANDAMENTO", "NÃO DEU CERTO"],
+            }}
+            showFormats={true}
+            showEditors={false}
+          />
+        </div>
       </Suspense>
 
       {/* Summary cards */}

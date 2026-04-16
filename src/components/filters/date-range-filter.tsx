@@ -13,6 +13,7 @@ const periods = [
   { label: "15 dias", value: "15d" },
   { label: "30 dias", value: "30d" },
   { label: "Este mês", value: "month" },
+  { label: "Mês passado", value: "last_month" },
   { label: "Tudo", value: "all" },
 ] as const;
 

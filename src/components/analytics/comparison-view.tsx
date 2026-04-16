@@ -18,7 +18,18 @@ export type ComparisonData = {
   totalVsls: number;
   pctEscalou: number;
   pctNaoEscalou: number;
+  totalSpend: number;
+  totalRevenue: number;
+  totalProfit: number;
+  roas: number | null;
+  currency: string;
+  hasCampaignData: boolean;
 };
+
+function formatCurrency(value: number, currency: string) {
+  if (!value) return "-";
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
+}
 
 type ComparisonViewProps = {
   dataA: ComparisonData;
@@ -65,8 +76,41 @@ function ComparisonCard({
             barColor="bg-red-400"
           />
         </div>
+
+        {data.hasCampaignData && (
+          <div className="space-y-1 border-t pt-3">
+            <p className="text-xs font-medium text-muted-foreground">Financeiro (UTMify)</p>
+            <div className="grid grid-cols-2 gap-2">
+              <MoneyStat label="Gasto" value={data.totalSpend} currency={data.currency} color="text-red-500" />
+              <MoneyStat label="Faturamento" value={data.totalRevenue} currency={data.currency} color="text-emerald-600" />
+              <MoneyStat
+                label="Lucro"
+                value={data.totalProfit}
+                currency={data.currency}
+                color={data.totalProfit >= 0 ? "text-emerald-600" : "text-red-500"}
+              />
+              <div className="rounded-md bg-muted/50 px-3 py-2">
+                <p className="text-xs text-muted-foreground">ROAS</p>
+                <p className="text-lg font-semibold">
+                  {data.roas != null ? `${data.roas}x` : "-"}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function MoneyStat({ label, value, currency, color }: { label: string; value: number; currency: string; color: string }) {
+  return (
+    <div className="rounded-md bg-muted/50 px-3 py-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={cn("text-sm font-semibold", color)}>
+        {formatCurrency(value, currency)}
+      </p>
+    </div>
   );
 }
 

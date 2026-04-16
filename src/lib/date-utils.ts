@@ -33,6 +33,11 @@ export function getDateRange(period: string): { from: Date; to: Date } {
       const from = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
       return { from, to };
     }
+    case "last_month": {
+      const from = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      return { from, to: endOfLastMonth };
+    }
     case "all":
     default:
       return { from: new Date(2020, 0, 1), to };

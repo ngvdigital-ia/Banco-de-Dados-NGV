@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Suspense, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ComparisonView, type ComparisonData } from "@/components/analytics/comparison-view";
+import { DateRangeFilter } from "@/components/filters/date-range-filter";
+import { getDateRange } from "@/lib/date-utils";
 import { getFilterOptions, getComparisonData, type AnalyticsFilters } from "../actions";
 
 type Dimension = "niche" | "language" | "copywriter" | "editor";
@@ -25,6 +28,15 @@ const dimensionLabels: Record<Dimension, string> = {
 };
 
 export default function ComparePage() {
+  return (
+    <Suspense fallback={<div className="h-8" />}>
+      <ComparePageInner />
+    </Suspense>
+  );
+}
+
+function ComparePageInner() {
+  const searchParams = useSearchParams();
   const [dimension, setDimension] = useState<Dimension | null>(null);
   const [valueA, setValueA] = useState<string | null>(null);
   const [valueB, setValueB] = useState<string | null>(null);
@@ -106,10 +118,17 @@ export default function ComparePage() {
   function handleCompare() {
     if (!dimension || !valueA || !valueB) return;
 
+    const period = searchParams.get("period") ?? "all";
+    const { from, to } = getDateRange(period);
+    const dateFrom = period === "all" ? undefined : from.toISOString();
+    const dateTo = period === "all" ? undefined : to.toISOString();
+
     startTransition(async () => {
       const data = await getComparisonData(
         dimension,
         [valueA, valueB],
+        dateFrom,
+        dateTo,
       );
       if (data.length === 2) {
         setResult([data[0], data[1]]);
@@ -125,6 +144,8 @@ export default function ComparePage() {
       <p className="text-muted-foreground">
         Compare metricas entre nichos, idiomas, copywriters ou editores lado a lado.
       </p>
+
+      <DateRangeFilter />
 
       <Card>
         <CardHeader>
