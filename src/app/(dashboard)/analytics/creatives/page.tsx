@@ -80,6 +80,9 @@ export default async function CreativesAnalyticsPage({
       <p className="text-muted-foreground">
         Clique numa oferta para ver os ads da UTMify. Selecione o formato de cada ad.
       </p>
+      <p className="text-xs text-muted-foreground">
+        Filtro de periodo afeta status das ofertas (escalou/validacao). Dados financeiros UTMify mostram sempre o total acumulado da ultima sincronizacao.
+      </p>
 
       <Suspense fallback={<div className="h-8" />}>
         <div className="space-y-3">

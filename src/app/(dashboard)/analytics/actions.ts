@@ -665,11 +665,8 @@ export async function getComparisonData(
 ) {
   const results: ComparisonData[] = [];
 
-  // Pre-fetch all utmify campaign snapshots once for efficiency
-  const campaignConditions = [eq(metricsSnapshots.entityType, "utmify_campaign_by_offer")];
-  if (dateFrom) campaignConditions.push(gte(metricsSnapshots.date, new Date(dateFrom)));
-  if (dateTo) campaignConditions.push(lte(metricsSnapshots.date, new Date(dateTo)));
-
+  // Pre-fetch all utmify campaign snapshots once.
+  // UTMify data is a total snapshot — date filter ignored, always returns latest sync.
   const campaignRows = await db
     .select({
       extraData: metricsSnapshots.extraData,
@@ -677,7 +674,7 @@ export async function getComparisonData(
       revenue: metricsSnapshots.revenue,
     })
     .from(metricsSnapshots)
-    .where(and(...campaignConditions))
+    .where(eq(metricsSnapshots.entityType, "utmify_campaign_by_offer"))
     .orderBy(desc(metricsSnapshots.createdAt))
     .limit(2000);
 
@@ -871,14 +868,13 @@ export type OfferCampaignSummary = {
 /**
  * Read campaign data from DB cache, grouped by offer.
  */
+// Note: UTMify data is a snapshot of the total accumulated at sync time.
+// Date filters (dateFrom/dateTo) are accepted for API compatibility but ignored —
+// financial totals always reflect the latest sync, not the filtered period.
 export async function getOfferCampaignSummary(
-  dateFrom?: string,
-  dateTo?: string,
+  _dateFrom?: string,
+  _dateTo?: string,
 ): Promise<{ offers: OfferCampaignSummary[]; lastSync: Date | null }> {
-  const conditions = [eq(metricsSnapshots.entityType, "utmify_campaign_by_offer")];
-  if (dateFrom) conditions.push(gte(metricsSnapshots.date, new Date(dateFrom)));
-  if (dateTo) conditions.push(lte(metricsSnapshots.date, new Date(dateTo)));
-
   const rows = await db
     .select({
       extraData: metricsSnapshots.extraData,
@@ -887,7 +883,7 @@ export async function getOfferCampaignSummary(
       createdAt: metricsSnapshots.createdAt,
     })
     .from(metricsSnapshots)
-    .where(and(...conditions))
+    .where(eq(metricsSnapshots.entityType, "utmify_campaign_by_offer"))
     .orderBy(desc(metricsSnapshots.createdAt))
     .limit(2000);
 
@@ -972,14 +968,12 @@ export type OfferAd = {
 /**
  * Read all individual ads from DB cache, grouped by offer name.
  */
+// Note: UTMify ad data is a snapshot of total accumulated at sync time.
+// Date filters are accepted but ignored — see getOfferCampaignSummary.
 export async function getOfferAdsSummary(
-  dateFrom?: string,
-  dateTo?: string,
+  _dateFrom?: string,
+  _dateTo?: string,
 ): Promise<Map<string, OfferAd[]>> {
-  const conditions = [eq(metricsSnapshots.entityType, "utmify_ad_by_offer")];
-  if (dateFrom) conditions.push(gte(metricsSnapshots.date, new Date(dateFrom)));
-  if (dateTo) conditions.push(lte(metricsSnapshots.date, new Date(dateTo)));
-
   const rows = await db
     .select({
       extraData: metricsSnapshots.extraData,
@@ -987,7 +981,7 @@ export async function getOfferAdsSummary(
       revenue: metricsSnapshots.revenue,
     })
     .from(metricsSnapshots)
-    .where(and(...conditions))
+    .where(eq(metricsSnapshots.entityType, "utmify_ad_by_offer"))
     .limit(2000);
 
   const map = new Map<string, OfferAd[]>();

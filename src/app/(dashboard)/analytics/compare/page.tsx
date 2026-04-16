@@ -144,6 +144,9 @@ function ComparePageInner() {
       <p className="text-muted-foreground">
         Compare metricas entre nichos, idiomas, copywriters ou editores lado a lado.
       </p>
+      <p className="text-xs text-muted-foreground">
+        Filtro de periodo afeta status das ofertas. Dados financeiros UTMify sao totais acumulados.
+      </p>
 
       <DateRangeFilter />
 
