@@ -145,7 +145,7 @@ function ComparePageInner() {
         Compare metricas entre nichos, idiomas, copywriters ou editores lado a lado.
       </p>
       <p className="text-xs text-muted-foreground">
-        Filtro de periodo afeta status das ofertas. Dados financeiros UTMify sao totais acumulados.
+        Dados refletem o total acumulado. Filtro por periodo sera habilitado apos coleta de historico diario.
       </p>
 
       <DateRangeFilter />

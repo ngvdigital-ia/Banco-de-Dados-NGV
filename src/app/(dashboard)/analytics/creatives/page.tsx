@@ -81,7 +81,7 @@ export default async function CreativesAnalyticsPage({
         Clique numa oferta para ver os ads da UTMify. Selecione o formato de cada ad.
       </p>
       <p className="text-xs text-muted-foreground">
-        Filtro de periodo afeta status das ofertas (escalou/validacao). Dados financeiros UTMify mostram sempre o total acumulado da ultima sincronizacao.
+        Dados exibidos refletem o total acumulado (ultima sincronizacao UTMify). Filtro por periodo sera habilitado apos coleta de historico diario.
       </p>
 
       <Suspense fallback={<div className="h-8" />}>

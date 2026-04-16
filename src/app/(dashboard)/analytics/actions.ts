@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { projects, vsls, creatives, campaigns, teamMembers, metricsSnapshots, offerTracking } from "@/db/schema";
 import { fieldContainsMember, fieldMatchesMember, getMemberAliases } from "@/lib/team-utils";
 import { extractOfferFromCampaignName } from "@/lib/utmify";
-import { eq, sql, desc, and, inArray, gte, lte } from "drizzle-orm";
+import { eq, sql, desc, and, inArray } from "drizzle-orm";
 
 // ========== TYPES ==========
 
@@ -211,10 +211,11 @@ export async function getVslsForComparison(filters?: AnalyticsFilters) {
 
 // ========== CREATIVES BY FORMAT ==========
 
+// Date filters are accepted for API compat but ignored until historical granularity is available.
 export async function getCreativesByFormat(
   filters?: { language?: string; format?: string; validation?: string },
-  dateFrom?: string,
-  dateTo?: string,
+  _dateFrom?: string,
+  _dateTo?: string,
 ) {
   const conditions = [];
 
@@ -227,8 +228,6 @@ export async function getCreativesByFormat(
   if (filters?.validation) {
     conditions.push(eq(offerTracking.validation, filters.validation));
   }
-  if (dateFrom) conditions.push(gte(offerTracking.updatedAt, new Date(dateFrom)));
-  if (dateTo) conditions.push(lte(offerTracking.updatedAt, new Date(dateTo)));
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -277,16 +276,12 @@ export async function getCreativesDetailed() {
 
 // ========== TEAM PERFORMANCE ==========
 
-export async function getTeamPerformance(dateFrom?: string, dateTo?: string) {
-  const offerConditions = [];
-  if (dateFrom) offerConditions.push(gte(offerTracking.updatedAt, new Date(dateFrom)));
-  if (dateTo) offerConditions.push(lte(offerTracking.updatedAt, new Date(dateTo)));
-  const offerWhere = offerConditions.length > 0 ? and(...offerConditions) : undefined;
-
+// Date filters accepted for API compat but ignored (same rationale as UTMify actions).
+export async function getTeamPerformance(_dateFrom?: string, _dateTo?: string) {
   // Fetch team members and all offer tracking data in parallel
   const [members, allOffers] = await Promise.all([
     db.select().from(teamMembers).where(eq(teamMembers.active, true)),
-    offerWhere ? db.select().from(offerTracking).where(offerWhere) : db.select().from(offerTracking),
+    db.select().from(offerTracking),
   ]);
 
   const results = [];
@@ -426,14 +421,13 @@ export async function getTeamPerformance(dateFrom?: string, dateTo?: string) {
 
 // ========== OFFERS RANKING ==========
 
+// Date filters accepted for API compat but ignored.
 export async function getOffersRanking(
   filters?: AnalyticsFilters,
-  dateFrom?: string,
-  dateTo?: string,
+  _dateFrom?: string,
+  _dateTo?: string,
 ) {
   const conditions = buildProjectConditions(filters);
-  if (dateFrom) conditions.push(gte(projects.createdAt, new Date(dateFrom)));
-  if (dateTo) conditions.push(lte(projects.createdAt, new Date(dateTo)));
   const whereClause = combineConditions(conditions);
 
   return db
@@ -657,11 +651,12 @@ export async function getUtmifyOfferMetrics() {
 
 // ========== COMPARISON DATA ==========
 
+// Date filters accepted for API compat but ignored (same rationale as UTMify actions).
 export async function getComparisonData(
   dimension: "niche" | "language" | "copywriter" | "editor",
   values: [string, string],
-  dateFrom?: string,
-  dateTo?: string,
+  _dateFrom?: string,
+  _dateTo?: string,
 ) {
   const results: ComparisonData[] = [];
 
@@ -734,9 +729,6 @@ export async function getComparisonData(
         conditions.push(eq(offerTracking.name, value));
         break;
     }
-
-    if (dateFrom) conditions.push(gte(offerTracking.updatedAt, new Date(dateFrom)));
-    if (dateTo) conditions.push(lte(offerTracking.updatedAt, new Date(dateTo)));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
