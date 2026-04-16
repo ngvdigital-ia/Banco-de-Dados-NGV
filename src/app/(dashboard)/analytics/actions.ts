@@ -839,3 +839,50 @@ export async function getOfferCampaignSummary(): Promise<{ offers: OfferCampaign
 
   return { offers: offers.sort((a, b) => b.totalSpend - a.totalSpend), lastSync };
 }
+
+// ========== UTMIFY AD-LEVEL DATA ==========
+
+export type OfferAdSummary = {
+  offerName: string;
+  totalAds: number;
+  totalVariants: number;
+  topAdNumber: string;
+  topAdEditors: string;
+  topAdSpend: number;
+};
+
+/**
+ * Read ad-level summary data from DB cache, per offer.
+ */
+export async function getOfferAdsSummary(): Promise<Map<string, OfferAdSummary>> {
+  const rows = await db
+    .select({ extraData: metricsSnapshots.extraData })
+    .from(metricsSnapshots)
+    .where(eq(metricsSnapshots.entityType, "utmify_ad_by_offer"))
+    .limit(50);
+
+  const map = new Map<string, OfferAdSummary>();
+
+  for (const row of rows) {
+    const data = row.extraData as {
+      offerName: string;
+      totalAds: number;
+      totalVariants: number;
+      topAdNumber: string;
+      topAdEditors: string;
+      topAdSpend: number;
+    } | null;
+    if (!data?.offerName) continue;
+
+    map.set(data.offerName, {
+      offerName: data.offerName,
+      totalAds: data.totalAds ?? 0,
+      totalVariants: data.totalVariants ?? 0,
+      topAdNumber: data.topAdNumber ?? "-",
+      topAdEditors: data.topAdEditors ?? "-",
+      topAdSpend: (data.topAdSpend ?? 0) / 100,
+    });
+  }
+
+  return map;
+}

@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/table";
 import { AnalyticsFilters } from "@/components/filters/analytics-filters";
 import { parseMultiParam } from "@/lib/filter-utils";
-import { getFilterOptions, getCreativesByFormat, getOfferCampaignSummary } from "../actions";
+import { getFilterOptions, getCreativesByFormat, getOfferCampaignSummary, getOfferAdsSummary } from "../actions";
 
 const formatLabels: Record<string, string> = {
   especialista: "Especialista",
@@ -36,10 +36,11 @@ export default async function CreativesAnalyticsPage({
     validation: filters.statuses.length > 0 ? filters.statuses[0] : undefined,
   };
 
-  const [options, offers, campaignData] = await Promise.all([
+  const [options, offers, campaignData, adsSummary] = await Promise.all([
     getFilterOptions(),
     getCreativesByFormat(creativeFilters),
     getOfferCampaignSummary(),
+    getOfferAdsSummary(),
   ]);
 
   // Build lookup map: offerName → campaign summary
@@ -169,6 +170,9 @@ export default async function CreativesAnalyticsPage({
                         <TableHead className="text-right">Gasto</TableHead>
                         <TableHead className="text-right">Receita</TableHead>
                         <TableHead className="text-right">ROAS</TableHead>
+                        <TableHead className="text-right">Ads</TableHead>
+                        <TableHead>Top Ad</TableHead>
+                        <TableHead>Editores</TableHead>
                       </>
                     )}
                   </TableRow>
@@ -178,6 +182,7 @@ export default async function CreativesAnalyticsPage({
                     const isEscalou = row.validation === "SIM" && (row.scale === "SIM" || row.scale === "EM ANDAMENTO");
                     const isNaoEscalou = row.scale === "NAO" || row.scale === "NÃO" || row.validation === "NÃO DEU CERTO";
                     const campaign = campaignMap.get(row.format);
+                    const adData = adsSummary.get(row.format);
                     return (
                       <TableRow key={i}>
                         <TableCell className="font-medium">{row.format}</TableCell>
@@ -226,6 +231,15 @@ export default async function CreativesAnalyticsPage({
                             </TableCell>
                             <TableCell className="text-right">
                               {campaign?.roas != null ? `${campaign.roas}x` : "-"}
+                            </TableCell>
+                            <TableCell className="text-right">{adData?.totalAds ?? "-"}</TableCell>
+                            <TableCell>
+                              {adData ? (
+                                <Badge variant="outline">{adData.topAdNumber}</Badge>
+                              ) : "-"}
+                            </TableCell>
+                            <TableCell>
+                              {adData?.topAdEditors ?? "-"}
                             </TableCell>
                           </>
                         )}
