@@ -240,6 +240,7 @@ const CAMPAIGN_OFFER_KEYWORDS: Record<string, string> = {
   "VM": "Vigor Max",
   "SKYVAULT": "Skyvault",
   "SKY VAULT": "Skyvault",
+  "-SV-": "Skyvault",
   "LECODE": "Le Code de la Femme Irrésistible",
   "LE CODE": "Le Code de la Femme Irrésistible",
   "SOLOMON": "Salomão",
@@ -252,6 +253,7 @@ const CAMPAIGN_OFFER_KEYWORDS: Record<string, string> = {
   "DAVINCI": "The DaVinci Frequency",
   "DA VINCI": "The DaVinci Frequency",
   "GUARDIAN": "Guardian Angel Reconnection Prayer",
+  "ANGEL": "Guardian Angel Reconnection Prayer",
   "AFRICAN": "African Water",
   "GODFINGERS": "God Fingers",
   "GOD FINGERS": "God Fingers",
@@ -262,6 +264,8 @@ const CAMPAIGN_OFFER_KEYWORDS: Record<string, string> = {
   "ALPHA": "ALPHA FLOW",
   "AMERICAN": "American System",
   "FUNGOS": "The Allicin Reset Protocol",
+  "CANDIDIASE": "The Allicin Reset Protocol",
+  "MOS": "Salomão",
 };
 
 /**
