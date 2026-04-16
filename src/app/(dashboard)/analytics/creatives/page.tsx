@@ -1,22 +1,9 @@
 import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
 import { AnalyticsFilters } from "@/components/filters/analytics-filters";
 import { parseMultiParam } from "@/lib/filter-utils";
 import { getFilterOptions, getCreativesByFormat, getOfferCampaignSummary, getOfferAdsSummary } from "../actions";
-
-const formatLabels: Record<string, string> = {
-  especialista: "Especialista",
-  ugc_masc: "UGC Masc",
-  ugc_fem: "UGC Fem",
-  famoso: "Famoso",
-  youtuber: "YouTuber",
-  autoridade: "Autoridade",
-  podcast: "Podcast",
-};
+import { CreativesTable } from "@/components/analytics/creatives-table";
 
 export default async function CreativesAnalyticsPage({
   searchParams,
@@ -43,13 +30,21 @@ export default async function CreativesAnalyticsPage({
     getOfferAdsSummary(),
   ]);
 
-  // Build lookup map: offerName → campaign summary
-  const campaignMap = new Map(
-    campaignData.offers.map((c) => [c.offerName, c])
-  );
+  const campaignMap: Record<string, { activeCampaigns: number; totalSpend: number; totalRevenue: number; roas: number | null; currency: string }> = {};
+  for (const c of campaignData.offers) {
+    campaignMap[c.offerName] = c;
+  }
+
+  // Convert Map to plain object for client component
+  const adsMapObj: Record<string, { adNumber: string; spend: number; revenue: number; profit: number; roas: number | null; editors: string; variantCount: number; adFormat: string | null }[]> = {};
+  for (const [key, value] of adsSummary) {
+    adsMapObj[key] = value;
+  }
+
   const hasCampaignData = campaignData.offers.length > 0;
   const totalCampaigns = campaignData.offers.reduce((sum, c) => sum + c.activeCampaigns, 0);
   const totalCampaignSpend = campaignData.offers.reduce((sum, c) => sum + c.totalSpend, 0);
+  const totalAds = Array.from(adsSummary.values()).reduce((sum, ads) => sum + ads.length, 0);
 
   function formatCurrency(value: number, currency: string) {
     if (!value) return "-";
@@ -62,11 +57,21 @@ export default async function CreativesAnalyticsPage({
   const pctEscalou = totalOffers > 0 ? Math.round((totalEscalou / totalOffers) * 10000) / 100 : 0;
   const pctNaoEscalou = totalOffers > 0 ? Math.round((totalNaoEscalou / totalOffers) * 10000) / 100 : 0;
 
+  const offerRows = offers.map((o) => ({
+    format: o.format,
+    platform: o.platform,
+    language: o.language,
+    adsEdited: o.adsEdited,
+    validation: o.validation,
+    scale: o.scale,
+    copyVsl: o.copyVsl,
+  }));
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Analise de Criativos</h1>
       <p className="text-muted-foreground">
-        Veja as ofertas, seus formatos de ads e metricas de escala.
+        Clique numa oferta para ver os ads da UTMify. Selecione o formato de cada ad.
       </p>
 
       <Suspense fallback={<div className="h-8" />}>
@@ -116,10 +121,10 @@ export default async function CreativesAnalyticsPage({
           <>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Campanhas Ativas</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground">Campanhas / Ads</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{totalCampaigns}</div>
+                <div className="text-2xl font-bold">{totalCampaigns} / {totalAds}</div>
                 <p className="text-xs text-muted-foreground">via UTMify</p>
               </CardContent>
             </Card>
@@ -142,7 +147,7 @@ export default async function CreativesAnalyticsPage({
         )}
       </div>
 
-      {/* Offers table */}
+      {/* Offers table with expandable ads */}
       <Card>
         <CardHeader>
           <CardTitle>Detalhamento por Oferta</CardTitle>
@@ -153,102 +158,12 @@ export default async function CreativesAnalyticsPage({
               Nenhuma oferta encontrada com os filtros selecionados.
             </p>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Oferta</TableHead>
-                    <TableHead>Idioma</TableHead>
-                    <TableHead>Formato</TableHead>
-                    <TableHead>Copy VSL</TableHead>
-                    <TableHead className="text-right">Ads Editados</TableHead>
-                    <TableHead>Validacao</TableHead>
-                    <TableHead>Escala</TableHead>
-                    {hasCampaignData && (
-                      <>
-                        <TableHead className="text-right">Campanhas</TableHead>
-                        <TableHead className="text-right">Gasto</TableHead>
-                        <TableHead className="text-right">Receita</TableHead>
-                        <TableHead className="text-right">ROAS</TableHead>
-                        <TableHead className="text-right">Ads</TableHead>
-                        <TableHead>Top Ad</TableHead>
-                        <TableHead>Editores</TableHead>
-                      </>
-                    )}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {offers.map((row, i) => {
-                    const isEscalou = row.validation === "SIM" && (row.scale === "SIM" || row.scale === "EM ANDAMENTO");
-                    const isNaoEscalou = row.scale === "NAO" || row.scale === "NÃO" || row.validation === "NÃO DEU CERTO";
-                    const campaign = campaignMap.get(row.format);
-                    const adData = adsSummary.get(row.format);
-                    return (
-                      <TableRow key={i}>
-                        <TableCell className="font-medium">{row.format}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{row.language}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {row.platform ? (
-                            <Badge variant="secondary">{formatLabels[row.platform] ?? row.platform}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>{row.copyVsl ?? "-"}</TableCell>
-                        <TableCell className="text-right">{row.adsEdited ?? 0}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={row.validation === "SIM" ? "default" : "outline"}
-                            className={
-                              row.validation === "SIM" ? "bg-emerald-600 text-white" :
-                              row.validation === "EM ANDAMENTO" ? "border-amber-300 text-amber-700" :
-                              row.validation === "NÃO DEU CERTO" ? "border-red-300 text-red-600" :
-                              ""
-                            }
-                          >
-                            {row.validation}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {isEscalou ? (
-                            <Badge className="bg-emerald-600 text-white">ESCALOU</Badge>
-                          ) : isNaoEscalou ? (
-                            <Badge variant="outline" className="border-red-300 text-red-600">NAO ESCALOU</Badge>
-                          ) : (
-                            <Badge variant="outline" className="border-amber-300 text-amber-700">{row.scale ?? "EM ANDAMENTO"}</Badge>
-                          )}
-                        </TableCell>
-                        {hasCampaignData && (
-                          <>
-                            <TableCell className="text-right">{campaign?.activeCampaigns ?? "-"}</TableCell>
-                            <TableCell className="text-right text-red-500">
-                              {campaign ? formatCurrency(campaign.totalSpend, campaign.currency) : "-"}
-                            </TableCell>
-                            <TableCell className="text-right text-emerald-600">
-                              {campaign ? formatCurrency(campaign.totalRevenue, campaign.currency) : "-"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {campaign?.roas != null ? `${campaign.roas}x` : "-"}
-                            </TableCell>
-                            <TableCell className="text-right">{adData?.totalAds ?? "-"}</TableCell>
-                            <TableCell>
-                              {adData ? (
-                                <Badge variant="outline">{adData.topAdNumber}</Badge>
-                              ) : "-"}
-                            </TableCell>
-                            <TableCell>
-                              {adData?.topAdEditors ?? "-"}
-                            </TableCell>
-                          </>
-                        )}
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+            <CreativesTable
+              offers={offerRows}
+              campaignMap={campaignMap}
+              adsMap={adsMapObj}
+              hasCampaignData={hasCampaignData}
+            />
           )}
         </CardContent>
       </Card>

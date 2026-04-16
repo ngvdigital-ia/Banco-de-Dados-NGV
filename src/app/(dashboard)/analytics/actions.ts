@@ -842,46 +842,68 @@ export async function getOfferCampaignSummary(): Promise<{ offers: OfferCampaign
 
 // ========== UTMIFY AD-LEVEL DATA ==========
 
-export type OfferAdSummary = {
-  offerName: string;
-  totalAds: number;
-  totalVariants: number;
-  topAdNumber: string;
-  topAdEditors: string;
-  topAdSpend: number;
+export type OfferAd = {
+  adNumber: string;
+  spend: number;
+  revenue: number;
+  profit: number;
+  roas: number | null;
+  variantName: string;
+  editors: string;
+  variantCount: number;
+  adFormat: string | null;
 };
 
 /**
- * Read ad-level summary data from DB cache, per offer.
+ * Read all individual ads from DB cache, grouped by offer name.
  */
-export async function getOfferAdsSummary(): Promise<Map<string, OfferAdSummary>> {
+export async function getOfferAdsSummary(): Promise<Map<string, OfferAd[]>> {
   const rows = await db
-    .select({ extraData: metricsSnapshots.extraData })
+    .select({
+      extraData: metricsSnapshots.extraData,
+      spend: metricsSnapshots.spend,
+      revenue: metricsSnapshots.revenue,
+    })
     .from(metricsSnapshots)
     .where(eq(metricsSnapshots.entityType, "utmify_ad_by_offer"))
-    .limit(50);
+    .limit(500);
 
-  const map = new Map<string, OfferAdSummary>();
+  const map = new Map<string, OfferAd[]>();
 
   for (const row of rows) {
     const data = row.extraData as {
       offerName: string;
-      totalAds: number;
-      totalVariants: number;
-      topAdNumber: string;
-      topAdEditors: string;
-      topAdSpend: number;
+      adNumber: string;
+      variantName: string;
+      editors: string;
+      variantCount: number;
+      profit: number;
+      adFormat?: string | null;
     } | null;
     if (!data?.offerName) continue;
 
-    map.set(data.offerName, {
-      offerName: data.offerName,
-      totalAds: data.totalAds ?? 0,
-      totalVariants: data.totalVariants ?? 0,
-      topAdNumber: data.topAdNumber ?? "-",
-      topAdEditors: data.topAdEditors ?? "-",
-      topAdSpend: (data.topAdSpend ?? 0) / 100,
-    });
+    const spend = Number(row.spend ?? 0);
+    const revenue = Number(row.revenue ?? 0);
+
+    const ad: OfferAd = {
+      adNumber: data.adNumber ?? "-",
+      spend,
+      revenue,
+      profit: data.profit ?? revenue - spend,
+      roas: spend > 0 ? Math.round((revenue / spend) * 100) / 100 : null,
+      variantName: data.variantName ?? "-",
+      editors: data.editors ?? "-",
+      variantCount: data.variantCount ?? 0,
+      adFormat: data.adFormat ?? null,
+    };
+
+    if (!map.has(data.offerName)) map.set(data.offerName, []);
+    map.get(data.offerName)!.push(ad);
+  }
+
+  // Sort ads by spend descending within each offer
+  for (const [, ads] of map) {
+    ads.sort((a, b) => b.spend - a.spend);
   }
 
   return map;
