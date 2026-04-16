@@ -75,7 +75,8 @@ export async function getVturbSummary() {
   const dateFrom = ago.toISOString().split("T")[0];
   const dateTo = now.toISOString().split("T")[0];
 
-  const playersResult = await fetchPlayers(dateFrom, dateTo);
+  // Fetch ALL players (no date filter — date filter restricts by creation date, not activity)
+  const playersResult = await fetchPlayers();
   const players = playersResult?.players ?? [];
   const playerIds = players.map((p) => p.id);
 
