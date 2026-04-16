@@ -81,7 +81,7 @@ export default async function CreativesAnalyticsPage({
         Clique numa oferta para ver os ads da UTMify. Selecione o formato de cada ad.
       </p>
       <p className="text-xs text-muted-foreground">
-        Dados exibidos refletem o total acumulado (ultima sincronizacao UTMify). Filtro por periodo sera habilitado apos coleta de historico diario.
+        Periodo &quot;Tudo&quot; mostra o total acumulado (ultima sincronizacao UTMify). Outros periodos usam snapshots diarios coletados automaticamente desde a ativacao do cron.
       </p>
 
       <Suspense fallback={<div className="h-8" />}>

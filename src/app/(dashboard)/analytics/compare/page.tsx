@@ -145,7 +145,7 @@ function ComparePageInner() {
         Compare metricas entre nichos, idiomas, copywriters ou editores lado a lado.
       </p>
       <p className="text-xs text-muted-foreground">
-        Dados refletem o total acumulado. Filtro por periodo sera habilitado apos coleta de historico diario.
+        Periodo &quot;Tudo&quot; mostra totais acumulados. Periodos especificos somam snapshots diarios coletados pelo cron UTMify.
       </p>
 
       <DateRangeFilter />

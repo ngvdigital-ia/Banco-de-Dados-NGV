@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { projects, vsls, creatives, campaigns, teamMembers, metricsSnapshots, offerTracking } from "@/db/schema";
 import { fieldContainsMember, fieldMatchesMember, getMemberAliases } from "@/lib/team-utils";
 import { extractOfferFromCampaignName } from "@/lib/utmify";
-import { eq, sql, desc, and, inArray } from "drizzle-orm";
+import { eq, sql, desc, and, inArray, gte, lte } from "drizzle-orm";
 
 // ========== TYPES ==========
 
@@ -651,17 +651,24 @@ export async function getUtmifyOfferMetrics() {
 
 // ========== COMPARISON DATA ==========
 
-// Date filters accepted for API compat but ignored (same rationale as UTMify actions).
+// Date filters affect UTMify financial data (via utmify_campaign_daily snapshots).
+// Offer status filters (escalou/validacao) remain snapshot-independent.
 export async function getComparisonData(
   dimension: "niche" | "language" | "copywriter" | "editor",
   values: [string, string],
-  _dateFrom?: string,
-  _dateTo?: string,
+  dateFrom?: string,
+  dateTo?: string,
 ) {
   const results: ComparisonData[] = [];
 
-  // Pre-fetch all utmify campaign snapshots once.
-  // UTMify data is a total snapshot — date filter ignored, always returns latest sync.
+  // Pre-fetch utmify campaign snapshots once.
+  // Daily mode when date range is set (SUM per campaignId), else total mode (max-spend dedup).
+  const hasDateFilter = Boolean(dateFrom || dateTo);
+  const entityType = hasDateFilter ? "utmify_campaign_daily" : "utmify_campaign_by_offer";
+  const campaignConditions = [eq(metricsSnapshots.entityType, entityType)];
+  if (dateFrom) campaignConditions.push(gte(metricsSnapshots.date, new Date(dateFrom)));
+  if (dateTo) campaignConditions.push(lte(metricsSnapshots.date, new Date(dateTo)));
+
   const campaignRows = await db
     .select({
       extraData: metricsSnapshots.extraData,
@@ -669,11 +676,10 @@ export async function getComparisonData(
       revenue: metricsSnapshots.revenue,
     })
     .from(metricsSnapshots)
-    .where(eq(metricsSnapshots.entityType, "utmify_campaign_by_offer"))
+    .where(and(...campaignConditions))
     .orderBy(desc(metricsSnapshots.createdAt))
-    .limit(2000);
+    .limit(5000);
 
-  // Dedup por campaignId mantendo max spend
   type CampaignRow = { offerName: string; campaignId: string; currency: string };
   const campaignByOffer = new Map<string, { spend: number; revenue: number; currency: string }[]>();
   const seenCampaignId = new Map<string, { spend: number; revenue: number; offerName: string; currency: string }>();
@@ -684,8 +690,19 @@ export async function getComparisonData(
     const spend = Number(row.spend ?? 0);
     const revenue = Number(row.revenue ?? 0);
     const existing = seenCampaignId.get(d.campaignId);
-    if (!existing || spend > existing.spend) {
-      seenCampaignId.set(d.campaignId, { spend, revenue, offerName: d.offerName, currency: d.currency ?? "USD" });
+    if (hasDateFilter) {
+      // Daily mode: SUM snapshots per campaignId
+      if (!existing) {
+        seenCampaignId.set(d.campaignId, { spend, revenue, offerName: d.offerName, currency: d.currency ?? "USD" });
+      } else {
+        existing.spend += spend;
+        existing.revenue += revenue;
+      }
+    } else {
+      // Total mode: max-spend dedup
+      if (!existing || spend > existing.spend) {
+        seenCampaignId.set(d.campaignId, { spend, revenue, offerName: d.offerName, currency: d.currency ?? "USD" });
+      }
     }
   }
   for (const c of seenCampaignId.values()) {
@@ -860,13 +877,21 @@ export type OfferCampaignSummary = {
 /**
  * Read campaign data from DB cache, grouped by offer.
  */
-// Note: UTMify data is a snapshot of the total accumulated at sync time.
-// Date filters (dateFrom/dateTo) are accepted for API compatibility but ignored —
-// financial totals always reflect the latest sync, not the filtered period.
+// Two modes:
+// - No date range: reads `utmify_campaign_by_offer` (total snapshot from last manual resync).
+// - With date range: reads `utmify_campaign_daily` and SUMS all daily snapshots per campaignId
+//   within the range (each daily snapshot = 1 campaign's spend/revenue for 1 day).
 export async function getOfferCampaignSummary(
-  _dateFrom?: string,
-  _dateTo?: string,
+  dateFrom?: string,
+  dateTo?: string,
 ): Promise<{ offers: OfferCampaignSummary[]; lastSync: Date | null }> {
+  const hasDateFilter = Boolean(dateFrom || dateTo);
+  const entityType = hasDateFilter ? "utmify_campaign_daily" : "utmify_campaign_by_offer";
+
+  const conditions = [eq(metricsSnapshots.entityType, entityType)];
+  if (dateFrom) conditions.push(gte(metricsSnapshots.date, new Date(dateFrom)));
+  if (dateTo) conditions.push(lte(metricsSnapshots.date, new Date(dateTo)));
+
   const rows = await db
     .select({
       extraData: metricsSnapshots.extraData,
@@ -875,9 +900,9 @@ export async function getOfferCampaignSummary(
       createdAt: metricsSnapshots.createdAt,
     })
     .from(metricsSnapshots)
-    .where(eq(metricsSnapshots.entityType, "utmify_campaign_by_offer"))
+    .where(and(...conditions))
     .orderBy(desc(metricsSnapshots.createdAt))
-    .limit(2000);
+    .limit(5000);
 
   type CampaignRow = {
     offerName: string;
@@ -902,13 +927,20 @@ export async function getOfferCampaignSummary(
     const spend = Number(row.spend ?? 0);
     const revenue = Number(row.revenue ?? 0);
     const existing = campaignData.get(data.campaignId);
-    if (!existing || spend > existing.spend) {
-      campaignData.set(data.campaignId, {
-        spend,
-        revenue,
-        offerName: data.offerName,
-        currency: data.currency ?? "USD",
-      });
+
+    if (hasDateFilter) {
+      // Daily mode: SUM all daily snapshots within the range per campaignId
+      if (!existing) {
+        campaignData.set(data.campaignId, { spend, revenue, offerName: data.offerName, currency: data.currency ?? "USD" });
+      } else {
+        existing.spend += spend;
+        existing.revenue += revenue;
+      }
+    } else {
+      // Legacy total mode: max-spend dedup (protects against duplicate total snapshots)
+      if (!existing || spend > existing.spend) {
+        campaignData.set(data.campaignId, { spend, revenue, offerName: data.offerName, currency: data.currency ?? "USD" });
+      }
     }
   }
 
