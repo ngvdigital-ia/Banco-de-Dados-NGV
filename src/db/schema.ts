@@ -494,6 +494,7 @@ export const offerTracking = pgTable("offer_tracking", {
   vslInVturb: text("vsl_in_vturb").default("NAO"),
   adsCopyByPerson: jsonb("ads_copy_by_person"),
   adsEditedCount: integer("ads_edited_count").default(0),
+  adsEditedByPerson: jsonb("ads_edited_by_person"),
   adsRejectedCount: integer("ads_rejected_count").default(0),
   editorStatus: jsonb("editor_status"),
   campaignsActive: text("campaigns_active").default("NAO"),

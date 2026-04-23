@@ -71,6 +71,7 @@ export async function updateOfferField(
     "vslInVturb",
     "adsCopyByPerson",
     "adsEditedCount",
+    "adsEditedByPerson",
     "adsRejectedCount",
     "editorStatus",
     "campaignsActive",
@@ -93,6 +94,27 @@ export async function updateOfferField(
     .update(offerTracking)
     .set({ [field]: value, updatedAt: new Date() })
     .where(eq(offerTracking.id, id));
+
+  // Keep adsEditedCount in sync with sum of adsEditedByPerson values
+  if (field === "adsEditedByPerson") {
+    let total = 0;
+    try {
+      const parsed =
+        typeof value === "string" ? JSON.parse(value) : (value as unknown);
+      if (parsed && typeof parsed === "object") {
+        for (const v of Object.values(parsed as Record<string, unknown>)) {
+          const n = typeof v === "number" ? v : parseInt(String(v), 10) || 0;
+          total += n;
+        }
+      }
+    } catch {
+      total = 0;
+    }
+    await db
+      .update(offerTracking)
+      .set({ adsEditedCount: total, updatedAt: new Date() })
+      .where(eq(offerTracking.id, id));
+  }
 
   // Cascade status changes through the pipeline
   if (field === "campaignsActive" && String(value).toUpperCase() === "SIM") {

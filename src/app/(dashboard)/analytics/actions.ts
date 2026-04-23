@@ -321,7 +321,22 @@ export async function getTeamPerformance(_dateFrom?: string, _dateTo?: string) {
 
       // Editor metrics
       if (member.role === "editor" || member.role === "admin") {
-        if (isEditorAds || isEditorVsl) {
+        // Sum from adsEditedByPerson JSONB if available
+        const editPersonData = offer.adsEditedByPerson as Record<string, number> | null;
+        let editedHere = 0;
+        if (editPersonData) {
+          for (const [k, v] of Object.entries(editPersonData)) {
+            if (aliases.some((a) => a === k.toUpperCase())) {
+              editedHere += Number(v) || 0;
+              break;
+            }
+          }
+        }
+        if (editedHere > 0) {
+          creativesEditCount += editedHere;
+          if (isEscalou) creativesEscalouCount++;
+        } else if (isEditorAds || isEditorVsl) {
+          // Fallback to legacy boolean match when per-person data not filled
           creativesEditCount++;
           if (isEscalou) creativesEscalouCount++;
         }

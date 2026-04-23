@@ -21,6 +21,7 @@ type Offer = {
   vslInVturb: string | null;
   adsCopyByPerson: unknown;
   adsEditedCount: number | null;
+  adsEditedByPerson: unknown;
   adsRejectedCount: number | null;
   editorStatus: unknown;
   campaignsActive: string | null;
@@ -662,6 +663,141 @@ function AdsCopyDisplay({
   );
 }
 
+function AdsEditDisplay({
+  value,
+  offerId,
+}: {
+  value: unknown;
+  offerId: number;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const data = (value as Record<string, number> | null) ?? {};
+  const entries = Object.entries(data).filter(([, v]) => Number(v) > 0);
+
+  const [maluVal, setMaluVal] = useState(String(data.MALU ?? 0));
+  const [vaVal, setVaVal] = useState(String(data.VA ?? 0));
+  const [caVal, setCaVal] = useState(String(data.CA ?? 0));
+  const [lfVal, setLfVal] = useState(String(data.LF ?? 0));
+
+  useEffect(() => {
+    if (!editing) {
+      const d = (value as Record<string, number> | null) ?? {};
+      setMaluVal(String(d.MALU ?? 0));
+      setVaVal(String(d.VA ?? 0));
+      setCaVal(String(d.CA ?? 0));
+      setLfVal(String(d.LF ?? 0));
+    }
+  }, [value, editing]);
+
+  function handleSave() {
+    setEditing(false);
+    const newData: Record<string, number> = {};
+    const m = parseInt(maluVal, 10) || 0;
+    const v = parseInt(vaVal, 10) || 0;
+    const c = parseInt(caVal, 10) || 0;
+    const l = parseInt(lfVal, 10) || 0;
+    if (m) newData.MALU = m;
+    if (v) newData.VA = v;
+    if (c) newData.CA = c;
+    if (l) newData.LF = l;
+    startTransition(async () => {
+      await updateOfferField(
+        offerId,
+        "adsEditedByPerson",
+        JSON.stringify(newData) as unknown as string
+      );
+    });
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <label className="flex items-center gap-0.5 text-[10px]">
+          <span className="text-pink-600 font-semibold">MA</span>:
+          <input
+            className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
+            value={maluVal}
+            onChange={(e) => setMaluVal(e.target.value)}
+            type="number"
+          />
+        </label>
+        <label className="flex items-center gap-0.5 text-[10px]">
+          <span className="text-cyan-600 font-semibold">VA</span>:
+          <input
+            className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
+            value={vaVal}
+            onChange={(e) => setVaVal(e.target.value)}
+            type="number"
+          />
+        </label>
+        <label className="flex items-center gap-0.5 text-[10px]">
+          <span className="text-amber-600 font-semibold">CA</span>:
+          <input
+            className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
+            value={caVal}
+            onChange={(e) => setCaVal(e.target.value)}
+            type="number"
+          />
+        </label>
+        <label className="flex items-center gap-0.5 text-[10px]">
+          <span className="text-teal-600 font-semibold">LF</span>:
+          <input
+            className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
+            value={lfVal}
+            onChange={(e) => setLfVal(e.target.value)}
+            type="number"
+          />
+        </label>
+        <button
+          onClick={handleSave}
+          className="rounded bg-primary px-1.5 py-0.5 text-[9px] text-primary-foreground"
+        >
+          OK
+        </button>
+      </div>
+    );
+  }
+
+  const siglaColors: Record<string, string> = {
+    MALU: "text-pink-600 dark:text-pink-400",
+    MA: "text-pink-600 dark:text-pink-400",
+    VA: "text-cyan-600 dark:text-cyan-400",
+    CA: "text-amber-600 dark:text-amber-400",
+    LF: "text-teal-600 dark:text-teal-400",
+  };
+
+  return (
+    <div
+      onClick={() => {
+        setMaluVal(String(data.MALU ?? 0));
+        setVaVal(String(data.VA ?? 0));
+        setCaVal(String(data.CA ?? 0));
+        setLfVal(String(data.LF ?? 0));
+        setEditing(true);
+      }}
+      className={`relative cursor-pointer truncate rounded px-1 py-0.5 text-[10px] hover:border-b hover:border-dashed hover:border-zinc-300 dark:hover:border-zinc-600 ${isPending ? "opacity-50" : ""}`}
+    >
+      {entries.length > 0 ? (
+        <span className="flex items-center gap-1.5">
+          {entries.map(([k, v]) => {
+            const sigla = k === "MALU" ? "MA" : k;
+            return (
+              <span key={k} className="inline-flex items-center">
+                <span className={`font-semibold ${siglaColors[k] || siglaColors[sigla] || "text-zinc-600 dark:text-zinc-400"}`}>{sigla}</span>
+                <span className="text-zinc-400 dark:text-zinc-500">:</span>
+                <span className="font-mono font-medium text-zinc-700 dark:text-zinc-300">{v}</span>
+              </span>
+            );
+          })}
+        </span>
+      ) : (
+        "-"
+      )}
+    </div>
+  );
+}
+
 function EditorStatusDisplay({
   value,
   offerId,
@@ -864,11 +1000,11 @@ const columns: ColumnDef[] = [
     ),
   },
   {
-    key: "adsEditedCount",
+    key: "adsEditedByPerson",
     label: "Ads Edit",
-    width: "w-[60px] min-w-[60px]",
+    width: "w-[190px] min-w-[190px]",
     render: (o) => (
-      <EditableCell value={o.adsEditedCount} offerId={o.id} field="adsEditedCount" type="number" />
+      <AdsEditDisplay value={o.adsEditedByPerson} offerId={o.id} />
     ),
   },
   {
