@@ -5,8 +5,11 @@ import { eq } from "drizzle-orm";
 
 const CLICKUP_API_BASE = "https://api.clickup.com/api/v2";
 
-// All lists in the NGV Digital workspace
-const LISTS = [
+// All lists in the NGV Digital workspace.
+// `categoryByTaskName: true` means the list mixes work types — derive the category
+// from each task's name instead of the folder prefix.
+type ListConfig = { id: string; name: string; categoryByTaskName?: boolean };
+const LISTS: ListConfig[] = [
   // Copy
   { id: "901321719582", name: "Copy > Produto" },
   { id: "901304977280", name: "Copy > Copy" },
@@ -25,7 +28,26 @@ const LISTS = [
   { id: "901323524276", name: "Tráfego > Tarefas" },
   // Diogo
   { id: "901306192613", name: "Diogo > List" },
+  // Produção de Ofertas — single list mixing Copy/Edição/Dev/Tráfego/Outros work
+  { id: "901326908721", name: "Produção de Ofertas > Projetos de Oferta", categoryByTaskName: true },
 ];
+
+// Infer category from a task name when the list mixes work types.
+// Order matters: more specific patterns first.
+function categoryFromTaskName(name: string): string {
+  const n = name.toLowerCase();
+  // Tráfego: tasks named "Ads - <person> ..."
+  if (/^\s*ads\b/.test(n)) return "Tráfego";
+  // Edição: editing/reviewing video work
+  if (/edi[cç][aã]o\s+(da|dos|de)/.test(n)) return "Edição";
+  if (/revis[aã]o\s+da\s+(edi[cç][aã]o|vsl)/.test(n)) return "Edição";
+  // Dev: pages, pixels, scripts, A/B test, dev info, putting VSL in site
+  if (/\bp[aá]gina|\bpixel|script|colocar\s+vsl|teste\s+a\/?b|informa[cç][oõ]es\s+pro?\s+dev/.test(n)) return "Dev";
+  // Copy: writing/translating VSL
+  if (/(escrita|tradu[cç][aã]o)\s+da\s+vsl/.test(n)) return "Copy";
+  // Anything else (validations, approvals, product reviews, generic reviews, template) → Outros
+  return "Outros";
+}
 
 type ClickUpTask = {
   id: string;
@@ -105,7 +127,9 @@ export async function GET(request: Request) {
       while (hasMore) {
         // ClickUp default order is DESC (newest first). We rely on that so we can break
         // when we cross the cutoff. Don't pass reverse=true here (it sorts ASC).
-        const url = `${CLICKUP_API_BASE}/list/${list.id}/task?include_closed=true&statuses[]=complete&page=${page}&subtasks=true&order_by=date_done`;
+        // Accept both `complete` (English status) and `finalizado` (Portuguese status, used
+        // in the newer Produção de Ofertas folder).
+        const url = `${CLICKUP_API_BASE}/list/${list.id}/task?include_closed=true&statuses[]=complete&statuses[]=finalizado&page=${page}&subtasks=true&order_by=date_done`;
         const res = await fetch(url, {
           headers: { Authorization: apiKey },
         });
@@ -133,7 +157,9 @@ export async function GET(request: Request) {
           if (doneMs === 0) continue;
 
           totalTasks++;
-          const category = list.name.split(" > ")[0];
+          const category = list.categoryByTaskName
+            ? categoryFromTaskName(task.name)
+            : list.name.split(" > ")[0];
           const dueMs = task.due_date ? parseInt(task.due_date, 10) : null;
           const onTime = dueMs != null ? doneMs <= dueMs + ON_TIME_GRACE_MS : null;
           // Use due date when available (matches what Pedro asked for: filter by deadline),
