@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 const CLICKUP_API_BASE = "https://api.clickup.com/api/v2";
 
@@ -42,6 +43,13 @@ type ClickUpResponse = {
   last_page: boolean;
 };
 
+// How far back to fetch completed tasks. 90 days gives us "Mês passado" + buffer.
+const HISTORY_DAYS = 90;
+const MS_DAY = 24 * 60 * 60 * 1000;
+// Grace period for on-time check: ClickUp due_date is midnight, so "next day delivery"
+// counts as on time.
+const ON_TIME_GRACE_MS = 48 * 60 * 60 * 1000;
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -53,13 +61,32 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "CLICKUP_API_KEY not configured" }, { status: 500 });
   }
 
-  // Current month only (1st of month at 00:00)
   const now = new Date();
+  const cutoffMs = now.getTime() - HISTORY_DAYS * MS_DAY;
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthStartMs = monthStart.getTime();
 
+  type TaskRow = {
+    taskId: string;
+    taskName: string;
+    listId: string;
+    listName: string;
+    category: string;
+    memberId: string;
+    memberName: string;
+    doneMs: number;
+    dueMs: number | null;
+    onTime: boolean | null;
+    // The "date" we file this task under for filtering. Prefer due_date so the team
+    // performance "by deadline" filters work; fall back to done date if no deadline.
+    filterMs: number;
+  };
+
+  const taskRows: TaskRow[] = [];
   const results: { list: string; status: string; tasksFound: number; error?: string }[] = [];
-  const memberTaskCounts: Record<string, {
+
+  // Member-level aggregate kept for backward compatibility (current month only)
+  const memberMonthly: Record<string, {
     name: string;
     count: number;
     byCategory: Record<string, number>;
@@ -72,12 +99,13 @@ export async function GET(request: Request) {
   for (const list of LISTS) {
     let totalTasks = 0;
     try {
-      // Paginate through all completed tasks in the last 30 days
       let page = 0;
       let hasMore = true;
 
       while (hasMore) {
-        const url = `${CLICKUP_API_BASE}/list/${list.id}/task?include_closed=true&statuses[]=complete&page=${page}&subtasks=true&order_by=date_done&reverse=true`;
+        // ClickUp default order is DESC (newest first). We rely on that so we can break
+        // when we cross the cutoff. Don't pass reverse=true here (it sorts ASC).
+        const url = `${CLICKUP_API_BASE}/list/${list.id}/task?include_closed=true&statuses[]=complete&page=${page}&subtasks=true&order_by=date_done`;
         const res = await fetch(url, {
           headers: { Authorization: apiKey },
         });
@@ -90,60 +118,79 @@ export async function GET(request: Request) {
         const data = (await res.json()) as ClickUpResponse;
         const tasks = data.tasks || [];
 
-        // Filter to tasks completed in the last 30 days
+        let reachedCutoff = false;
+
         for (const task of tasks) {
           const doneMs = task.date_done ? parseInt(task.date_done, 10)
             : task.date_closed ? parseInt(task.date_closed, 10)
             : 0;
 
-          // Skip tasks completed before our window
-          if (doneMs > 0 && doneMs < monthStartMs) continue;
-          // Skip tasks not completed yet (shouldn't happen with status filter, but safety)
+          // Tasks come ordered by date_done desc — once we cross the cutoff we can stop
+          if (doneMs > 0 && doneMs < cutoffMs) {
+            reachedCutoff = true;
+            break;
+          }
           if (doneMs === 0) continue;
 
           totalTasks++;
+          const category = list.name.split(" > ")[0];
+          const dueMs = task.due_date ? parseInt(task.due_date, 10) : null;
+          const onTime = dueMs != null ? doneMs <= dueMs + ON_TIME_GRACE_MS : null;
+          // Use due date when available (matches what Pedro asked for: filter by deadline),
+          // fall back to done date so the row still shows up in some bucket.
+          const filterMs = dueMs ?? doneMs;
 
           for (const assignee of task.assignees) {
-            const key = String(assignee.id);
-            if (!memberTaskCounts[key]) {
-              memberTaskCounts[key] = {
-                name: assignee.username,
-                count: 0,
-                byCategory: {},
-                withDueDate: 0,
-                onTime: 0,
-                late: 0,
-                lists: [],
-              };
-            }
-            memberTaskCounts[key].count += 1;
-            // Track by category (folder prefix before ">")
-            const category = list.name.split(" > ")[0];
-            memberTaskCounts[key].byCategory[category] = (memberTaskCounts[key].byCategory[category] || 0) + 1;
-            if (!memberTaskCounts[key].lists.includes(list.name)) {
-              memberTaskCounts[key].lists.push(list.name);
-            }
+            const memberId = String(assignee.id);
+            const memberName = assignee.username || assignee.email || `User ${memberId}`;
 
-            // Calculate on-time completion
-            if (task.due_date) {
-              const dueMs = parseInt(task.due_date, 10);
-              memberTaskCounts[key].withDueDate += 1;
-              // Give 24h grace period (due_date is usually end of day)
-              // 48h grace: ClickUp due_date is midnight, so "next day delivery" counts as on time
-              if (doneMs <= dueMs + 48 * 60 * 60 * 1000) {
-                memberTaskCounts[key].onTime += 1;
-              } else {
-                memberTaskCounts[key].late += 1;
+            taskRows.push({
+              taskId: task.id,
+              taskName: task.name,
+              listId: list.id,
+              listName: list.name,
+              category,
+              memberId,
+              memberName,
+              doneMs,
+              dueMs,
+              onTime,
+              filterMs,
+            });
+
+            // Monthly aggregate (only count tasks completed in current month)
+            if (doneMs >= monthStartMs) {
+              if (!memberMonthly[memberId]) {
+                memberMonthly[memberId] = {
+                  name: memberName,
+                  count: 0,
+                  byCategory: {},
+                  withDueDate: 0,
+                  onTime: 0,
+                  late: 0,
+                  lists: [],
+                };
+              }
+              memberMonthly[memberId].count += 1;
+              memberMonthly[memberId].byCategory[category] =
+                (memberMonthly[memberId].byCategory[category] || 0) + 1;
+              if (!memberMonthly[memberId].lists.includes(list.name)) {
+                memberMonthly[memberId].lists.push(list.name);
+              }
+              if (onTime != null) {
+                memberMonthly[memberId].withDueDate += 1;
+                if (onTime) memberMonthly[memberId].onTime += 1;
+                else memberMonthly[memberId].late += 1;
               }
             }
           }
         }
 
-        // Stop if last page or if tasks are too old
-        hasMore = !data.last_page && tasks.length > 0;
+        // Stop if cutoff reached, last page, or empty
+        hasMore = !reachedCutoff && !data.last_page && tasks.length > 0;
         page++;
-        // Safety: max 5 pages per list
-        if (page >= 5) break;
+        // Safety: max 20 pages per list (ClickUp returns 100/page → up to 2k tasks per list)
+        if (page >= 20) break;
       }
 
       results.push({ list: list.name, status: "ok", tasksFound: totalTasks });
@@ -154,16 +201,45 @@ export async function GET(request: Request) {
     }
   }
 
-  // Save each member's task count as a metricsSnapshot
+  // Replace per-task snapshots atomically: delete old clickup_task rows, then insert fresh.
+  await db.delete(metricsSnapshots).where(eq(metricsSnapshots.entityType, "clickup_task"));
+
+  if (taskRows.length > 0) {
+    const rowsToInsert = taskRows.map((r) => ({
+      date: new Date(r.filterMs),
+      entityType: "clickup_task",
+      entityId: parseInt(r.memberId) || 0,
+      source: "manual" as const,
+      extraData: {
+        taskId: r.taskId,
+        taskName: r.taskName,
+        listId: r.listId,
+        listName: r.listName,
+        category: r.category,
+        memberId: r.memberId,
+        memberName: r.memberName,
+        doneAt: r.doneMs,
+        dueDate: r.dueMs,
+        onTime: r.onTime,
+      },
+    }));
+    // Insert in chunks to avoid Postgres parameter limits
+    const CHUNK = 500;
+    for (let i = 0; i < rowsToInsert.length; i += CHUNK) {
+      await db.insert(metricsSnapshots).values(rowsToInsert.slice(i, i + CHUNK));
+    }
+  }
+
+  // Save monthly aggregate snapshot per member (backward compatibility)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  for (const [memberId, data] of Object.entries(memberTaskCounts)) {
+  for (const [memberId, data] of Object.entries(memberMonthly)) {
     try {
       await db.insert(metricsSnapshots).values({
         date: today,
         entityType: "clickup_member",
-        entityId: 0,
+        entityId: parseInt(memberId) || 0,
         source: "manual",
         extraData: {
           memberId,
@@ -189,7 +265,9 @@ export async function GET(request: Request) {
   return NextResponse.json({
     success: true,
     syncedAt: new Date().toISOString(),
-    membersSynced: Object.keys(memberTaskCounts).length,
+    historyDays: HISTORY_DAYS,
+    tasksIndexed: taskRows.length,
+    membersSyncedMonthly: Object.keys(memberMonthly).length,
     results,
   });
 }

@@ -276,8 +276,9 @@ export async function getCreativesDetailed() {
 
 // ========== TEAM PERFORMANCE ==========
 
-// Date filters accepted for API compat but ignored (same rationale as UTMify actions).
-export async function getTeamPerformance(_dateFrom?: string, _dateTo?: string) {
+// Filters by ClickUp task DUE DATE — falls back to done date when a task has no deadline.
+// Data is sourced from per-task snapshots populated by /api/cron/sync-clickup.
+export async function getTeamPerformance(dateFrom?: string, dateTo?: string) {
   // Fetch team members and all offer tracking data in parallel
   const [members, allOffers] = await Promise.all([
     db.select().from(teamMembers).where(eq(teamMembers.active, true)),
@@ -370,54 +371,72 @@ export async function getTeamPerformance(_dateFrom?: string, _dateTo?: string) {
     });
   }
 
-  // Fetch ClickUp task counts from metricsSnapshots
-  const clickupRows = await db
+  // Fetch ClickUp tasks from per-task snapshots, filtered by due date.
+  // Each row is one (task × assignee) pair, with `date` set to the task's due_date
+  // (falling back to done date when there's no deadline).
+  const taskConditions = [eq(metricsSnapshots.entityType, "clickup_task")];
+  if (dateFrom) taskConditions.push(gte(metricsSnapshots.date, new Date(dateFrom)));
+  if (dateTo) taskConditions.push(lte(metricsSnapshots.date, new Date(dateTo)));
+
+  const taskRows = await db
     .select({
       entityId: metricsSnapshots.entityId,
       extraData: metricsSnapshots.extraData,
     })
     .from(metricsSnapshots)
-    .where(eq(metricsSnapshots.entityType, "clickup_member"))
-    .orderBy(desc(metricsSnapshots.createdAt));
+    .where(and(...taskConditions));
 
-  type ClickUpData = {
+  type TaskData = {
+    memberId?: string;
     memberName?: string;
-    tasksCompleted?: number;
-    taskCount?: number;
-    tasksByCategory?: Record<string, number>;
-    pctOnTime?: number | null;
+    category?: string;
+    onTime?: boolean | null;
   };
 
-  const clickupByName = new Map<string, { count: number; byCategory: Record<string, number>; pctOnTime: number | null }>();
-  for (const row of clickupRows) {
-    const data = row.extraData as ClickUpData | null;
-    if (data?.memberName && !clickupByName.has(data.memberName.toLowerCase())) {
-      clickupByName.set(data.memberName.toLowerCase(), {
-        count: data.tasksCompleted ?? data.taskCount ?? 0,
-        byCategory: data.tasksByCategory ?? {},
-        pctOnTime: data.pctOnTime ?? null,
-      });
+  const clickupByName = new Map<string, { count: number; byCategory: Record<string, number>; withDueDate: number; onTime: number }>();
+  for (const row of taskRows) {
+    const data = row.extraData as TaskData | null;
+    if (!data?.memberName) continue;
+    const key = data.memberName.toLowerCase();
+    let agg = clickupByName.get(key);
+    if (!agg) {
+      agg = { count: 0, byCategory: {}, withDueDate: 0, onTime: 0 };
+      clickupByName.set(key, agg);
+    }
+    agg.count += 1;
+    if (data.category) {
+      agg.byCategory[data.category] = (agg.byCategory[data.category] || 0) + 1;
+    }
+    if (data.onTime != null) {
+      agg.withDueDate += 1;
+      if (data.onTime) agg.onTime += 1;
     }
   }
 
+  // Compute pctOnTime per member from the filtered task slice
+  const clickupSummary = new Map<string, { count: number; byCategory: Record<string, number>; pctOnTime: number | null }>();
+  for (const [name, agg] of clickupByName) {
+    clickupSummary.set(name, {
+      count: agg.count,
+      byCategory: agg.byCategory,
+      pctOnTime: agg.withDueDate > 0
+        ? Math.round((agg.onTime / agg.withDueDate) * 10000) / 100
+        : null,
+    });
+  }
+
   // Match ClickUp members using aliases (handles Malu↔Maria Luisa, etc.)
-  // Build a map of clickup name → best matching team member
   for (const member of results) {
     const aliases = getMemberAliases(member.name).map((a) => a.toLowerCase());
-    for (const [clickupName, data] of clickupByName) {
+    for (const [clickupName, data] of clickupSummary) {
       const clickupLower = clickupName.toLowerCase();
       const clickupParts = clickupLower.split(/\s+/);
 
-      // Precise matching: check if any alias matches the clickup name exactly or as first/full name
       const matched = aliases.some((alias) => {
         const aliasLower = alias.toLowerCase();
-        // Exact full match
         if (clickupLower === aliasLower) return true;
-        // ClickUp first name matches alias exactly
         if (clickupParts[0] === aliasLower) return true;
-        // Alias is a multi-word name that matches start of clickup name
         if (aliasLower.includes(" ") && clickupLower.startsWith(aliasLower)) return true;
-        // ClickUp full name starts with alias (only for aliases >= 4 chars to avoid false positives)
         if (aliasLower.length >= 4 && clickupLower.startsWith(aliasLower)) return true;
         return false;
       });
