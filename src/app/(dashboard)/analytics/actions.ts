@@ -425,28 +425,54 @@ export async function getTeamPerformance(dateFrom?: string, dateTo?: string) {
     });
   }
 
-  // Match ClickUp members using aliases (handles Malu↔Maria Luisa, etc.)
+  // Match ClickUp members against team members. Strategy:
+  //  1. Aliases that have ≥ 2 words (full names) must have ALL words present in the
+  //     ClickUp name. This avoids "Gabriel" alias on Fischer accidentally matching
+  //     "Gabriel Lima".
+  //  2. Single-word aliases must equal the ClickUp first name exactly OR match via
+  //     a longer prefix on the full ClickUp name.
+  //  3. We score each candidate and pick the best (more matched words = better)
+  //     so that "Gabriel Fischer" beats a stray "Gabriel" alias in case both fire.
   for (const member of results) {
     const aliases = getMemberAliases(member.name).map((a) => a.toLowerCase());
+    let bestMatch: { name: string; score: number; data: typeof clickupSummary extends Map<string, infer V> ? V : never } | null = null;
+
     for (const [clickupName, data] of clickupSummary) {
       const clickupLower = clickupName.toLowerCase();
-      const clickupParts = clickupLower.split(/\s+/);
+      const clickupWords = new Set(clickupLower.split(/\s+/));
 
-      const matched = aliases.some((alias) => {
-        const aliasLower = alias.toLowerCase();
-        if (clickupLower === aliasLower) return true;
-        if (clickupParts[0] === aliasLower) return true;
-        if (aliasLower.includes(" ") && clickupLower.startsWith(aliasLower)) return true;
-        if (aliasLower.length >= 4 && clickupLower.startsWith(aliasLower)) return true;
-        return false;
-      });
+      let bestScoreForThisName = 0;
+      for (const alias of aliases) {
+        const aliasParts = alias.split(/\s+/).filter(Boolean);
+        let score = 0;
 
-      if (matched) {
-        member.clickupTasks = data.count;
-        member.clickupByCategory = data.byCategory;
-        member.clickupOnTimePct = data.pctOnTime;
-        break;
+        if (aliasParts.length >= 2) {
+          // Multi-word alias: every word must be in the clickup name
+          if (aliasParts.every((p) => clickupWords.has(p))) {
+            score = aliasParts.length + 1; // longer matches win
+          }
+        } else if (aliasParts.length === 1) {
+          const a = aliasParts[0];
+          // Exact full match
+          if (clickupLower === a) score = 10;
+          // ClickUp first name equals alias exactly
+          else if (clickupLower.split(/\s+/)[0] === a) score = 1;
+          // Sigla / nickname (short alias matches a word inside the clickup name)
+          else if (a.length >= 4 && clickupWords.has(a)) score = 2;
+        }
+
+        if (score > bestScoreForThisName) bestScoreForThisName = score;
       }
+
+      if (bestScoreForThisName > 0 && (!bestMatch || bestScoreForThisName > bestMatch.score)) {
+        bestMatch = { name: clickupName, score: bestScoreForThisName, data };
+      }
+    }
+
+    if (bestMatch) {
+      member.clickupTasks = bestMatch.data.count;
+      member.clickupByCategory = bestMatch.data.byCategory;
+      member.clickupOnTimePct = bestMatch.data.pctOnTime;
     }
   }
 
