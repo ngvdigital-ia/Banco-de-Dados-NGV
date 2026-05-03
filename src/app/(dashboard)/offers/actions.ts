@@ -81,6 +81,7 @@ export async function updateOfferField(
     "productCreated",
     "productApproved",
     "siteCreated",
+    "siteUrl",
     "gender",
     "adFormat",
     "observations",

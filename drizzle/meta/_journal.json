@@ -15,6 +15,13 @@
       "when": 1776973908024,
       "tag": "0001_add_ads_edited_by_person",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777829883999,
+      "tag": "0002_add_site_url",
+      "breakpoints": true
     }
   ]
 }

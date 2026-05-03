@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, ExternalLink, Pencil } from "lucide-react";
 import { updateOfferField, deleteOffer } from "@/app/(dashboard)/offers/actions";
 
 // ---------- Types ----------
@@ -31,6 +31,7 @@ type Offer = {
   productCreated: string | null;
   productApproved: string | null;
   siteCreated: string | null;
+  siteUrl: string | null;
   adFormat: string | null;
   observations: string | null;
   createdAt: Date;
@@ -857,6 +858,103 @@ function EditorStatusDisplay({
   );
 }
 
+function LinkCell({
+  value,
+  offerId,
+  field,
+}: {
+  value: string | null;
+  offerId: number;
+  field: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [localValue, setLocalValue] = useState(value ?? "");
+  const [isPending, startTransition] = useTransition();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!editing) setLocalValue(value ?? "");
+  }, [value, editing]);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  function handleSave() {
+    setEditing(false);
+    const trimmed = localValue.trim();
+    if (trimmed !== (value ?? "")) {
+      startTransition(async () => {
+        await updateOfferField(offerId, field, trimmed === "" ? null : trimmed);
+      });
+    }
+  }
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        type="url"
+        placeholder="https://dominio.com/slug"
+        className="h-7 w-full rounded border border-input bg-background px-1.5 text-xs outline-none focus:border-ring"
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleSave();
+          if (e.key === "Escape") {
+            setLocalValue(value ?? "");
+            setEditing(false);
+          }
+        }}
+      />
+    );
+  }
+
+  if (!value) {
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className={`w-full rounded px-1 py-0.5 text-left text-xs text-muted-foreground hover:text-foreground hover:border-b hover:border-dashed hover:border-zinc-300 dark:hover:border-zinc-600 ${isPending ? "opacity-50" : ""}`}
+      >
+        + adicionar
+      </button>
+    );
+  }
+
+  // Normalize: prefix https:// if missing so the link works
+  const href = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+  // Display: strip protocol and trailing slash for compactness
+  const display = value.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+
+  return (
+    <div className={`flex items-center gap-1 ${isPending ? "opacity-50" : ""}`}>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex min-w-0 items-center gap-1 truncate rounded px-1 py-0.5 text-xs text-blue-600 hover:underline dark:text-blue-400"
+        title={value}
+      >
+        <ExternalLink className="h-3 w-3 flex-shrink-0" />
+        <span className="truncate">{display}</span>
+      </a>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="flex-shrink-0 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+        title="Editar"
+      >
+        <Pencil className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
+
 function DeleteButton({ offerId }: { offerId: number }) {
   const [isPending, startTransition] = useTransition();
 
@@ -1087,6 +1185,14 @@ const columns: ColumnDef[] = [
     width: "w-[80px] min-w-[80px]",
     render: (o) => (
       <StatusBadge value={o.siteCreated} offerId={o.id} field="siteCreated" />
+    ),
+  },
+  {
+    key: "siteUrl",
+    label: "Domínio",
+    width: "w-[220px] min-w-[220px]",
+    render: (o) => (
+      <LinkCell value={o.siteUrl} offerId={o.id} field="siteUrl" />
     ),
   },
   {
