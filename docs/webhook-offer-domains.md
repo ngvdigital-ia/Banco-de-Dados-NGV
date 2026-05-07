@@ -1,10 +1,66 @@
 # Webhook: Atualizar domínios de oferta
 
-Endpoint pro **agente Claude Code de criação de páginas** atualizar automaticamente os URLs de cada oferta no banco NGV Digital.
+Endpoints pro **agente Claude Code de criação de páginas** listar ofertas e atualizar URLs no banco NGV Digital.
 
-> **Versão**: 1.0 (Maio/2026)
-> **Endpoint**: `POST https://banco-de-dados-ngv.vercel.app/api/admin/offer-domains`
-> **Auth**: `Authorization: Bearer ${CRON_SECRET}`
+> **Versão**: 1.1 (Maio/2026)
+> **Endpoints**:
+> - `GET https://banco-de-dados-ngv.vercel.app/api/admin/offers` — listar ofertas (resolver matches)
+> - `POST https://banco-de-dados-ngv.vercel.app/api/admin/offer-domains` — atualizar URLs
+>
+> **Auth (ambos)**: `Authorization: Bearer ${CRON_SECRET}`
+
+## 0. Endpoint de descoberta — `GET /api/admin/offers`
+
+**Use isso PRIMEIRO** quando seu registry local tem nomes diferentes do banco (idiomas, traduções, sufixos). Resolve `offerName` ambíguo (409) ou não encontrado (404) sem precisar adivinhar.
+
+### Request
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  https://banco-de-dados-ngv.vercel.app/api/admin/offers
+```
+
+### Query params (opcionais)
+
+| Param | Valor | Filtra |
+|---|---|---|
+| `language` | `EN`, `FR`, `DE`, `ITA`, `ES`, `PT` | só ofertas naquele idioma |
+| `validation` | `SIM` | só validadas |
+| `has_site_urls` | `true` ou `false` | com/sem URLs já configuradas |
+
+Exemplo combinado: `?language=DE&has_site_urls=false` retorna alemãs ainda sem URLs.
+
+### Response (200)
+
+```json
+{
+  "success": true,
+  "total": 26,
+  "offers": [
+    {
+      "id": 175,
+      "name": "Sciatic Shield",
+      "language": "EN",
+      "validation": "EM ANDAMENTO",
+      "scale": "NAO",
+      "hasSiteUrls": true,
+      "linkCount": 1,
+      "domain": "sciaticshield.com"
+    },
+    ...
+  ]
+}
+```
+
+### Fluxo recomendado pro agente externo
+
+1. **Boot**: chama `GET /api/admin/offers` 1x e cacheia na sessão
+2. **Pra cada oferta no registry local**: faz match por `name` (case-insensitive, sem acento, sem espaço) contra os 3 candidatos do banco (`name`, primeiras palavras, etc)
+3. **Em caso de empate** (ex: `Skyvault` vs `SkyVault (Leva04)`): pede ao Pedro decidir, ou usa heurística (`Leva04` é mais nova; `(...)` indica variant)
+4. **Salva o map `slug → offerId`** no estado da skill pra próximas chamadas
+5. **POST com `offerId`** (não `offerName`) — zero ambiguidade
+
+---
 
 ---
 
