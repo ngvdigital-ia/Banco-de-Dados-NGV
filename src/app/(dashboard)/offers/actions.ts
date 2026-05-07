@@ -4,6 +4,14 @@ import { db } from "@/db";
 import { offerTracking } from "@/db/schema";
 import { eq, desc, and, gte, lt, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import {
+  type SiteUrls,
+  siteUrlsSchema,
+  normalizeSiteUrls,
+  deriveDomain,
+  vslOf,
+  totalLinks,
+} from "@/lib/site-urls";
 
 export async function getOffers(filters?: {
   language?: string;
@@ -81,7 +89,8 @@ export async function updateOfferField(
     "productCreated",
     "productApproved",
     "siteCreated",
-    "siteUrl",
+    // siteUrl removido propositalmente — escrita passa por updateOfferSiteUrls
+    // para manter siteUrls (jsonb) e siteUrl (text legacy) sincronizados.
     "gender",
     "adFormat",
     "observations",
@@ -154,6 +163,51 @@ export async function updateOfferField(
   }
 
   revalidatePath("/offers");
+}
+
+// Atualiza siteUrls (jsonb estruturado) e sincroniza siteUrl (text legacy) com a VSL.
+// É a ÚNICA forma de escrever esses campos — siteUrl saiu do allowlist de updateOfferField.
+// Cascata: quando primeiro link é adicionado, marca siteCreated="SIM" automaticamente.
+export async function updateOfferSiteUrls(
+  id: number,
+  value: SiteUrls,
+): Promise<{ siteUrls: SiteUrls; siteUrl: string | null }> {
+  const parsed = siteUrlsSchema.parse(value);
+  const normalized = normalizeSiteUrls(parsed);
+  // Preenche domain automaticamente se não vier
+  if (!normalized.domain) {
+    const inferred = deriveDomain(normalized);
+    if (inferred) normalized.domain = inferred;
+  }
+  const newVsl = vslOf(normalized) ?? null;
+  const hadAnyLink = totalLinks(normalized) > 0;
+
+  // Snapshot atual pra detectar transição de zero → um link e disparar cascata
+  const [current] = await db
+    .select({
+      siteUrls: offerTracking.siteUrls,
+      siteCreated: offerTracking.siteCreated,
+    })
+    .from(offerTracking)
+    .where(eq(offerTracking.id, id));
+
+  const wasEmpty = totalLinks((current?.siteUrls as SiteUrls | null) ?? null) === 0;
+
+  await db
+    .update(offerTracking)
+    .set({
+      siteUrls: normalized as unknown as object,
+      siteUrl: newVsl,
+      // Cascata: 0 → 1 link e siteCreated ainda NAO → vira SIM
+      ...(hadAnyLink && wasEmpty && current?.siteCreated !== "SIM"
+        ? { siteCreated: "SIM" }
+        : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(offerTracking.id, id));
+
+  revalidatePath("/offers");
+  return { siteUrls: normalized, siteUrl: newVsl };
 }
 
 export async function createOffer() {

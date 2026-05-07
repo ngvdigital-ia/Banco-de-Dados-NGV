@@ -504,7 +504,11 @@ export const offerTracking = pgTable("offer_tracking", {
   productCreated: text("product_created").default("NAO"),
   productApproved: text("product_approved").default("NAO"),
   siteCreated: text("site_created").default("NAO"),
+  // siteUrl: deprecated. Mantido por compat (espelha siteUrls.vsl one-way).
+  // Não está no allowlist de updateOfferField; toda escrita passa por updateOfferSiteUrls.
   siteUrl: text("site_url"),
+  // siteUrls: fonte de verdade pros domínios da oferta — shape em src/lib/site-urls.ts
+  siteUrls: jsonb("site_urls"),
   gender: text("gender"),
   adFormat: creativeFormatEnum("ad_format"),
   observations: text("observations"),

@@ -3,6 +3,8 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { Trash2, ExternalLink, Pencil } from "lucide-react";
 import { updateOfferField, deleteOffer } from "@/app/(dashboard)/offers/actions";
+import { type SiteUrls, primaryUrl, totalLinks } from "@/lib/site-urls";
+import { SiteUrlsDialog } from "@/components/offers/site-urls-dialog";
 
 // ---------- Types ----------
 
@@ -32,6 +34,7 @@ type Offer = {
   productApproved: string | null;
   siteCreated: string | null;
   siteUrl: string | null;
+  siteUrls: unknown;
   adFormat: string | null;
   observations: string | null;
   createdAt: Date;
@@ -858,100 +861,83 @@ function EditorStatusDisplay({
   );
 }
 
-function LinkCell({
+function SiteUrlsCell({
   value,
   offerId,
-  field,
+  offerName,
 }: {
-  value: string | null;
+  value: unknown;
   offerId: number;
-  field: string;
+  offerName: string;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [localValue, setLocalValue] = useState(value ?? "");
-  const [isPending, startTransition] = useTransition();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
+  const data = (value as SiteUrls | null) ?? null;
+  const main = primaryUrl(data);
+  const total = totalLinks(data);
+  const extra = main ? total - 1 : 0;
 
-  useEffect(() => {
-    if (!editing) setLocalValue(value ?? "");
-  }, [value, editing]);
-
-  useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [editing]);
-
-  function handleSave() {
-    setEditing(false);
-    const trimmed = localValue.trim();
-    if (trimmed !== (value ?? "")) {
-      startTransition(async () => {
-        await updateOfferField(offerId, field, trimmed === "" ? null : trimmed);
-      });
-    }
-  }
-
-  if (editing) {
+  if (!main) {
     return (
-      <input
-        ref={inputRef}
-        type="url"
-        placeholder="https://dominio.com/slug"
-        className="h-7 w-full rounded border border-input bg-background px-1.5 text-xs outline-none focus:border-ring"
-        value={localValue}
-        onChange={(e) => setLocalValue(e.target.value)}
-        onBlur={handleSave}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") handleSave();
-          if (e.key === "Escape") {
-            setLocalValue(value ?? "");
-            setEditing(false);
-          }
-        }}
-      />
+      <>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="w-full rounded px-1 py-0.5 text-left text-xs text-muted-foreground hover:text-foreground hover:border-b hover:border-dashed hover:border-zinc-300 dark:hover:border-zinc-600"
+        >
+          + adicionar
+        </button>
+        <SiteUrlsDialog
+          open={open}
+          onOpenChange={setOpen}
+          offerId={offerId}
+          offerName={offerName}
+          initial={data}
+        />
+      </>
     );
   }
 
-  if (!value) {
-    return (
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className={`w-full rounded px-1 py-0.5 text-left text-xs text-muted-foreground hover:text-foreground hover:border-b hover:border-dashed hover:border-zinc-300 dark:hover:border-zinc-600 ${isPending ? "opacity-50" : ""}`}
-      >
-        + adicionar
-      </button>
-    );
-  }
-
-  // Normalize: prefix https:// if missing so the link works
-  const href = /^https?:\/\//i.test(value) ? value : `https://${value}`;
-  // Display: strip protocol and trailing slash for compactness
-  const display = value.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+  const href = /^https?:\/\//i.test(main) ? main : `https://${main}`;
+  const display = main.replace(/^https?:\/\//i, "").replace(/\/$/, "");
 
   return (
-    <div className={`flex items-center gap-1 ${isPending ? "opacity-50" : ""}`}>
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex min-w-0 items-center gap-1 truncate rounded px-1 py-0.5 text-xs text-blue-600 hover:underline dark:text-blue-400"
-        title={value}
-      >
-        <ExternalLink className="h-3 w-3 flex-shrink-0" />
-        <span className="truncate">{display}</span>
-      </a>
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className="flex-shrink-0 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-        title="Editar"
-      >
-        <Pencil className="h-3 w-3" />
-      </button>
-    </div>
+    <>
+      <div className="flex items-center gap-1">
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-w-0 items-center gap-1 truncate rounded px-1 py-0.5 text-xs text-blue-600 hover:underline dark:text-blue-400"
+          title={main}
+        >
+          <ExternalLink className="h-3 w-3 flex-shrink-0" />
+          <span className="truncate">{display}</span>
+        </a>
+        {extra > 0 && (
+          <span
+            className="flex-shrink-0 rounded bg-zinc-100 px-1 py-0.5 text-[10px] font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+            title={`Mais ${extra} link${extra > 1 ? "s" : ""} configurado${extra > 1 ? "s" : ""}`}
+          >
+            +{extra}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex-shrink-0 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+          title="Editar domínios"
+        >
+          <Pencil className="h-3 w-3" />
+        </button>
+      </div>
+      <SiteUrlsDialog
+        open={open}
+        onOpenChange={setOpen}
+        offerId={offerId}
+        offerName={offerName}
+        initial={data}
+      />
+    </>
   );
 }
 
@@ -1188,11 +1174,11 @@ const columns: ColumnDef[] = [
     ),
   },
   {
-    key: "siteUrl",
+    key: "siteUrls",
     label: "Domínio",
     width: "w-[220px] min-w-[220px]",
     render: (o) => (
-      <LinkCell value={o.siteUrl} offerId={o.id} field="siteUrl" />
+      <SiteUrlsCell value={o.siteUrls} offerId={o.id} offerName={o.name} />
     ),
   },
   {
