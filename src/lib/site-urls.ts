@@ -153,3 +153,76 @@ export function primaryUrl(urls: SiteUrls | null | undefined): string | undefine
   if (!urls) return undefined;
   return urls.vsl ?? urls.quiz ?? urls.whites?.[0] ?? urls.custom?.[0]?.url ?? undefined;
 }
+
+// Computa a diferença entre o estado anterior e o novo, separando em added/updated/removed.
+// Usa URL normalizada pra comparação. Útil pra resposta do webhook ("o que mudou?").
+export type SiteUrlsDelta = {
+  added: SiteUrls;        // só campos com valores novos
+  updated: SiteUrls;      // campos que existiam e tiveram valor trocado (vsl/quiz/domain)
+  removed: SiteUrls;      // campos que sumiram (só em merge=false)
+};
+
+export function computeDelta(
+  before: SiteUrls | null,
+  after: SiteUrls | null,
+): SiteUrlsDelta {
+  const a = before ?? {};
+  const b = after ?? {};
+  const added: SiteUrls = {};
+  const updated: SiteUrls = {};
+  const removed: SiteUrls = {};
+
+  // Singletons (domain, vsl, quiz)
+  for (const key of ["domain", "vsl", "quiz"] as const) {
+    const av = a[key];
+    const bv = b[key];
+    if (!av && bv) added[key] = bv;
+    else if (av && !bv) removed[key] = av;
+    else if (av && bv && av !== bv) updated[key] = bv;
+  }
+
+  // Whites: comparar conjuntos
+  const aWhites = new Set((a.whites ?? []).map((u) => u.toLowerCase()));
+  const bWhites = new Set((b.whites ?? []).map((u) => u.toLowerCase()));
+  const addedWhites = (b.whites ?? []).filter((u) => !aWhites.has(u.toLowerCase()));
+  const removedWhites = (a.whites ?? []).filter((u) => !bWhites.has(u.toLowerCase()));
+  if (addedWhites.length) added.whites = addedWhites;
+  if (removedWhites.length) removed.whites = removedWhites;
+
+  // Custom: comparar por URL normalizada
+  const aCustomMap = new Map((a.custom ?? []).map((c) => [c.url.toLowerCase(), c]));
+  const bCustomMap = new Map((b.custom ?? []).map((c) => [c.url.toLowerCase(), c]));
+  const addedCustom = (b.custom ?? []).filter((c) => !aCustomMap.has(c.url.toLowerCase()));
+  const removedCustom = (a.custom ?? []).filter((c) => !bCustomMap.has(c.url.toLowerCase()));
+  if (addedCustom.length) added.custom = addedCustom;
+  if (removedCustom.length) removed.custom = removedCustom;
+
+  return { added, updated, removed };
+}
+
+// Resumo humano da delta — usado na resposta do webhook como hint pro agente.
+export function deltaSummary(delta: SiteUrlsDelta): string {
+  const parts: string[] = [];
+  if (delta.added.vsl) parts.push("VSL adicionada");
+  if (delta.added.quiz) parts.push("Quiz adicionado");
+  if (delta.added.domain) parts.push(`domínio ${delta.added.domain} definido`);
+  if (delta.added.whites?.length) {
+    parts.push(`${delta.added.whites.length} white${delta.added.whites.length > 1 ? "s" : ""} adicionada${delta.added.whites.length > 1 ? "s" : ""}`);
+  }
+  if (delta.added.custom?.length) {
+    parts.push(`${delta.added.custom.length} link${delta.added.custom.length > 1 ? "s" : ""} extra${delta.added.custom.length > 1 ? "s" : ""} adicionado${delta.added.custom.length > 1 ? "s" : ""}`);
+  }
+  if (delta.updated.vsl) parts.push("VSL atualizada");
+  if (delta.updated.quiz) parts.push("Quiz atualizado");
+  if (delta.updated.domain) parts.push(`domínio atualizado para ${delta.updated.domain}`);
+  if (delta.removed.whites?.length) {
+    parts.push(`${delta.removed.whites.length} white${delta.removed.whites.length > 1 ? "s" : ""} removida${delta.removed.whites.length > 1 ? "s" : ""}`);
+  }
+  if (delta.removed.custom?.length) {
+    parts.push(`${delta.removed.custom.length} link${delta.removed.custom.length > 1 ? "s" : ""} extra removido${delta.removed.custom.length > 1 ? "s" : ""}`);
+  }
+  if (delta.removed.vsl) parts.push("VSL removida");
+  if (delta.removed.quiz) parts.push("Quiz removido");
+
+  return parts.length === 0 ? "Nenhuma mudança" : parts.join(", ");
+}

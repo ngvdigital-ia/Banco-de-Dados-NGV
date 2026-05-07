@@ -12,6 +12,8 @@ import {
   vslOf,
   totalLinks,
   MAX_LINKS,
+  computeDelta,
+  deltaSummary,
 } from "@/lib/site-urls";
 
 // POST /api/admin/offer-domains
@@ -196,13 +198,21 @@ export async function POST(request: Request) {
     console.error("[offer-domains] audit log failed:", err);
   }
 
-  const result = { siteUrls: next, siteUrl: newVsl };
+  // Computa o que mudou pra comunicação clara com o agente externo
+  const delta = computeDelta(existingUrls, next);
+  const summary = deltaSummary(delta);
 
   return NextResponse.json({
     success: true,
     offerId,
     merged: body.merge,
-    siteUrls: result.siteUrls,
-    siteUrl: result.siteUrl,
+    summary,
+    delta,
+    counts: {
+      before: totalLinks(existingUrls),
+      after: totalLinks(next),
+    },
+    siteUrls: next,
+    siteUrl: newVsl,
   });
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { Trash2, ExternalLink, Pencil } from "lucide-react";
+import { Trash2, ExternalLink, Pencil, ChevronDown } from "lucide-react";
 import { updateOfferField, deleteOffer } from "@/app/(dashboard)/offers/actions";
 import { type SiteUrls, primaryUrl, totalLinks } from "@/lib/site-urls";
 import { SiteUrlsDialog } from "@/components/offers/site-urls-dialog";
@@ -861,6 +861,25 @@ function EditorStatusDisplay({
   );
 }
 
+type LinkRow = { type: "VSL" | "White" | "Quiz" | "Outros"; label?: string; url: string };
+
+function listAllLinks(d: SiteUrls | null): LinkRow[] {
+  if (!d) return [];
+  const out: LinkRow[] = [];
+  if (d.vsl) out.push({ type: "VSL", url: d.vsl });
+  d.whites?.forEach((u) => out.push({ type: "White", url: u }));
+  if (d.quiz) out.push({ type: "Quiz", url: d.quiz });
+  d.custom?.forEach((c) => out.push({ type: "Outros", label: c.label, url: c.url }));
+  return out;
+}
+
+const TYPE_STYLES: Record<LinkRow["type"], string> = {
+  VSL: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
+  White: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+  Quiz: "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300",
+  Outros: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+};
+
 function SiteUrlsCell({
   value,
   offerId,
@@ -870,25 +889,40 @@ function SiteUrlsCell({
   offerId: number;
   offerName: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [peekOpen, setPeekOpen] = useState(false);
+  const peekRef = useRef<HTMLDivElement>(null);
   const data = (value as SiteUrls | null) ?? null;
   const main = primaryUrl(data);
   const total = totalLinks(data);
   const extra = main ? total - 1 : 0;
+  const allLinks = listAllLinks(data);
+
+  // Fecha popover ao clicar fora
+  useEffect(() => {
+    if (!peekOpen) return;
+    function handler(e: MouseEvent) {
+      if (peekRef.current && !peekRef.current.contains(e.target as Node)) {
+        setPeekOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [peekOpen]);
 
   if (!main) {
     return (
       <>
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => setEditOpen(true)}
           className="w-full rounded px-1 py-0.5 text-left text-xs text-muted-foreground hover:text-foreground hover:border-b hover:border-dashed hover:border-zinc-300 dark:hover:border-zinc-600"
         >
           + adicionar
         </button>
         <SiteUrlsDialog
-          open={open}
-          onOpenChange={setOpen}
+          open={editOpen}
+          onOpenChange={setEditOpen}
           offerId={offerId}
           offerName={offerName}
           initial={data}
@@ -902,7 +936,7 @@ function SiteUrlsCell({
 
   return (
     <>
-      <div className="flex items-center gap-1">
+      <div className="relative flex items-center gap-1">
         <a
           href={href}
           target="_blank"
@@ -914,25 +948,85 @@ function SiteUrlsCell({
           <span className="truncate">{display}</span>
         </a>
         {extra > 0 && (
-          <span
-            className="flex-shrink-0 rounded bg-zinc-100 px-1 py-0.5 text-[10px] font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-            title={`Mais ${extra} link${extra > 1 ? "s" : ""} configurado${extra > 1 ? "s" : ""}`}
+          <button
+            type="button"
+            onClick={() => setPeekOpen((v) => !v)}
+            className="flex-shrink-0 inline-flex items-center gap-0.5 rounded bg-zinc-100 px-1 py-0.5 text-[10px] font-medium text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+            title={`Ver ${extra} link${extra > 1 ? "s" : ""} extra${extra > 1 ? "s" : ""}`}
+            aria-expanded={peekOpen}
           >
             +{extra}
-          </span>
+            <ChevronDown
+              className={`h-3 w-3 transition-transform ${peekOpen ? "rotate-180" : ""}`}
+            />
+          </button>
         )}
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => setEditOpen(true)}
           className="flex-shrink-0 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
           title="Editar domínios"
         >
           <Pencil className="h-3 w-3" />
         </button>
+
+        {peekOpen && (
+          <div
+            ref={peekRef}
+            className="absolute left-0 top-full z-50 mt-1 w-[320px] rounded-md border border-border bg-popover p-2 text-popover-foreground shadow-md"
+          >
+            <div className="mb-1 flex items-center justify-between px-1">
+              <span className="text-[11px] font-medium text-muted-foreground">
+                {total} link{total > 1 ? "s" : ""}{data?.domain ? ` · ${data.domain}` : ""}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setPeekOpen(false);
+                  setEditOpen(true);
+                }}
+                className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                title="Editar"
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
+            </div>
+            <ul className="space-y-1">
+              {allLinks.map((l, i) => {
+                const linkHref = /^https?:\/\//i.test(l.url) ? l.url : `https://${l.url}`;
+                const linkDisplay = l.url
+                  .replace(/^https?:\/\//i, "")
+                  .replace(/\/$/, "");
+                return (
+                  <li key={i} className="flex items-center gap-1.5">
+                    <span
+                      className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${TYPE_STYLES[l.type]}`}
+                    >
+                      {l.type}
+                    </span>
+                    <a
+                      href={linkHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="min-w-0 flex-1 truncate text-xs text-blue-600 hover:underline dark:text-blue-400"
+                      title={l.label ? `${l.label}: ${l.url}` : l.url}
+                    >
+                      {l.label && (
+                        <span className="font-medium text-foreground">{l.label}: </span>
+                      )}
+                      {linkDisplay}
+                    </a>
+                    <ExternalLink className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
       </div>
       <SiteUrlsDialog
-        open={open}
-        onOpenChange={setOpen}
+        open={editOpen}
+        onOpenChange={setEditOpen}
         offerId={offerId}
         offerName={offerName}
         initial={data}

@@ -221,18 +221,31 @@ curl -X POST https://banco-de-dados-ngv.vercel.app/api/admin/offer-domains \
   "success": true,
   "offerId": 201,
   "merged": true,
+  "summary": "VSL adicionada, 1 white adicionada",
+  "delta": {
+    "added": {
+      "vsl": "https://meusite.com/vsl-pt",
+      "whites": ["https://meusite.com/w1"]
+    },
+    "updated": {},
+    "removed": {}
+  },
+  "counts": { "before": 0, "after": 2 },
   "siteUrls": {
     "domain": "meusite.com",
     "vsl": "https://meusite.com/vsl-pt",
-    "whites": ["https://meusite.com/w1"],
-    "quiz": "https://meusite.com/quiz-pt",
-    "custom": [{ "label": "Obrigado", "url": "https://meusite.com/obrigado" }]
+    "whites": ["https://meusite.com/w1"]
   },
   "siteUrl": "https://meusite.com/vsl-pt"
 }
 ```
 
-`siteUrls` é o estado **final** após o merge. Use isso pra confirmar.
+**Use o response assim:**
+
+- **`summary`**: texto pronto pra logar (ex: `console.log("[domains]", res.summary)`)
+- **`delta.added/updated/removed`**: o que efetivamente mudou (útil pra dedup detection — se mandar a mesma white 2x, segunda vez vem `delta: {added:{}, ...}` indicando "nada novo")
+- **`counts`**: quantos links a oferta tinha antes e depois — útil pra garantir que não inflou nada
+- **`siteUrls`**: estado final no banco. Use pra confirmação.
 
 ---
 
@@ -287,14 +300,53 @@ LIMIT 10;
 
 ---
 
+## 8.5. Auto-trigger pattern (uma chamada por evento)
+
+A premissa é: **toda vez que o agente externo terminar de criar UM artefato**, dispara uma chamada com APENAS o campo correspondente. Cumulativo (`merge=true` default), idempotente e legível.
+
+Use sempre `offerId` (consultado via `GET /api/admin/offers` — seção 0).
+
+| Evento (no agente externo) | Payload do POST | Resultado |
+|---|---|---|
+| **Comprou domínio raiz** (ex: `meusite.com`) | `{ "offerId": 201, "domain": "meusite.com" }` | `domain` definido |
+| **Publicou VSL** | `{ "offerId": 201, "vsl": "https://meusite.com/vsl-pt" }` | VSL gravada + `siteCreated="SIM"` (na 1ª) |
+| **Publicou 1 White** | `{ "offerId": 201, "whites": ["https://meusite.com/white-1"] }` | Acrescenta na lista (não substitui) |
+| **Publicou múltiplas Whites de uma vez** | `{ "offerId": 201, "whites": ["...w1","...w2","...w3"] }` | Todas viram união com existentes |
+| **Publicou Quiz** | `{ "offerId": 201, "quiz": "https://meusite.com/quiz-pt" }` | Quiz definido |
+| **Configurou Pixel** | `{ "offerId": 201, "custom": [{"label":"Pixel","url":"..."}] }` | Adiciona em "Outros" |
+| **Página de Obrigado** | `{ "offerId": 201, "custom": [{"label":"Obrigado","url":"..."}] }` | Adiciona em "Outros" |
+
+**Vantagens deste padrão:**
+
+- **Independência**: cada evento dispara a sua chamada separada — não precisa juntar/coordenar
+- **Idempotência**: se o agente reentregar o mesmo evento (retry, reexecução), `merge=true` + dedup garante que não duplica
+- **Auditoria granular**: cada chamada vira 1 row em `metrics_snapshots` — você sabe exatamente *quando* cada artefato entrou
+- **Resposta dirigida**: `delta.added` te diz o que ESSA chamada mudou. Se o agente recebeu `added: {}` — nada novo, dedup pegou.
+
+**Anti-padrão**: NÃO mandar tudo de uma vez ao final. Prejudica auditoria e idempotência.
+
+```ts
+// ❌ Ruim — sobrescreve tudo, perde rastro
+await postWebhook({ offerId, vsl, whites, quiz, custom, merge: false });
+
+// ✅ Bom — uma chamada por evento, cumulativo
+await postWebhook({ offerId, vsl: newVsl });           // ao publicar VSL
+await postWebhook({ offerId, whites: [newWhite] });    // ao publicar cada white
+await postWebhook({ offerId, custom: [pixel] });       // ao configurar pixel
+```
+
+---
+
 ## 9. Boas práticas pro agente
 
-1. **Sempre prefira `offerId`** quando souber. Mais rápido, sem risco de 409.
-2. **Use `merge=true`** (default) na maioria dos casos. Só use `merge=false` quando explicitamente refazendo setup.
-3. **Verifique a resposta**: o `siteUrls` retornado é o estado final. Se algo não bateu, ajuste e reenvie.
-4. **Não envie campos vazios** desnecessariamente. Ex: se só está adicionando whites, não mande `vsl`/`quiz`/`domain` — só passa `{ offerName, whites }`.
-5. **Para criar pixel/obrigado/redirect** use `custom` com `label` descritivo. O dashboard mostra como `Label: URL` na seção "Outros".
-6. **Em caso de erro 404**: a oferta provavelmente não existe ainda. Pedro precisa criar no dashboard antes (ou você pode pedir que ele crie).
+1. **No boot da skill**: chame `GET /api/admin/offers` 1x e cacheie `Map<lowercase(name) → offerId>`. Resolve matches sem 409 ambíguo.
+2. **Sempre use `offerId`** no POST (não `offerName`). Mais rápido, sem ambiguidade.
+3. **Uma chamada por evento** (seção 8.5): cada artefato criado dispara seu próprio POST com apenas o campo correspondente.
+4. **Use `merge=true`** (default). `merge=false` só quando explicitamente refazendo setup do zero — perde rastro.
+5. **Verifique `delta.added` na resposta**: se vier vazio, é dedup detectando que não mudou nada (esperado em retry).
+6. **Loga `summary`**: vem pronto pra ser exibido (ex: `[domains] VSL adicionada, 2 whites adicionadas`).
+7. **404 silencioso em batch**: se a oferta não está no banco (legado/não cadastrada), pula sem tratar como erro. Só logar `SKIPPED: not in DB`.
+8. **Para pixel/obrigado/redirect** use `custom` com `label` descritivo. O dashboard mostra como `Label: URL` na seção "Outros".
 
 ---
 
