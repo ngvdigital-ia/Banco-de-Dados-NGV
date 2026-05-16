@@ -29,6 +29,13 @@
       "when": 1778155566088,
       "tag": "0003_add_site_urls",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778932874276,
+      "tag": "0004_add_agent_approvals",
+      "breakpoints": true
     }
   ]
 }
