@@ -9,6 +9,7 @@ import {
   serial,
   text,
   timestamp,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -514,4 +515,22 @@ export const offerTracking = pgTable("offer_tracking", {
   observations: text("observations"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ============================================================
+// 18. AGENT APPROVALS (aba Agentes — decisões dos agentes Black/White)
+// ============================================================
+
+export const agentApprovals = pgTable("agent_approvals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  taskId: text("task_id").notNull(),
+  agente: text("agente").notNull(),
+  acao: text("acao").notNull(),
+  feedback: text("feedback"),
+  feedbackAudioUrl: text("feedback_audio_url"),
+  executionId: text("execution_id"),
+  sessionId: text("session_id"),
+  userId: text("user_id").notNull(),
+  userEmail: text("user_email").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
