@@ -1,3 +1,4 @@
+import { CheckCircle2, Clock, Play } from "lucide-react";
 import { StateSection } from "./StateSection";
 import type { Oferta, EstadoAgente } from "@/types/agentes";
 
@@ -38,7 +39,10 @@ export function AgentColumn({
     {} as Record<EstadoAgente, Oferta[]>,
   );
 
-  const resumo = `${ofertasPorEstado.executada.length} / ${ofertasPorEstado.pra_hoje.length} / ${ofertasPorEstado.pra_amanha.length}`;
+  const executadas = ofertasPorEstado.executada.length;
+  const emExecucao = ofertasPorEstado.em_execucao.length;
+  const pendentes =
+    ofertasPorEstado.pra_hoje.length + ofertasPorEstado.pra_amanha.length;
 
   return (
     <div className="space-y-2">
@@ -48,12 +52,23 @@ export function AgentColumn({
           aria-hidden="true"
         />
         <span className="text-sm font-medium">{titulo}</span>
-        <span
-          className="text-xs text-muted-foreground ml-auto"
-          title="executadas / pra hoje / pra amanhã"
-        >
-          {resumo}
-        </span>
+        <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1" title="Executadas">
+            <CheckCircle2 className="h-3 w-3 text-blue-600" aria-hidden="true" />
+            {executadas}
+          </span>
+          <span className="flex items-center gap-1" title="Em execução">
+            <Play className="h-3 w-3 text-amber-600" aria-hidden="true" />
+            {emExecucao}
+          </span>
+          <span
+            className="flex items-center gap-1"
+            title="Pendentes (pra hoje + pra amanhã)"
+          >
+            <Clock className="h-3 w-3 text-slate-500" aria-hidden="true" />
+            {pendentes}
+          </span>
+        </div>
       </div>
 
       {ESTADOS_ORDEM.map((estado) => (
