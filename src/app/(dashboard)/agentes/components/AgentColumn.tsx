@@ -1,4 +1,13 @@
-import { CheckCircle2, Clock, Play } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Play,
+} from "lucide-react";
 import { StateSection } from "./StateSection";
 import type { Oferta, EstadoAgente } from "@/types/agentes";
 
@@ -44,6 +53,18 @@ export function AgentColumn({
   const pendentes =
     ofertasPorEstado.pra_hoje.length + ofertasPorEstado.pra_amanha.length;
 
+  const storageKey = `agentes-column-collapsed-${agente}`;
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Hidrata o estado salvo (efeito só roda no client — localStorage é seguro aqui).
+  useEffect(() => {
+    if (localStorage.getItem(storageKey) === "true") setCollapsed(true);
+  }, [storageKey]);
+
+  useEffect(() => {
+    localStorage.setItem(storageKey, String(collapsed));
+  }, [collapsed, storageKey]);
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 px-3 py-2 bg-card border rounded-md">
@@ -69,18 +90,32 @@ export function AgentColumn({
             {pendentes}
           </span>
         </div>
+        <button
+          type="button"
+          onClick={() => setCollapsed((v) => !v)}
+          className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          aria-label={collapsed ? "Expandir coluna" : "Colapsar coluna"}
+          aria-expanded={!collapsed}
+        >
+          {collapsed ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronUp className="h-4 w-4" />
+          )}
+        </button>
       </div>
 
-      {ESTADOS_ORDEM.map((estado) => (
-        <StateSection
-          key={estado}
-          label={ESTADO_LABEL[estado]}
-          estado={estado}
-          ofertas={ofertasPorEstado[estado]}
-          agente={agente}
-          onAction={onAction}
-        />
-      ))}
+      {!collapsed &&
+        ESTADOS_ORDEM.map((estado) => (
+          <StateSection
+            key={estado}
+            label={ESTADO_LABEL[estado]}
+            estado={estado}
+            ofertas={ofertasPorEstado[estado]}
+            agente={agente}
+            onAction={onAction}
+          />
+        ))}
     </div>
   );
 }
