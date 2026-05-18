@@ -29,17 +29,22 @@ export function DashboardHeader({
   isRefreshing,
 }: DashboardHeaderProps) {
   return (
-    <header className="flex items-center justify-between mb-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Agentes NGV</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Atualizado {formatRelativeTime(atualizadoEm)} · {totalOfertas} ofertas
-        </p>
+    <header className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Agentes NGV</h1>
+          <p className="text-[13px] text-muted-foreground">
+            Atualizado {formatRelativeTime(atualizadoEm)}
+          </p>
+        </div>
+        <span className="inline-flex h-6 items-center rounded-md border border-zinc-200 bg-zinc-100 px-2 text-[11px] font-mono font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
+          {totalOfertas} ofertas
+        </span>
       </div>
       <div className="flex items-center gap-2">
         <Link href="/agentes/triagem">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ClipboardCheck className="h-4 w-4" />
+          <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-3 text-xs font-medium">
+            <ClipboardCheck className="h-3.5 w-3.5" />
             Candidatos triados
           </Button>
         </Link>
@@ -48,10 +53,10 @@ export function DashboardHeader({
           disabled={isRefreshing}
           variant="outline"
           size="sm"
-          className="gap-2"
+          className="h-8 gap-1.5 px-3 text-xs font-medium"
         >
           <RefreshCw
-            className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+            className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`}
           />
           {isRefreshing ? "Atualizando" : "Atualizar"}
         </Button>
