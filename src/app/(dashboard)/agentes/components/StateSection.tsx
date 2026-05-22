@@ -6,7 +6,11 @@ interface StateSectionProps {
   estado: EstadoAgente;
   ofertas: Oferta[];
   agente: "black" | "white";
-  onAction?: (oferta: Oferta, action: "approve" | "reject") => void;
+  onAction?: (
+    oferta: Oferta,
+    action: "approve" | "reject",
+    agente: "black" | "white",
+  ) => void;
 }
 
 export function StateSection({
