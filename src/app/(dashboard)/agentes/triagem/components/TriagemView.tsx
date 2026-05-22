@@ -81,125 +81,123 @@ export function TriagemView({ initialCandidatos }: Props) {
   );
 
   return (
-    <div className="min-h-screen bg-muted/30 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        <header className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Link href="/agentes">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Agentes
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Triagem</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                {candidatos.length} candidatos
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-              Atualizar
+    <div className="space-y-4">
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/agentes">
+            <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-3 text-xs font-medium">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Agentes
             </Button>
-          </div>
-        </header>
-
-        <div className="bg-card border rounded-md p-3 mb-4 space-y-3">
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-xs font-medium text-muted-foreground mr-1">
-              Classificação:
+          </Link>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">Triagem</h1>
+            <span className="inline-flex h-6 items-center rounded-md border border-zinc-200 bg-zinc-100 px-2 text-[11px] font-mono font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
+              {candidatos.length} candidatos
             </span>
-            <FiltroChip
-              ativo={filtroClassif === "todas"}
-              onClick={() => setFiltroClassif("todas")}
-            >
-              Todas ({candidatos.length})
-            </FiltroChip>
-            <FiltroChip
-              ativo={filtroClassif === "MUITO_BOM"}
-              cor="green"
-              onClick={() => setFiltroClassif("MUITO_BOM")}
-            >
-              Muito bom ({contadoresClassif.MUITO_BOM})
-            </FiltroChip>
-            <FiltroChip
-              ativo={filtroClassif === "TALVEZ"}
-              cor="amber"
-              onClick={() => setFiltroClassif("TALVEZ")}
-            >
-              Talvez ({contadoresClassif.TALVEZ})
-            </FiltroChip>
-            <FiltroChip
-              ativo={filtroClassif === "DESCARTAR"}
-              cor="slate"
-              onClick={() => setFiltroClassif("DESCARTAR")}
-            >
-              Descartar ({contadoresClassif.DESCARTAR})
-            </FiltroChip>
-          </div>
-
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-xs font-medium text-muted-foreground mr-1">
-              Vaga:
-            </span>
-            <FiltroChip
-              ativo={filtroVaga === "todas"}
-              onClick={() => setFiltroVaga("todas")}
-            >
-              Todas
-            </FiltroChip>
-            <FiltroChip
-              ativo={filtroVaga === "editor"}
-              onClick={() => setFiltroVaga("editor")}
-            >
-              Editor ({contadoresVaga.editor})
-            </FiltroChip>
-            <FiltroChip
-              ativo={filtroVaga === "copywriter"}
-              onClick={() => setFiltroVaga("copywriter")}
-            >
-              Copywriter ({contadoresVaga.copywriter})
-            </FiltroChip>
-            <FiltroChip
-              ativo={filtroVaga === "trafego"}
-              onClick={() => setFiltroVaga("trafego")}
-            >
-              Tráfego ({contadoresVaga.trafego})
-            </FiltroChip>
-          </div>
-
-          <div className="relative">
-            <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Buscar por nome ou email..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-sm bg-background border rounded-md outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-            />
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 px-3 text-xs font-medium"
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+            Atualizar
+          </Button>
+        </div>
+      </header>
 
-        <CandidatosTable
-          candidatos={filtrados}
-          totalSemFiltro={candidatos.length}
-          onSelecionar={setSelecionado}
-        />
-        <CandidatoDetailsSheet
-          candidato={selecionado}
-          onClose={() => setSelecionado(null)}
-        />
+      <div className="bg-card border rounded-md p-3 space-y-3">
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs font-medium text-muted-foreground mr-1">
+            Classificação:
+          </span>
+          <FiltroChip
+            ativo={filtroClassif === "todas"}
+            onClick={() => setFiltroClassif("todas")}
+          >
+            Todas ({candidatos.length})
+          </FiltroChip>
+          <FiltroChip
+            ativo={filtroClassif === "MUITO_BOM"}
+            cor="green"
+            onClick={() => setFiltroClassif("MUITO_BOM")}
+          >
+            Muito bom ({contadoresClassif.MUITO_BOM})
+          </FiltroChip>
+          <FiltroChip
+            ativo={filtroClassif === "TALVEZ"}
+            cor="amber"
+            onClick={() => setFiltroClassif("TALVEZ")}
+          >
+            Talvez ({contadoresClassif.TALVEZ})
+          </FiltroChip>
+          <FiltroChip
+            ativo={filtroClassif === "DESCARTAR"}
+            cor="slate"
+            onClick={() => setFiltroClassif("DESCARTAR")}
+          >
+            Descartar ({contadoresClassif.DESCARTAR})
+          </FiltroChip>
+        </div>
+
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs font-medium text-muted-foreground mr-1">
+            Vaga:
+          </span>
+          <FiltroChip
+            ativo={filtroVaga === "todas"}
+            onClick={() => setFiltroVaga("todas")}
+          >
+            Todas
+          </FiltroChip>
+          <FiltroChip
+            ativo={filtroVaga === "editor"}
+            onClick={() => setFiltroVaga("editor")}
+          >
+            Editor ({contadoresVaga.editor})
+          </FiltroChip>
+          <FiltroChip
+            ativo={filtroVaga === "copywriter"}
+            onClick={() => setFiltroVaga("copywriter")}
+          >
+            Copywriter ({contadoresVaga.copywriter})
+          </FiltroChip>
+          <FiltroChip
+            ativo={filtroVaga === "trafego"}
+            onClick={() => setFiltroVaga("trafego")}
+          >
+            Tráfego ({contadoresVaga.trafego})
+          </FiltroChip>
+        </div>
+
+        <div className="relative">
+          <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Buscar por nome ou email..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="w-full pl-9 pr-3 py-1.5 text-sm bg-background border rounded-md outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+          />
+        </div>
       </div>
+
+      <CandidatosTable
+        candidatos={filtrados}
+        totalSemFiltro={candidatos.length}
+        onSelecionar={setSelecionado}
+      />
+      <CandidatoDetailsSheet
+        candidato={selecionado}
+        onClose={() => setSelecionado(null)}
+      />
     </div>
   );
 }
