@@ -35,6 +35,8 @@ export function ApprovalSheet({
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  // Re-executar o Black com o feedback ao rejeitar (default ligado).
+  const [reexecutar, setReexecutar] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export function ApprovalSheet({
       setAudioBlob(null);
       setIsSubmitting(false);
       setIsTranscribing(false);
+      setReexecutar(true); // volta ao default ON ao fechar/reabrir
     }
   }, [oferta]);
 
@@ -51,6 +54,8 @@ export function ApprovalSheet({
   const isReject = action === "reject";
   const agenteEstado = oferta.agentes[agente];
   const produto = agenteEstado.produto;
+  // Re-execução só existe pro Black (único com endpoint /re-execute hoje).
+  const podeReexecutar = isReject && agente === "black";
 
   async function handleSubmit() {
     setIsSubmitting(true);
@@ -79,6 +84,7 @@ export function ApprovalSheet({
         setIsTranscribing(false);
       }
 
+      // 1. Registra o approval — operação crítica. Se falhar, o request inteiro falha.
       const approvalRes = await fetch("/api/agentes/approvals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -89,6 +95,7 @@ export function ApprovalSheet({
           feedback: finalFeedback || undefined,
           exec_id: agenteEstado.execution?.exec_id,
           session_id: agenteEstado.execution?.session_id,
+          oferta_nome: oferta!.nome,
         }),
       });
 
@@ -97,9 +104,51 @@ export function ApprovalSheet({
         throw new Error(err.error ?? `HTTP ${approvalRes.status}`);
       }
 
-      toast.success(
-        action === "approve" ? "Aprovada" : "Rejeitada com feedback",
-      );
+      if (action === "approve") {
+        toast.success("Aprovada");
+      } else {
+        toast.success("Rejeição registrada");
+
+        // 2. Re-execução opcional do Black — INDEPENDENTE da rejeição. Se falhar,
+        //    a rejeição NÃO é revertida; só avisamos o usuário de forma clara.
+        if (podeReexecutar && reexecutar) {
+          try {
+            const reexecRes = await fetch("/api/agentes/black/re-execute", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                task_id: oferta!.task_id,
+                feedback: finalFeedback || undefined,
+              }),
+            });
+            if (reexecRes.ok) {
+              toast.success("Re-execução do Black disparada com o feedback");
+            } else {
+              const errBody = (await reexecRes.json().catch(() => ({}))) as {
+                error?: string;
+              };
+              const motivo = errBody.error ?? `HTTP ${reexecRes.status}`;
+              if (reexecRes.status === 422) {
+                toast.warning(
+                  `Atenção: re-execução do Black NÃO disparou. Motivo: ${motivo}. Verifique se a oferta tem a subtarefa "Tradução da VSL".`,
+                  { duration: 12000 },
+                );
+              } else {
+                toast.warning(
+                  `Rejeição salva, mas a re-execução não pôde ser iniciada (${motivo}). Tente de novo em alguns minutos ou avise o time.`,
+                  { duration: 12000 },
+                );
+              }
+            }
+          } catch {
+            toast.warning(
+              "Rejeição salva, mas a re-execução não pôde ser iniciada (erro de rede). Tente de novo em alguns minutos.",
+              { duration: 12000 },
+            );
+          }
+        }
+      }
+
       await onSuccess();
       router.refresh();
     } catch (err) {
@@ -111,6 +160,18 @@ export function ApprovalSheet({
       setIsTranscribing(false);
     }
   }
+
+  const botaoLabel = isTranscribing
+    ? "Transcrevendo áudio..."
+    : isSubmitting
+      ? "Salvando..."
+      : !isReject
+        ? "Confirmar aprovação"
+        : podeReexecutar
+          ? reexecutar
+            ? "Rejeitar e re-executar Black"
+            : "Apenas rejeitar"
+          : "Confirmar rejeição";
 
   return (
     <Sheet open={!!oferta} onOpenChange={(open) => !open && onClose()}>
@@ -174,6 +235,27 @@ export function ApprovalSheet({
                   disabled={isSubmitting}
                 />
               </div>
+
+              {podeReexecutar && (
+                <label className="flex items-start gap-2 cursor-pointer select-none rounded-md border bg-muted/40 p-3">
+                  <input
+                    type="checkbox"
+                    checked={reexecutar}
+                    onChange={(e) => setReexecutar(e.target.checked)}
+                    disabled={isSubmitting}
+                    className="mt-0.5 h-4 w-4 accent-slate-900"
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium">
+                      Re-executar o Black com este feedback
+                    </span>
+                    <span className="block text-xs text-muted-foreground mt-0.5">
+                      Gera uma nova versão do produto usando o seu feedback. Custa
+                      créditos da Anthropic (~$0,50 por execução).
+                    </span>
+                  </span>
+                </label>
+              )}
             </>
           )}
 
@@ -202,19 +284,9 @@ export function ApprovalSheet({
               className="flex-1 gap-2"
             >
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isTranscribing
-                ? "Transcrevendo áudio..."
-                : isSubmitting
-                  ? "Salvando..."
-                  : isReject
-                    ? "Confirmar rejeição"
-                    : "Confirmar aprovação"}
+              {botaoLabel}
             </Button>
-            <Button
-              onClick={onClose}
-              variant="outline"
-              disabled={isSubmitting}
-            >
+            <Button onClick={onClose} variant="outline" disabled={isSubmitting}>
               Cancelar
             </Button>
           </div>

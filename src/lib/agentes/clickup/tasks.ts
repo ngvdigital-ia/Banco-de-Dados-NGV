@@ -110,3 +110,30 @@ export function findSubtaskByName(
     s.name.toLowerCase().includes(nameSubstring.toLowerCase()),
   );
 }
+
+/**
+ * Muda o status de uma task. `status` é o NOME do status como cadastrado na
+ * lista (ex: "em ajustes"). Lança em caso de erro (chamador decide se ignora).
+ */
+export async function updateTaskStatus(
+  taskId: string,
+  status: string,
+): Promise<void> {
+  await clickupFetch(`/task/${taskId}`, {
+    method: "PUT",
+    body: { status },
+  });
+}
+
+/**
+ * Posta um comentário na task. Não notifica todos por padrão.
+ */
+export async function postComment(
+  taskId: string,
+  text: string,
+): Promise<void> {
+  await clickupFetch(`/task/${taskId}/comment`, {
+    method: "POST",
+    body: { comment_text: text, notify_all: false },
+  });
+}

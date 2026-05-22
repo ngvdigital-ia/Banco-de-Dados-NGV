@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   FileText,
   Play,
@@ -11,10 +10,7 @@ import {
   ThumbsUp,
   ThumbsDown,
   FileDown,
-  RotateCcw,
-  Loader2,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Oferta, EstadoAgente } from "@/types/agentes";
@@ -23,7 +19,11 @@ interface OfertaCardProps {
   oferta: Oferta;
   estado: EstadoAgente;
   agente: "black" | "white";
-  onAction?: (oferta: Oferta, action: "approve" | "reject") => void;
+  onAction?: (
+    oferta: Oferta,
+    action: "approve" | "reject",
+    agente: "black" | "white",
+  ) => void;
 }
 
 const BORDA_ESQUERDA_POR_ESTADO: Record<EstadoAgente, string> = {
@@ -63,35 +63,6 @@ export function OfertaCard({ oferta, estado, agente, onAction }: OfertaCardProps
   const scoreVariant = getScoreVariant(score);
   const pulsar = estado === "em_execucao";
   const approval = agenteEstado.approval;
-  const [isReexecuting, setIsReexecuting] = useState(false);
-
-  async function handleReexecutar() {
-    if (
-      !window.confirm(
-        `Re-executar o agente Black para "${oferta.nome}"? Isso inicia uma nova execução no n8n.`,
-      )
-    ) {
-      return;
-    }
-    setIsReexecuting(true);
-    try {
-      const res = await fetch("/api/agentes/black/re-execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task_id: oferta.task_id }),
-      });
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(err.error ?? `HTTP ${res.status}`);
-      }
-      toast.success("Re-execução do Black disparada");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "erro desconhecido";
-      toast.error(`Falha ao re-executar: ${msg}`);
-    } finally {
-      setIsReexecuting(false);
-    }
-  }
 
   return (
     <article
@@ -213,10 +184,7 @@ export function OfertaCard({ oferta, estado, agente, onAction }: OfertaCardProps
                 </>
               ) : (
                 <>
-                  <X
-                    className="h-3.5 w-3.5 text-red-700"
-                    aria-hidden="true"
-                  />
+                  <X className="h-3.5 w-3.5 text-red-700" aria-hidden="true" />
                   <span className="text-red-700 font-medium">Rejeitado</span>
                 </>
               )}
@@ -233,7 +201,7 @@ export function OfertaCard({ oferta, estado, agente, onAction }: OfertaCardProps
                   className="h-7 px-2 text-xs gap-1 flex-1"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onAction(oferta, "approve");
+                    onAction(oferta, "approve", agente);
                   }}
                 >
                   <ThumbsUp className="h-3 w-3" />
@@ -245,7 +213,7 @@ export function OfertaCard({ oferta, estado, agente, onAction }: OfertaCardProps
                   className="h-7 px-2 text-xs gap-1 flex-1"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onAction(oferta, "reject");
+                    onAction(oferta, "reject", agente);
                   }}
                 >
                   <ThumbsDown className="h-3 w-3" />
@@ -253,26 +221,6 @@ export function OfertaCard({ oferta, estado, agente, onAction }: OfertaCardProps
                 </Button>
               </div>
             )
-          )}
-
-          {agente === "black" && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 w-full gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
-              disabled={isReexecuting}
-              onClick={(e) => {
-                e.stopPropagation();
-                void handleReexecutar();
-              }}
-            >
-              {isReexecuting ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <RotateCcw className="h-3 w-3" />
-              )}
-              {isReexecuting ? "Disparando..." : "Re-executar Black"}
-            </Button>
           )}
         </div>
       )}

@@ -16,7 +16,11 @@ interface AgentColumnProps {
   corDestaque: string;
   ofertas: Oferta[];
   agente: "black" | "white";
-  onAction?: (oferta: Oferta, action: "approve" | "reject") => void;
+  onAction?: (
+    oferta: Oferta,
+    action: "approve" | "reject",
+    agente: "black" | "white",
+  ) => void;
 }
 
 const ESTADOS_ORDEM: EstadoAgente[] = [
@@ -57,7 +61,10 @@ export function AgentColumn({
   const [collapsed, setCollapsed] = useState(false);
 
   // Hidrata o estado salvo (efeito só roda no client — localStorage é seguro aqui).
+  // setState no effect é intencional: ler localStorage no lazy-init do useState
+  // causaria hydration mismatch no SSR; effect client-only é o padrão correto.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (localStorage.getItem(storageKey) === "true") setCollapsed(true);
   }, [storageKey]);
 

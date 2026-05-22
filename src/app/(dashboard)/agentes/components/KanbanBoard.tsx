@@ -56,8 +56,12 @@ export function KanbanBoard({
     }
   }
 
-  function handleAction(oferta: Oferta, action: "approve" | "reject") {
-    setApprovalState({ oferta, action, agente: "black" });
+  function handleAction(
+    oferta: Oferta,
+    action: "approve" | "reject",
+    agente: "black" | "white",
+  ) {
+    setApprovalState({ oferta, action, agente });
   }
 
   async function handleApprovalSuccess() {

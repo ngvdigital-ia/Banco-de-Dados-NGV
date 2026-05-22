@@ -21,7 +21,7 @@ Portada do app standalone `agentes-ngv-ui` para dentro do `Banco_de_dados_NGV`
 - Rotas de API: `src/app/api/agentes/*` — `ofertas`, `candidatos`, `approvals`,
   `transcribe`, `black/re-execute`.
 - Wrappers de integração: `src/lib/agentes/*` — n8n, anthropic, clickup,
-  ofertas, triagem.
+  ofertas, triagem, `notify` (webhook n8n de notificação de rejeição).
 
 ## Variáveis de ambiente
 
@@ -35,6 +35,7 @@ Necessárias em `.env.local` (ver `.env.example`):
 | `TRIAGEM_WEBHOOK_LISTAR_URL` | Webhook que lista os candidatos triados |
 | `GROQ_API_KEY` | Transcrição de áudio (Whisper) |
 | `BLACK_MANUAL_WEBHOOK_URL` | Disparo manual / re-execução do Black |
+| `N8N_NOTIF_REJEICAO_WEBHOOK_URL` | Webhook n8n que notifica o `#triagem-ngv` ao rejeitar |
 
 ## Banco de dados
 
@@ -75,25 +76,38 @@ existe — o código está correto. O `documento_principal_url` vem do custom fi
 **TODO (time de ClickUp):** preencher o custom field "Documento principal" nas
 ofertas que faltam (`[TEMPLATE] Oferta` é template — pode ficar vazio).
 
+## Como o Diogo aprova/rejeita produtos
+
+Nos cards de agente **executados** (com produto gerado) há **Aprovar** e **Rejeitar**.
+
+- **Aprovar** → grava a decisão em `agent_approvals`.
+- **Rejeitar** → abre o `ApprovalSheet` com feedback (texto ou áudio transcrito) e um
+  checkbox **"Re-executar o Black com este feedback"** (ligado por padrão, só no Black).
+  Ao confirmar:
+  1. grava o approval (`rejected` + feedback) no Neon;
+  2. muda o status da oferta no ClickUp para **"Em ajustes"** e posta um comentário
+     com o feedback no card;
+  3. notifica o **`#triagem-ngv`** no Slack (via webhook n8n `notif-rejeicao-agente`);
+  4. se o checkbox estiver marcado, dispara a **re-execução do Black** com o feedback
+     — o backend resolve a subtarefa "Tradução da VSL" da oferta-mãe antes de chamar
+     o `manual-cria-black`, e o workflow injeta o feedback no prompt do agente.
+
+Os passos 2–4 são **side effects isolados**: se o ClickUp ou o Slack falharem, a
+rejeição continua salva. Se a re-execução falhar (ex.: oferta sem subtarefa "Tradução
+da VSL" → 422), o usuário vê um toast de aviso claro, mas a rejeição **não** é
+revertida. Detalhes técnicos: `SISTEMA-AGENTES-NGV.md` §7.14.
+
 ## Pendências conhecidas
 
-1. **Re-execução com feedback não fecha o ciclo:** `/api/agentes/black/re-execute`
-   dispara o webhook `manual-cria-black` com o `feedback` no payload, mas o
-   workflow n8n `W7odSUjobmbeaQBC` ainda não injeta esse `feedback` no prompt do
-   agente Black. Tarefa do time de n8n.
-2. **Botão "Re-executar Black" é net-new:** o app de origem nunca teve esse botão
-   (só a API route). Foi criado nesta migração, no `OfertaCard` dos cards Black
-   executados.
-3. **Áudio não é persistido:** o `.webm` é apenas transcrito (Groq), não salvo.
+1. **Áudio não é persistido:** o `.webm` é apenas transcrito (Groq), não salvo.
    Persistir exige storage (Fase B).
-4. **Token do ClickUp é pessoal** (hoje, do Diogo) — trocar por um token de
+2. **Token do ClickUp é pessoal** (hoje, do Diogo) — trocar por um token de
    serviço dedicado.
-5. **White roda muito pouco:** confirmar com a equipe se o agente White segue
-   em uso.
-6. **Triagem não está classificando:** os candidatos aparecem, mas a
+3. **White roda muito pouco:** confirmar com a equipe se o agente White segue
+   em uso. A re-execução com feedback existe só pro Black (único com endpoint
+   `/re-execute`).
+4. **Triagem não está classificando:** os candidatos aparecem, mas a
    classificação não vem correta — é bug do workflow n8n `t26MZRLKNrC2prd1`
    (não do dashboard). Sprint separada com o time de n8n.
-7. **Aprovar/Rejeitar não integra com o ClickUp:** hoje a decisão só grava em
-   `agent_approvals`. O ideal seria mover status / postar comentário no card do
-   ClickUp e refletir no dashboard de acompanhamento de ofertas. Feature de
-   integração para uma sprint futura (precisa desenhar o fluxo antes).
+5. **Apontamento TESTE → PROD:** agentes e dashboard ainda operam na lista TESTE
+   (`901326990512`). Virar pra PROD é decisão pendente do Diogo.
