@@ -109,5 +109,9 @@ revertida. Detalhes técnicos: `SISTEMA-AGENTES-NGV.md` §7.14.
 4. **Triagem não está classificando:** os candidatos aparecem, mas a
    classificação não vem correta — é bug do workflow n8n `t26MZRLKNrC2prd1`
    (não do dashboard). Sprint separada com o time de n8n.
-5. **Apontamento TESTE → PROD:** agentes e dashboard ainda operam na lista TESTE
-   (`901326990512`). Virar pra PROD é decisão pendente do Diogo.
+5. **Apontamento TESTE → PROD:** ✅ RESOLVIDO (2026-05-23, go-live aprovado pelo Diogo).
+   Dashboard (`aggregate.ts`) e triggers Black/White (`W7odSUjobmbeaQBC` /
+   `4PGnjgJAuqQLDBHU`) agora apontam pra lista PROD `901326908721`. O Black notifica
+   todas as subtasks "Produto PDF" abertas. **Pré-requisitos contínuos:** VSLs reais
+   compartilhadas com a conta do n8n (`ngvdigital.ia@gmail.com`) e atenção a pastas
+   duplicadas no Drive (Black cria pasta com o CF "Nome da oferta").

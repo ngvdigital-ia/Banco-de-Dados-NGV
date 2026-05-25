@@ -22,7 +22,7 @@ import {
 } from "./subs";
 import type { ApprovalInfo, Oferta } from "@/types/agentes";
 
-const CLICKUP_LIST_ID = "901326990512";
+const CLICKUP_LIST_ID = "901326908721"; // PROD "Projetos de Oferta" (go-live 2026-05-23)
 const WORKFLOW_BLACK = "W7odSUjobmbeaQBC";
 const WORKFLOW_WHITE = "4PGnjgJAuqQLDBHU";
 const ANTHROPIC_BLACK = "agent_014LergsnxrZH5RvCnnzhfGS";
