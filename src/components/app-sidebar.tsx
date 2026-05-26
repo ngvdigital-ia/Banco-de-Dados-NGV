@@ -10,13 +10,15 @@ import {
   LineChart,
   PieChart,
   Settings,
+  ShieldCheck,
   Tags,
   Upload,
   Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useUser } from "@clerk/nextjs";
+import { isAdminEmail } from "@/lib/admin-emails";
 import {
   Sidebar,
   SidebarContent,
@@ -46,6 +48,8 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { user } = useUser();
+  const isAdmin = isAdminEmail(user?.primaryEmailAddress?.emailAddress);
 
   return (
     <Sidebar>
@@ -78,6 +82,24 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    render={<Link href="/admin/team" />}
+                    isActive={pathname.startsWith("/admin/team")}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>Equipe & Acessos</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter className="border-t p-4">
         <div className="flex items-center gap-3">
