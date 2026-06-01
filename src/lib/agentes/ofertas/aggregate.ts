@@ -8,7 +8,7 @@ import {
 } from "@/lib/agentes/n8n/executions";
 import { db } from "@/db";
 import { agentApprovals } from "@/db/schema";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, inArray } from "drizzle-orm";
 import { listSessions } from "@/lib/agentes/anthropic/sessions";
 import {
   listTasksInList,
@@ -145,17 +145,19 @@ export async function aggregateOfertas(): Promise<Oferta[]> {
     }),
   );
 
-  // 4c. Buscar ÚLTIMA approval por task_id no Drizzle (só Black por enquanto)
+  // 4c. Buscar ÚLTIMA approval por task_id+agente no Drizzle (Black e White)
+  // Chave do map: `${taskId}:${agente}` — evita colisão entre Black e White da mesma oferta.
   const approvalsMap = new Map<string, ApprovalInfo>();
   try {
     const taskIds = ofertasPais.map((t) => t.id);
     if (taskIds.length > 0) {
       const rows = await db.select().from(agentApprovals)
-        .where(and(inArray(agentApprovals.taskId, taskIds), eq(agentApprovals.agente, "black")))
+        .where(and(inArray(agentApprovals.taskId, taskIds), inArray(agentApprovals.agente, ["black", "white"])))
         .orderBy(desc(agentApprovals.createdAt));
       for (const row of rows) {
-        if (!approvalsMap.has(row.taskId)) {
-          approvalsMap.set(row.taskId, {
+        const key = `${row.taskId}:${row.agente}`;
+        if (!approvalsMap.has(key)) {
+          approvalsMap.set(key, {
             id: row.id,
             action: row.acao as "approved" | "rejected",
             feedback: row.feedback ?? undefined,
@@ -194,7 +196,7 @@ export async function aggregateOfertas(): Promise<Oferta[]> {
           });
           if (estadoBase.estado !== "executada") return estadoBase;
           const produto = produtoMap.get(t.id);
-          const approval = approvalsMap.get(t.id);
+          const approval = approvalsMap.get(`${t.id}:black`);
           if (!produto && !approval) return estadoBase;
           return {
             ...estadoBase,
@@ -210,13 +212,19 @@ export async function aggregateOfertas(): Promise<Oferta[]> {
             approval,
           };
         })(),
-        white: calcularEstadoAgente({
-          oferta: t,
-          agente: "white",
-          execsRunningPorTaskId,
-          sessionsRunning,
-          execsRealizadas: execsRealizadasWhitePorTaskId,
-        }),
+        white: (() => {
+          const estadoBase = calcularEstadoAgente({
+            oferta: t,
+            agente: "white",
+            execsRunningPorTaskId,
+            sessionsRunning,
+            execsRealizadas: execsRealizadasWhitePorTaskId,
+          });
+          if (estadoBase.estado !== "executada") return estadoBase;
+          const approval = approvalsMap.get(`${t.id}:white`);
+          if (!approval) return estadoBase;
+          return { ...estadoBase, approval };
+        })(),
       },
       atualizado_em: new Date().toISOString(),
     };

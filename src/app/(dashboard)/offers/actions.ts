@@ -6,6 +6,7 @@ import { eq, desc, and, gte, lt, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 import { requireAdmin } from "@/lib/admin-auth";
+import { logChange } from "@/lib/changelog";
 import {
   type SiteUrls,
   siteUrlsSchema,
@@ -129,10 +130,32 @@ export async function updateOfferField(
     throw new Error(`Campo desconhecido: ${field}`);
   }
 
+  // Captura valor antigo para changelog — tolerante a falha (não bloqueia o update)
+  let oldValue: unknown = null;
+  try {
+    const [current] = await db
+      .select()
+      .from(offerTracking)
+      .where(eq(offerTracking.id, id))
+      .limit(1);
+    oldValue = current ? (current as Record<string, unknown>)[field] ?? null : null;
+  } catch {
+    // Não bloqueia o update se a leitura prévia falhar
+  }
+
   await db
     .update(offerTracking)
     .set({ [field]: value, updatedAt: new Date() })
     .where(eq(offerTracking.id, id));
+
+  // Registro no changelog — falha silenciosa (não deve quebrar o update)
+  try {
+    await logChange("offer", id, "update", {
+      [field]: { from: oldValue, to: value },
+    });
+  } catch (logErr) {
+    console.error("[updateOfferField] logChange failed (non-fatal):", logErr);
+  }
 
   // Keep adsEditedCount in sync with sum of adsEditedByPerson values
   if (field === "adsEditedByPerson") {
@@ -260,6 +283,51 @@ export async function deleteOffer(id: number) {
 
   await db.delete(offerTracking).where(eq(offerTracking.id, id));
   revalidatePath("/offers");
+}
+
+export async function duplicateOffer(id: number): Promise<number> {
+  await requireAdmin();
+
+  const [original] = await db
+    .select()
+    .from(offerTracking)
+    .where(eq(offerTracking.id, id))
+    .limit(1);
+
+  if (!original) {
+    throw new Error(`Oferta ${id} não encontrada`);
+  }
+
+  const [newOffer] = await db
+    .insert(offerTracking)
+    .values({
+      // Setup preservado
+      name: `${original.name} (copia)`,
+      copyVsl: original.copyVsl,
+      copyAds: original.copyAds,
+      editorAds: original.editorAds,
+      editorVsl: original.editorVsl,
+      language: original.language,
+      ticket: original.ticket,
+      adFormat: original.adFormat,
+      gender: original.gender,
+      observations: original.observations,
+      // Status zerado
+      copyVslStatus: "NAO",
+      copyCriativosStatus: "NAO",
+      validation: "NAO",
+      preScale: "NAO",
+      scale: "NAO",
+      productCreated: "NAO",
+      productApproved: "NAO",
+      siteCreated: "NAO",
+      siteUrls: null,
+      siteUrl: null,
+    })
+    .returning({ id: offerTracking.id });
+
+  revalidatePath("/offers");
+  return newOffer.id;
 }
 
 export async function importOffers(rows: Record<string, unknown>[]) {

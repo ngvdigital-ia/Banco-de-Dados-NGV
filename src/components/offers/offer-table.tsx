@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { Trash2, ExternalLink, Pencil, ChevronDown } from "lucide-react";
-import { updateOfferField, deleteOffer } from "@/app/(dashboard)/offers/actions";
+import { Trash2, ExternalLink, Pencil, ChevronDown, Copy } from "lucide-react";
+import { toast } from "sonner";
+import { updateOfferField, deleteOffer, duplicateOffer } from "@/app/(dashboard)/offers/actions";
 import { type SiteUrls, primaryUrl, totalLinks } from "@/lib/site-urls";
 import { SiteUrlsDialog } from "@/components/offers/site-urls-dialog";
 
@@ -89,93 +90,8 @@ function calcProgress(offer: Offer): number {
 // ---------- Fixed options ----------
 
 // Siglas: DG=Diogo, GF=Gabriel Fischer, GL=Gabriel Lima, RO=Robert, MALU=Malu, VA=Victor Andrade, CA=Camile, LF=Luis Felipe
-import { COPYWRITERS, EDITORS, LANGUAGES, SIGLA_TO_NAME, NAME_TO_SIGLA, AD_FORMATS, FORMAT_LABELS } from "@/lib/team-utils";
+import { COPYWRITERS, EDITORS, LANGUAGES, NAME_TO_SIGLA, AD_FORMATS, FORMAT_LABELS } from "@/lib/team-utils";
 
-// Convert a multi-person string like "ROBERT & GABRIEL" → "RO & GA"
-function convertNamesToSiglas(value: string | null): string {
-  if (!value) return "-";
-  return value
-    .split(/[&,\-]/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((name) => {
-      const sigla = NAME_TO_SIGLA[name.toLowerCase()];
-      return sigla || name;
-    })
-    .join(" & ");
-}
-
-// Multi-person display cell (read-only display with siglas, click to edit as text)
-function MultiPersonCell({
-  value,
-  offerId,
-  field,
-}: {
-  value: string | null;
-  offerId: number;
-  field: string;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [localValue, setLocalValue] = useState(value ?? "");
-  const [isPending, startTransition] = useTransition();
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [editing]);
-
-  function handleSave() {
-    setEditing(false);
-    if (localValue !== (value ?? "")) {
-      startTransition(async () => {
-        await updateOfferField(offerId, field, localValue || null);
-      });
-    }
-  }
-
-  if (editing) {
-    return (
-      <input
-        ref={inputRef}
-        className="h-7 w-full rounded border border-input bg-background px-1.5 text-xs outline-none focus:border-ring"
-        value={localValue}
-        onChange={(e) => setLocalValue(e.target.value)}
-        onBlur={handleSave}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") handleSave();
-          if (e.key === "Escape") { setLocalValue(value ?? ""); setEditing(false); }
-        }}
-      />
-    );
-  }
-
-  const display = convertNamesToSiglas(value);
-
-  return (
-    <div
-      onClick={() => { setLocalValue(value ?? ""); setEditing(true); }}
-      className={`cursor-pointer truncate rounded px-1 py-0.5 text-xs font-medium hover:border-b hover:border-dashed hover:border-zinc-300 ${isPending ? "opacity-50" : ""}`}
-      title={value ?? ""}
-    >
-      {display}
-    </div>
-  );
-}
-
-function parseEditors(editorAds: string | null): string[] {
-  if (!editorAds) return [];
-  return editorAds
-    .split(/[&,]/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((name) => {
-      const known = EDITORS.find((e) => e.toLowerCase() === name.toLowerCase());
-      return known || name;
-    });
-}
 
 // ---------- SelectCell ----------
 
@@ -764,64 +680,6 @@ function AdsEditDisplay({
   );
 }
 
-function EditorStatusDisplay({
-  value,
-  offerId,
-  editorAds,
-}: {
-  value: unknown;
-  offerId: number;
-  editorAds: string | null;
-}) {
-  const [isPending, startTransition] = useTransition();
-  const data = (value as Record<string, string> | null) ?? {};
-
-  const editors = parseEditors(editorAds);
-
-  function toggleEditor(name: string) {
-    const current = (data[name] || "NAO").toUpperCase().trim();
-    const next = current === "SIM" ? "NAO" : "SIM";
-    const newData = { ...data, [name]: next };
-    startTransition(async () => {
-      await updateOfferField(
-        offerId,
-        "editorStatus",
-        JSON.stringify(newData) as unknown as string
-      );
-    });
-  }
-
-  if (editors.length === 0) {
-    return <span className="text-xs text-muted-foreground">-</span>;
-  }
-
-  return (
-    <div
-      className={`flex gap-0.5 ${isPending ? "opacity-50" : ""}`}
-    >
-      {editors.map((name) => {
-        const status = (data[name] || "NAO").toUpperCase().trim();
-        const done = status === "SIM";
-        return (
-          <button
-            key={name}
-            type="button"
-            onClick={() => toggleEditor(name)}
-            className={`inline-flex h-6 items-center rounded px-1.5 text-[10px] font-medium transition-all duration-150 ${
-              done
-                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
-                : "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
-            }`}
-            title={`${name}: ${status}`}
-          >
-            {name[0]}
-            {done ? "\u2713" : "\u2717"}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 type LinkRow = { type: "VSL" | "White" | "Quiz" | "Outros"; label?: string; url: string };
 
@@ -1017,6 +875,34 @@ function DeleteButton({ offerId }: { offerId: number }) {
       title="Excluir oferta"
     >
       <Trash2 className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+function CopyButton({ offerId }: { offerId: number }) {
+  const [isPending, startTransition] = useTransition();
+
+  function handleCopy() {
+    startTransition(async () => {
+      try {
+        await duplicateOffer(offerId);
+        toast.success("Oferta duplicada com sucesso");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Erro ao duplicar oferta");
+      }
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      disabled={isPending}
+      className={`rounded p-1 text-muted-foreground opacity-0 transition-all duration-150 group-hover:opacity-100 hover:bg-accent hover:text-foreground ${isPending ? "opacity-50" : ""}`}
+      title="Duplicar oferta"
+      aria-label="Duplicar oferta"
+    >
+      <Copy className="h-3.5 w-3.5" />
     </button>
   );
 }
@@ -1262,8 +1148,13 @@ const columns: ColumnDef[] = [
   {
     key: "actions",
     label: "",
-    width: "w-[40px] min-w-[40px]",
-    render: (o) => <DeleteButton offerId={o.id} />,
+    width: "w-[68px] min-w-[68px]",
+    render: (o) => (
+      <div className="flex items-center gap-0.5">
+        <CopyButton offerId={o.id} />
+        <DeleteButton offerId={o.id} />
+      </div>
+    ),
   },
 ];
 

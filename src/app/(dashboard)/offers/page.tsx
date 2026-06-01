@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OfferTable } from "@/components/offers/offer-table";
 import { CsvImportDialog } from "@/components/offers/csv-import-dialog";
@@ -66,6 +66,13 @@ export default async function OffersPage({
         </div>
         <div className="flex items-center gap-2">
           <CsvImportDialog />
+          <ExportCsvButton
+            language={language}
+            validation={validation}
+            copywriter={copywriter}
+            monthFrom={monthFrom}
+            monthTo={monthTo}
+          />
           <form
             action={async () => {
               "use server";
@@ -119,7 +126,7 @@ function formatMonth(ym: string) {
 function OfferFilters({
   languages,
   validations,
-  copywriters: _copywriters,
+  copywriters,
   months,
   currentLanguage,
   currentValidation,
@@ -245,6 +252,31 @@ function OfferFilters({
         </>
       )}
 
+      {copywriters.length > 1 && (
+        <>
+          <div className="mx-1 h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
+          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Copy:</span>
+          <div className="flex items-center gap-1">
+            {copywriters.map((cw) => (
+              <a
+                key={cw}
+                href={buildHref({
+                  language: currentLanguage,
+                  validation: currentValidation,
+                  copywriter: currentCopywriter === cw ? undefined : cw,
+                  month: currentMonth,
+                })}
+                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-all ${
+                  currentCopywriter === cw ? monthBtnActive : monthBtnInactive
+                }`}
+              >
+                {cw}
+              </a>
+            ))}
+          </div>
+        </>
+      )}
+
       {hasFilters && (
         <>
           <div className="mx-1 h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
@@ -257,5 +289,39 @@ function OfferFilters({
         </>
       )}
     </div>
+  );
+}
+
+function ExportCsvButton({
+  language,
+  validation,
+  copywriter,
+  monthFrom,
+  monthTo,
+}: {
+  language?: string;
+  validation?: string;
+  copywriter?: string;
+  monthFrom?: string;
+  monthTo?: string;
+}) {
+  const sp = new URLSearchParams();
+  if (language) sp.set("language", language);
+  if (validation) sp.set("validation", validation);
+  if (copywriter) sp.set("copywriter", copywriter);
+  if (monthFrom) sp.set("monthFrom", monthFrom);
+  if (monthTo) sp.set("monthTo", monthTo);
+  const qs = sp.toString();
+  const href = `/api/admin/offers/export${qs ? `?${qs}` : ""}`;
+
+  return (
+    <a
+      href={href}
+      download
+      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-zinc-200 bg-background px-3 text-xs font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+    >
+      <Download className="h-3.5 w-3.5" />
+      Exportar CSV
+    </a>
   );
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
-import { fetchPlayers, fetchEventsByPlayer } from "@/lib/vturb";
+import { fetchPlayers, fetchEventsByPlayer, fetchSessionStats } from "@/lib/vturb";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -51,6 +51,30 @@ export async function GET(request: Request) {
 
     const allToSave = [...playersWithData, ...playersWithoutData];
 
+    // 4. Fetch session stats in batches of 5 for players with activity (rate-limit safe)
+    const sessionStatsMap = new Map<string, { playRate: string; buttonClickRate: string; conversionRate: string }>();
+    const playersWithActivity = playersWithData.filter((p) => (eventsMap?.get(p.id)?.started ?? 0) > 0);
+
+    for (let i = 0; i < playersWithActivity.length; i += 5) {
+      const batch = playersWithActivity.slice(i, i + 5);
+      await Promise.all(
+        batch.map(async (player) => {
+          try {
+            const stats = await fetchSessionStats(player.id, dateFrom, dateTo);
+            if (stats) {
+              sessionStatsMap.set(player.id, {
+                playRate: stats.play_rate,
+                buttonClickRate: stats.over_pitch_rate,
+                conversionRate: String(stats.overall_conversion_rate),
+              });
+            }
+          } catch (err) {
+            console.error(`[VTurb] Session stats skipped for player ${player.id}:`, err);
+          }
+        })
+      );
+    }
+
     for (const player of allToSave) {
       try {
         const events = eventsMap?.get(player.id) ?? { started: 0, finished: 0, viewed: 0, clicked: 0 };
@@ -62,11 +86,17 @@ export async function GET(request: Request) {
           ? Math.round((events.finished / events.started) * 10000) / 100
           : 0;
 
+        const sessionStats = sessionStatsMap.get(player.id);
+
         await db.insert(metricsSnapshots).values({
           date: now,
           entityType: "vturb_player",
           entityId: 0,
           source: "manual",
+          // Typed columns from VTurb session stats (only for players with activity)
+          playRate: sessionStats?.playRate ?? String(playRate),
+          buttonClickRate: sessionStats?.buttonClickRate ?? null,
+          conversionRate: sessionStats?.conversionRate ?? null,
           extraData: {
             source: "vturb",
             playerId: player.id,

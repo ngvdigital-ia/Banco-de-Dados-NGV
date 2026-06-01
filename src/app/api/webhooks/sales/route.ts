@@ -57,11 +57,14 @@ export async function POST(request: Request) {
   try {
     // Detect platform
     const isPerfectPay = body.sale_status_enum !== undefined || body.sale_amount !== undefined || (typeof body.code === "string" && String(body.code).startsWith("PPC"));
+    const platform = detectPlatform(body);
 
     let sale;
 
     if (isPerfectPay) {
       sale = parsePerfectPay(body);
+    } else if (platform === "Hotmart") {
+      sale = parseHotmart(body);
     } else {
       sale = parseGeneric(body);
     }
@@ -74,7 +77,14 @@ export async function POST(request: Request) {
       source: "manual",
       revenue: sale.price ? String(sale.price) : null,
       extraData: {
-        ...sale,
+        // LGPD: nao persistir PII do comprador. entityType='sale' nao e lido em
+        // lugar nenhum hoje e o futuro painel de vendas usara so agregados.
+        ...(() => {
+          const s = sale as Record<string, unknown>;
+          const { customerEmail, customerName, customerPhone, ...safe } = s;
+          void customerEmail; void customerName; void customerPhone;
+          return safe;
+        })(),
         receivedAt: new Date().toISOString(),
       },
     });
@@ -129,6 +139,29 @@ function parsePerfectPay(body: Record<string, unknown>) {
     dateCreated: body.date_created ? String(body.date_created) : null,
     dateApproved: body.date_approved ? String(body.date_approved) : null,
     quantity: Number(body.quantity || 1),
+  };
+}
+
+function parseHotmart(body: Record<string, unknown>) {
+  const data = body.data as Record<string, unknown> | undefined;
+  const purchase = data?.purchase as Record<string, unknown> | undefined;
+  const product = data?.product as Record<string, unknown> | undefined;
+  const buyer = data?.buyer as Record<string, unknown> | undefined;
+  const commissions = data?.commissions as Record<string, unknown> | undefined;
+
+  const rawStatus = purchase?.status;
+  const rawPrice = commissions?.total_value;
+  const rawCurrency = purchase?.currency_value;
+
+  return {
+    platform: "Hotmart",
+    status: rawStatus ? String(rawStatus).toLowerCase() : null,
+    productName: product?.name ? String(product.name) : null,
+    price: rawPrice !== undefined && rawPrice !== null ? parseFloat(String(rawPrice)) : null,
+    currency: rawCurrency ? String(rawCurrency) : "BRL",
+    transactionId: purchase?.transaction ? String(purchase.transaction) : null,
+    // Dados do comprador — sem expor email diretamente no log (mantém padrão pós-auditoria)
+    customerEmail: buyer?.email ? String(buyer.email) : null,
   };
 }
 
