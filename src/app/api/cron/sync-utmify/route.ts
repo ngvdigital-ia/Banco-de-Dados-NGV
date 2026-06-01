@@ -52,27 +52,31 @@ export async function GET(request: Request) {
       try {
         const metaData = await fetchMetaAdObjects(dashboard.id, dashboard.timeZone);
         for (const campaign of metaData.results) {
-          const offerName = extractOfferFromCampaignName(campaign.name);
-          await db.insert(metricsSnapshots).values({
-            date: yesterday,
-            entityType: "utmify_campaign_daily",
-            entityId: 0,
-            source: "utmify",
-            impressions: campaign.impressions ?? null,
-            clicks: campaign.clicks ?? null,
-            spend: campaign.spend != null ? String(campaign.spend / 100) : null,
-            revenue: campaign.revenue != null ? String(campaign.revenue / 100) : null,
-            cpa: campaign.cpa != null ? String(campaign.cpa / 100) : null,
-            roas: campaign.roas != null ? String(campaign.roas) : null,
-            extraData: {
-              campaignName: campaign.name,
-              campaignId: campaign.id,
-              offerName,
-              dashboardId: dashboard.id,
-              currency: dashboard.currency,
-            },
-          });
-          dailySnapshots++;
+          try {
+            const offerName = extractOfferFromCampaignName(campaign.name);
+            await db.insert(metricsSnapshots).values({
+              date: yesterday,
+              entityType: "utmify_campaign_daily",
+              entityId: 0,
+              source: "utmify",
+              impressions: campaign.impressions ?? null,
+              clicks: campaign.clicks ?? null,
+              spend: campaign.spend != null ? String(campaign.spend / 100) : null,
+              revenue: campaign.revenue != null ? String(campaign.revenue / 100) : null,
+              cpa: campaign.cpa != null ? String(campaign.cpa / 100) : null,
+              roas: campaign.roas != null ? String(campaign.roas) : null,
+              extraData: {
+                campaignName: campaign.name,
+                campaignId: campaign.id,
+                offerName,
+                dashboardId: dashboard.id,
+                currency: dashboard.currency,
+              },
+            });
+            dailySnapshots++;
+          } catch (err) {
+            console.error(`[UTMify] Failed to save campaign "${campaign.name}":`, err);
+          }
         }
       } catch (err) {
         console.error("[UTMify] Daily campaign sync error:", err);

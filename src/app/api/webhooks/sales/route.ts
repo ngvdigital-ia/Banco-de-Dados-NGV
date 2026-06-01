@@ -37,15 +37,18 @@ export async function POST(request: Request) {
   }
 
   // Auth: token via query param, header, or body
+  const expectedSecret = process.env.SALES_WEBHOOK_SECRET;
+  if (!expectedSecret) {
+    return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 });
+  }
+
   const headerSecret = request.headers.get("x-webhook-secret");
   const bodyToken = typeof body.token === "string" ? body.token : null;
-  const expectedSecret = process.env.SALES_WEBHOOK_SECRET;
 
   const isAuthorized =
     (queryToken && queryToken === expectedSecret) ||
     (headerSecret && headerSecret === expectedSecret) ||
-    (bodyToken && bodyToken === expectedSecret) ||
-    !expectedSecret; // If no secret configured, accept all (dev mode)
+    (bodyToken && bodyToken === expectedSecret);
 
   if (!isAuthorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -72,7 +75,6 @@ export async function POST(request: Request) {
       revenue: sale.price ? String(sale.price) : null,
       extraData: {
         ...sale,
-        rawPayload: body,
         receivedAt: new Date().toISOString(),
       },
     });

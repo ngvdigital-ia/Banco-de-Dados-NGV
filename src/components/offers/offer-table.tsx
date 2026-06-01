@@ -121,10 +121,6 @@ function MultiPersonCell({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!editing) setLocalValue(value ?? "");
-  }, [value, editing]);
-
-  useEffect(() => {
     if (editing && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
@@ -338,13 +334,6 @@ function EditableCell({
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync local value when prop changes (after server revalidation)
-  useEffect(() => {
-    if (!editing) {
-      setLocalValue(String(value ?? ""));
-    }
-  }, [value, editing]);
-
   useEffect(() => {
     if (editing && inputRef.current) {
       inputRef.current.focus();
@@ -477,13 +466,6 @@ function ObservationsCell({
   const [isPending, startTransition] = useTransition();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync when prop changes
-  useEffect(() => {
-    if (!editing) {
-      setLocalValue(value ?? "");
-    }
-  }, [value, editing]);
-
   useEffect(() => {
     if (editing && textareaRef.current) {
       textareaRef.current.focus();
@@ -559,16 +541,6 @@ function AdsCopyDisplay({
   const [diogoVal, setDiogoVal] = useState(String(data.DIOGO ?? 0));
   const [robertVal, setRobertVal] = useState(String(data.ROBERT ?? 0));
   const [gabrielVal, setGabrielVal] = useState(String(data.GABRIEL ?? 0));
-
-  // Sync when prop changes
-  useEffect(() => {
-    if (!editing) {
-      const d = (value as Record<string, number> | null) ?? {};
-      setDiogoVal(String(d.DIOGO ?? 0));
-      setRobertVal(String(d.ROBERT ?? 0));
-      setGabrielVal(String(d.GABRIEL ?? 0));
-    }
-  }, [value, editing]);
 
   function handleSave() {
     setEditing(false);
@@ -683,16 +655,6 @@ function AdsEditDisplay({
   const [vaVal, setVaVal] = useState(String(data.VA ?? 0));
   const [caVal, setCaVal] = useState(String(data.CA ?? 0));
   const [lfVal, setLfVal] = useState(String(data.LF ?? 0));
-
-  useEffect(() => {
-    if (!editing) {
-      const d = (value as Record<string, number> | null) ?? {};
-      setMaluVal(String(d.MALU ?? 0));
-      setVaVal(String(d.VA ?? 0));
-      setCaVal(String(d.CA ?? 0));
-      setLfVal(String(d.LF ?? 0));
-    }
-  }, [value, editing]);
 
   function handleSave() {
     setEditing(false);
@@ -921,6 +883,7 @@ function SiteUrlsCell({
           + adicionar
         </button>
         <SiteUrlsDialog
+          key={String(editOpen)}
           open={editOpen}
           onOpenChange={setEditOpen}
           offerId={offerId}
@@ -1025,6 +988,7 @@ function SiteUrlsCell({
         )}
       </div>
       <SiteUrlsDialog
+        key={String(editOpen)}
         open={editOpen}
         onOpenChange={setEditOpen}
         offerId={offerId}

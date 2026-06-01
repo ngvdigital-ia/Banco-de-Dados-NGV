@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# secrets / sessao local — NUNCA commitar (auditoria 2026-06-01)
+.claude/settings.local.json
+.auth/
+whats-next.md
+test-results/
+.playwright-mcp/

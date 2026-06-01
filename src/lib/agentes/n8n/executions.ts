@@ -104,19 +104,26 @@ export async function getRealExecutionsByTaskId(
   // Filtro inicial só por duração (data ainda não veio)
   const reais = filterRealExecutions(execs);
   const map = new Map<string, N8nExecution>();
-  await Promise.all(
-    reais.map(async (e) => {
-      try {
-        const taskId = await getTaskIdFromExecution(e.id, parentTaskIds);
-        if (taskId) map.set(taskId, e);
-      } catch (err) {
-        console.error(
-          `[getRealExecutionsByTaskId] erro pra exec ${e.id}:`,
-          (err as Error).message,
-        );
-      }
-    }),
-  );
+
+  // Processar em lotes de 10 para evitar avalanche de requisições simultâneas
+  const BATCH_SIZE = 10;
+  for (let i = 0; i < reais.length; i += BATCH_SIZE) {
+    const lote = reais.slice(i, i + BATCH_SIZE);
+    await Promise.all(
+      lote.map(async (e) => {
+        try {
+          const taskId = await getTaskIdFromExecution(e.id, parentTaskIds);
+          if (taskId) map.set(taskId, e);
+        } catch (err) {
+          console.error(
+            `[getRealExecutionsByTaskId] erro pra exec ${e.id}:`,
+            (err as Error).message,
+          );
+        }
+      }),
+    );
+  }
+
   return map;
 }
 

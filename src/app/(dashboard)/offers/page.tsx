@@ -2,7 +2,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OfferTable } from "@/components/offers/offer-table";
 import { CsvImportDialog } from "@/components/offers/csv-import-dialog";
-import { getOffers, getOfferMonths, createOffer } from "./actions";
+import { getOffers, getOfferMonths, getOfferFilterOptions, createOffer } from "./actions";
 
 export default async function OffersPage({
   searchParams,
@@ -42,21 +42,15 @@ export default async function OffersPage({
     monthTo = defaultTo;
   }
 
-  const [offers, allMonths, allOffers] = await Promise.all([
+  const [offers, allMonths, filterOptions] = await Promise.all([
     getOffers({ language, validation, copywriter, monthFrom, monthTo }),
     getOfferMonths(),
-    getOffers(),
+    getOfferFilterOptions(),
   ]);
 
-  const uniqueLanguages = [
-    ...new Set(allOffers.map((o) => o.language)),
-  ].sort();
-  const uniqueValidations = [
-    ...new Set(allOffers.map((o) => o.validation).filter(Boolean)),
-  ].sort();
-  const uniqueCopywriters = [
-    ...new Set(allOffers.map((o) => o.copyVsl).filter(Boolean)),
-  ].sort();
+  const uniqueLanguages = filterOptions.languages;
+  const uniqueValidations = filterOptions.validations;
+  const uniqueCopywriters = filterOptions.copywriters;
 
   return (
     <div className="space-y-4">

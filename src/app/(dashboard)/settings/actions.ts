@@ -3,8 +3,10 @@
 import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
 import { DASHBOARDS, fetchDashboardSummary, fetchMetaAdObjects } from "@/lib/utmify";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export async function triggerSync(endpoint: string) {
+  await requireAdmin();
   try {
     if (endpoint.includes("sync-utmify")) {
       return await syncUtmify();

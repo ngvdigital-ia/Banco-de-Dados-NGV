@@ -6,42 +6,33 @@ import { eq, sql, desc, gte } from "drizzle-orm";
 import { fetchEventsByPlayer, fetchPlayers, fetchSessionStats } from "@/lib/vturb";
 
 export async function getDashboardStats() {
-  // Count from offerTracking (real data) instead of empty tables
-  const [offerCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(offerTracking);
+  // Consolidar as 5 queries de offerTracking em 1 + teamMembers separada, ambas em paralelo
+  const [offerStats, teamResult] = await Promise.all([
+    db
+      .select({
+        total: sql<number>`count(*)`,
+        active: sql<number>`count(*) filter (where ${offerTracking.validation} = 'EM ANDAMENTO')`,
+        vslCount: sql<number>`count(*) filter (where ${offerTracking.copyVslStatus} = 'SIM')`,
+        campaigns: sql<number>`count(*) filter (where ${offerTracking.campaignsActive} = 'SIM')`,
+        creatives: sql<number>`coalesce(sum(${offerTracking.adsEditedCount}), 0)`,
+      })
+      .from(offerTracking),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(teamMembers)
+      .where(eq(teamMembers.active, true)),
+  ]);
 
-  const [activeOfferCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(offerTracking)
-    .where(eq(offerTracking.validation, "EM ANDAMENTO"));
-
-  const [teamCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(teamMembers)
-    .where(eq(teamMembers.active, true));
-
-  const [vslCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(offerTracking)
-    .where(eq(offerTracking.copyVslStatus, "SIM"));
-
-  const [creativeCount] = await db
-    .select({ total: sql<number>`coalesce(sum(${offerTracking.adsEditedCount}), 0)` })
-    .from(offerTracking);
-
-  const [campaignCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(offerTracking)
-    .where(eq(offerTracking.campaignsActive, "SIM"));
+  const stats = offerStats[0];
+  const [teamCount] = teamResult;
 
   return {
-    totalProjects: Number(offerCount.count),
-    activeProjects: Number(activeOfferCount.count),
+    totalProjects: Number(stats.total),
+    activeProjects: Number(stats.active),
     teamSize: Number(teamCount.count),
-    totalVsls: Number(vslCount.count),
-    totalCreatives: Number(creativeCount.total),
-    totalCampaigns: Number(campaignCount.count),
+    totalVsls: Number(stats.vslCount),
+    totalCreatives: Number(stats.creatives),
+    totalCampaigns: Number(stats.campaigns),
   };
 }
 

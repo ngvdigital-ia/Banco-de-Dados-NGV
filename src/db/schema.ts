@@ -1,6 +1,7 @@
 import {
   type AnyPgColumn,
   boolean,
+  index,
   integer,
   jsonb,
   numeric,
@@ -9,6 +10,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
@@ -89,7 +91,7 @@ export const metricSourceEnum = pgEnum("metric_source", [
 export const teamMembers = pgTable("team_members", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull(),
+  email: text("email").notNull().unique(),
   role: teamRoleEnum("role").notNull(),
   avatarUrl: text("avatar_url"),
   active: boolean("active").notNull().default(true),
@@ -134,7 +136,7 @@ export const projectsRelations = relations(projects, ({ many }) => ({
 
 export const vsls = pgTable("vsls", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull().references(() => projects.id),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   version: text("version").notNull(),
   copywriterId: integer("copywriter_id").references(() => teamMembers.id),
   btubeLink: text("btube_link"),
@@ -145,7 +147,9 @@ export const vsls = pgTable("vsls", {
   status: text("status").notNull().default("ativo"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  index("vsls_project_id_idx").on(t.projectId),
+]);
 
 export const vslsRelations = relations(vsls, ({ one }) => ({
   project: one(projects, { fields: [vsls.projectId], references: [projects.id] }),
@@ -162,7 +166,7 @@ export const vslsRelations = relations(vsls, ({ one }) => ({
 
 export const funnels = pgTable("funnels", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull().references(() => projects.id),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   salesPageUrl: text("sales_page_url"),
   checkoutUrl: text("checkout_url"),
@@ -183,7 +187,7 @@ export const funnelsRelations = relations(funnels, ({ one, many }) => ({
 
 export const funnelNodes = pgTable("funnel_nodes", {
   id: serial("id").primaryKey(),
-  funnelId: integer("funnel_id").notNull().references(() => funnels.id),
+  funnelId: integer("funnel_id").notNull().references(() => funnels.id, { onDelete: "cascade" }),
   parentNodeId: integer("parent_node_id").references((): AnyPgColumn => funnelNodes.id),
   nodeType: funnelNodeTypeEnum("node_type").notNull(),
   offerName: text("offer_name").notNull(),
@@ -197,6 +201,7 @@ export const funnelNodes = pgTable("funnel_nodes", {
   acceptanceRate: numeric("acceptance_rate", { precision: 8, scale: 4 }),
   revenuePerCustomer: numeric("revenue_per_customer", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const funnelNodesRelations = relations(funnelNodes, ({ one }) => ({
@@ -224,11 +229,12 @@ export const funnelNodesRelations = relations(funnelNodes, ({ one }) => ({
 
 export const orderBumps = pgTable("order_bumps", {
   id: serial("id").primaryKey(),
-  funnelId: integer("funnel_id").notNull().references(() => funnels.id),
+  funnelId: integer("funnel_id").notNull().references(() => funnels.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const orderBumpsRelations = relations(orderBumps, ({ one }) => ({
@@ -241,7 +247,7 @@ export const orderBumpsRelations = relations(orderBumps, ({ one }) => ({
 
 export const creatives = pgTable("creatives", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull().references(() => projects.id),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   platform: platformEnum("platform").notNull(),
   format: creativeFormatEnum("format").notNull(),
   copyScript: text("copy_script"),
@@ -252,7 +258,9 @@ export const creatives = pgTable("creatives", {
   status: creativeStatusEnum("status").notNull().default("rascunho"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  index("creatives_project_id_idx").on(t.projectId),
+]);
 
 export const creativesRelations = relations(creatives, ({ one, many }) => ({
   project: one(projects, { fields: [creatives.projectId], references: [projects.id] }),
@@ -275,7 +283,7 @@ export const creativesRelations = relations(creatives, ({ one, many }) => ({
 
 export const campaigns = pgTable("campaigns", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull().references(() => projects.id),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   platform: platformEnum("platform").notNull(),
   name: text("name").notNull(),
   objective: text("objective"),
@@ -284,7 +292,9 @@ export const campaigns = pgTable("campaigns", {
   status: text("status").notNull().default("ativo"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  index("campaigns_project_id_idx").on(t.projectId),
+]);
 
 export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
   project: one(projects, { fields: [campaigns.projectId], references: [projects.id] }),
@@ -302,9 +312,11 @@ export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
 
 export const campaignCreatives = pgTable("campaign_creatives", {
   id: serial("id").primaryKey(),
-  campaignId: integer("campaign_id").notNull().references(() => campaigns.id),
-  creativeId: integer("creative_id").notNull().references(() => creatives.id),
-});
+  campaignId: integer("campaign_id").notNull().references(() => campaigns.id, { onDelete: "cascade" }),
+  creativeId: integer("creative_id").notNull().references(() => creatives.id, { onDelete: "cascade" }),
+}, (t) => [
+  uniqueIndex("campaign_creatives_campaign_id_creative_id_idx").on(t.campaignId, t.creativeId),
+]);
 
 export const campaignCreativesRelations = relations(campaignCreatives, ({ one }) => ({
   campaign: one(campaigns, { fields: [campaignCreatives.campaignId], references: [campaigns.id] }),
@@ -332,10 +344,12 @@ export const tagsRelations = relations(tags, ({ many }) => ({
 
 export const entityTags = pgTable("entity_tags", {
   id: serial("id").primaryKey(),
-  tagId: integer("tag_id").notNull().references(() => tags.id),
+  tagId: integer("tag_id").notNull().references(() => tags.id, { onDelete: "cascade" }),
   entityType: text("entity_type").notNull(),
   entityId: integer("entity_id").notNull(),
-});
+}, (t) => [
+  uniqueIndex("entity_tags_tag_id_entity_type_entity_id_idx").on(t.tagId, t.entityType, t.entityId),
+]);
 
 export const entityTagsRelations = relations(entityTags, ({ one }) => ({
   tag: one(tags, { fields: [entityTags.tagId], references: [tags.id] }),
@@ -353,7 +367,9 @@ export const changeLog = pgTable("change_log", {
   changesJson: jsonb("changes_json"),
   userId: text("user_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  index("change_log_entity_type_entity_id_idx").on(t.entityType, t.entityId),
+]);
 
 // ============================================================
 // 13. METRICS SNAPSHOTS (Fase 3 - já preparando a tabela)
@@ -391,7 +407,10 @@ export const metricsSnapshots = pgTable("metrics_snapshots", {
   videoRetentionJson: jsonb("video_retention_json"),
   extraData: jsonb("extra_data"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  index("metrics_snapshots_entity_type_idx").on(t.entityType),
+  index("metrics_snapshots_entity_type_entity_id_date_idx").on(t.entityType, t.entityId, t.date),
+]);
 
 // ============================================================
 // 14. EXTERNAL MAPPINGS (para integração UTMify - Fase 3)
@@ -404,7 +423,9 @@ export const externalMappings = pgTable("external_mappings", {
   platform: text("platform").notNull(),
   externalId: text("external_id").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  uniqueIndex("external_mappings_entity_type_entity_id_platform_idx").on(t.entityType, t.entityId, t.platform),
+]);
 
 // ============================================================
 // 15. A/B TESTS
@@ -431,7 +452,7 @@ export const abTests = pgTable("ab_tests", {
 
 export const abTestVariants = pgTable("ab_test_variants", {
   id: serial("id").primaryKey(),
-  abTestId: integer("ab_test_id").notNull().references(() => abTests.id),
+  abTestId: integer("ab_test_id").notNull().references(() => abTests.id, { onDelete: "cascade" }),
   variantName: text("variant_name").notNull(),
   description: text("description"),
   metricsJson: jsonb("metrics_json"),
@@ -471,7 +492,7 @@ export const alerts = pgTable("alerts", {
 
 export const alertHistory = pgTable("alert_history", {
   id: serial("id").primaryKey(),
-  alertId: integer("alert_id").notNull().references(() => alerts.id),
+  alertId: integer("alert_id").notNull().references(() => alerts.id, { onDelete: "cascade" }),
   triggeredAt: timestamp("triggered_at", { withTimezone: true }).notNull().defaultNow(),
   currentValue: numeric("current_value", { precision: 12, scale: 2 }),
   message: text("message"),

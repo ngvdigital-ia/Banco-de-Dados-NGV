@@ -64,7 +64,7 @@ export default async function SettingsPage() {
               <Settings className="h-5 w-5 text-blue-600" />
               <h2 className="text-lg font-semibold">UTMify / Vendas</h2>
             </div>
-            <StatusBadge connected={true} />
+            <StatusBadge connected={utmifyConnected} />
           </div>
           <div className="space-y-2 text-sm text-muted-foreground">
             <p><strong>Dashboards UTMify:</strong></p>

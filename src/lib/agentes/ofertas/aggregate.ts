@@ -86,19 +86,12 @@ export async function aggregateOfertas(): Promise<Oferta[]> {
     }),
   );
 
-  // 3b. Execs reais White (success) — pra "executada" exigir prova de exec real
-  const execsRealizadasWhitePorTaskId = await getRealExecutionsByTaskId(
-    WORKFLOW_WHITE,
-    parentIds,
-    200,
-  );
-
-  // 3c. Execs reais Black (success) — pra extrair score do Revisor + Drive URL
-  const execsRealizadasBlackPorTaskId = await getRealExecutionsByTaskId(
-    WORKFLOW_BLACK,
-    parentIds,
-    200,
-  );
+  // 3b+3c. Execs reais White + Black em paralelo (limit 50 cada)
+  const [execsRealizadasWhitePorTaskId, execsRealizadasBlackPorTaskId] =
+    await Promise.all([
+      getRealExecutionsByTaskId(WORKFLOW_WHITE, parentIds, 50),
+      getRealExecutionsByTaskId(WORKFLOW_BLACK, parentIds, 50),
+    ]);
 
   // 4. Anthropic sessions running (Black + White)
   const [sessionsBlack, sessionsWhite] = await Promise.all([

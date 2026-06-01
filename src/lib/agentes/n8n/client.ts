@@ -27,15 +27,24 @@ export async function n8nFetch<T = unknown>(
     }
   }
 
-  const res = await fetch(url, {
-    method: options.method ?? "GET",
-    headers: {
-      "X-N8N-API-KEY": API_KEY,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: options.method ?? "GET",
+      headers: {
+        "X-N8N-API-KEY": API_KEY,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      throw new Error(`n8n API timeout (10s) on ${path}`);
+    }
+    throw err;
+  }
 
   if (!res.ok) {
     const text = await res.text();

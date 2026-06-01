@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { metricsSnapshots, projects, creatives, campaigns } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 
@@ -66,7 +66,12 @@ export async function getMetricsForProject(projectId: number) {
   return db
     .select()
     .from(metricsSnapshots)
-    .where(eq(metricsSnapshots.entityId, projectId))
+    .where(
+      and(
+        eq(metricsSnapshots.entityId, projectId),
+        eq(metricsSnapshots.entityType, "project"),
+      )
+    )
     .orderBy(desc(metricsSnapshots.date))
     .limit(30);
 }

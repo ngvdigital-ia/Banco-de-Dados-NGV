@@ -6,6 +6,7 @@ import { eq, and, type SQL } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { logChange } from "@/lib/changelog";
+import { requireAdmin } from "@/lib/admin-auth";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -39,10 +40,10 @@ export async function getProjects(filters?: {
   const query = db.select().from(projects);
 
   if (conditions.length > 0) {
-    return query.where(and(...conditions)).orderBy(projects.createdAt);
+    return query.where(and(...conditions)).orderBy(projects.createdAt).limit(500);
   }
 
-  return query.orderBy(projects.createdAt);
+  return query.orderBy(projects.createdAt).limit(500);
 }
 
 export async function getProject(id: number) {
@@ -55,6 +56,8 @@ export async function getProject(id: number) {
 }
 
 export async function createProject(data: ProjectFormData) {
+  await requireAdmin();
+
   const parsed = projectSchema.parse(data);
   const { scaleStartDate, scaleEndDate, ...rest } = parsed;
   const values = {
@@ -68,6 +71,8 @@ export async function createProject(data: ProjectFormData) {
 }
 
 export async function updateProject(id: number, data: ProjectFormData) {
+  await requireAdmin();
+
   const parsed = projectSchema.parse(data);
   const { scaleStartDate, scaleEndDate, ...rest } = parsed;
   const values = {
@@ -86,6 +91,8 @@ export async function updateProject(id: number, data: ProjectFormData) {
 }
 
 export async function deleteProject(id: number) {
+  await requireAdmin();
+
   await db.delete(projects).where(eq(projects.id, id));
   await logChange("project", id, "delete");
   revalidatePath("/projects");

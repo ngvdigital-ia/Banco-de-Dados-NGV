@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { offerTracking } from "@/db/schema";
 import { eq, desc, and, gte, lt, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { auth } from "@clerk/nextjs/server";
+import { requireAdmin } from "@/lib/admin-auth";
 import {
   type SiteUrls,
   siteUrlsSchema,
@@ -45,9 +47,33 @@ export async function getOffers(filters?: {
     .select()
     .from(offerTracking)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(offerTracking.createdAt));
+    .orderBy(desc(offerTracking.createdAt))
+    .limit(200);
 
   return result;
+}
+
+export async function getOfferFilterOptions() {
+  const [languages, validations, copywriters] = await Promise.all([
+    db
+      .selectDistinct({ value: offerTracking.language })
+      .from(offerTracking)
+      .orderBy(offerTracking.language),
+    db
+      .selectDistinct({ value: offerTracking.validation })
+      .from(offerTracking)
+      .orderBy(offerTracking.validation),
+    db
+      .selectDistinct({ value: offerTracking.copyVsl })
+      .from(offerTracking)
+      .orderBy(offerTracking.copyVsl),
+  ]);
+
+  return {
+    languages: languages.map((r) => r.value).filter((v): v is string => v !== null),
+    validations: validations.map((r) => r.value).filter((v): v is string => v !== null),
+    copywriters: copywriters.map((r) => r.value).filter((v): v is string => v !== null),
+  };
 }
 
 export async function getOfferMonths() {
@@ -66,6 +92,9 @@ export async function updateOfferField(
   field: string,
   value: string | number | null
 ) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
   const allowedFields = new Set([
     "name",
     "copyVsl",
@@ -172,6 +201,8 @@ export async function updateOfferSiteUrls(
   id: number,
   value: SiteUrls,
 ): Promise<{ siteUrls: SiteUrls; siteUrl: string | null }> {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
   const parsed = siteUrlsSchema.parse(value);
   const normalized = normalizeSiteUrls(parsed);
   // Preenche domain automaticamente se não vier
@@ -211,6 +242,8 @@ export async function updateOfferSiteUrls(
 }
 
 export async function createOffer() {
+  await requireAdmin();
+
   const [newOffer] = await db
     .insert(offerTracking)
     .values({
@@ -223,11 +256,15 @@ export async function createOffer() {
 }
 
 export async function deleteOffer(id: number) {
+  await requireAdmin();
+
   await db.delete(offerTracking).where(eq(offerTracking.id, id));
   revalidatePath("/offers");
 }
 
 export async function importOffers(rows: Record<string, unknown>[]) {
+  await requireAdmin();
+
   let imported = 0;
 
   for (const row of rows) {

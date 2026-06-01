@@ -97,7 +97,7 @@ function buildProjectConditions(filters?: AnalyticsFilters) {
   }
 
   if (filters?.statuses && filters.statuses.length > 0) {
-    conditions.push(sql`${projects.status}::text IN (${sql.join(filters.statuses.map(s => sql`${s}`), sql`, `)})`);
+    conditions.push(inArray(projects.status, filters.statuses as ("escalou" | "nao_escalou" | "em_teste" | "rodando" | "pausado")[]));
   }
 
   return conditions;
@@ -118,11 +118,11 @@ function buildCreativeConditions(filters?: AnalyticsFilters) {
   }
 
   if (filters?.formats && filters.formats.length > 0) {
-    conditions.push(sql`${creatives.format}::text IN (${sql.join(filters.formats.map(f => sql`${f}`), sql`, `)})`);
+    conditions.push(inArray(creatives.format, filters.formats as ("especialista" | "ugc_masc" | "ugc_fem" | "famoso" | "youtuber" | "autoridade" | "podcast")[]));
   }
 
   if (filters?.statuses && filters.statuses.length > 0) {
-    conditions.push(sql`${creatives.status}::text IN (${sql.join(filters.statuses.map(s => sql`${s}`), sql`, `)})`);
+    conditions.push(inArray(creatives.status, filters.statuses as ("rascunho" | "validou" | "nao_validou" | "escalou" | "nao_escalou")[]));
   }
 
   return conditions;
@@ -255,25 +255,6 @@ export async function getCreativesByFormat(
     .orderBy(desc(offerTracking.adsEditedCount));
 }
 
-export async function getCreativesDetailed() {
-  return db
-    .select({
-      id: creatives.id,
-      format: creatives.format,
-      platform: creatives.platform,
-      status: creatives.status,
-      projectName: projects.name,
-      copywriterName: sql<string | null>`cw.name`,
-      editorName: sql<string | null>`ed.name`,
-      createdAt: creatives.createdAt,
-    })
-    .from(creatives)
-    .innerJoin(projects, eq(creatives.projectId, projects.id))
-    .leftJoin(sql`${teamMembers} as cw`, sql`cw.id = ${creatives.copywriterId}`)
-    .leftJoin(sql`${teamMembers} as ed`, sql`ed.id = ${creatives.editorId}`)
-    .orderBy(desc(creatives.createdAt));
-}
-
 // ========== TEAM PERFORMANCE ==========
 
 // Filters by ClickUp task DUE DATE — falls back to done date when a task has no deadline.
@@ -282,7 +263,7 @@ export async function getTeamPerformance(dateFrom?: string, dateTo?: string) {
   // Fetch team members and all offer tracking data in parallel
   const [members, allOffers] = await Promise.all([
     db.select().from(teamMembers).where(eq(teamMembers.active, true)),
-    db.select().from(offerTracking),
+    db.select().from(offerTracking).limit(500),
   ]);
 
   const results = [];
@@ -490,6 +471,10 @@ export async function getOffersRanking(
   const conditions = buildProjectConditions(filters);
   const whereClause = combineConditions(conditions);
 
+  // Use LEFT JOIN + GROUP BY em vez de ~7-8 subqueries correlacionadas por linha.
+  // COUNT(DISTINCT) em cada tabela evita duplicacao de linhas quando multiplos joins
+  // retornam N:M (ex: um projeto com 3 vsls e 2 creatives geraria 6 linhas sem DISTINCT).
+  // creatives/vsls/campaigns estao vazias hoje — resultado identico, sem subquery por linha.
   return db
     .select({
       id: projects.id,
@@ -497,18 +482,22 @@ export async function getOffersRanking(
       niche: projects.niche,
       language: projects.language,
       status: projects.status,
-      vslCount: sql<number>`(SELECT count(*) FROM vsls WHERE vsls.project_id = ${projects.id})`,
-      creativeCount: sql<number>`(SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id})`,
-      campaignCount: sql<number>`(SELECT count(*) FROM campaigns WHERE campaigns.project_id = ${projects.id})`,
-      creativesEscalou: sql<number>`(SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id} AND creatives.status = 'escalou')`,
-      creativesValidou: sql<number>`(SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id} AND creatives.status = 'validou')`,
-      creativesNaoValidou: sql<number>`(SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id} AND creatives.status = 'nao_validou')`,
-      pctEscalou: sql<number>`round(100.0 * (SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id} AND creatives.status = 'escalou') / nullif((SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id}), 0), 2)`,
-      pctEscalouX: sql<number>`round(100.0 * (SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id} AND creatives.status = 'validou') / nullif((SELECT count(*) FROM creatives WHERE creatives.project_id = ${projects.id}), 0), 2)`,
+      vslCount: sql<number>`count(distinct ${vsls.id})`,
+      creativeCount: sql<number>`count(distinct ${creatives.id})`,
+      campaignCount: sql<number>`count(distinct ${campaigns.id})`,
+      creativesEscalou: sql<number>`count(distinct case when ${creatives.status} = 'escalou' then ${creatives.id} end)`,
+      creativesValidou: sql<number>`count(distinct case when ${creatives.status} = 'validou' then ${creatives.id} end)`,
+      creativesNaoValidou: sql<number>`count(distinct case when ${creatives.status} = 'nao_validou' then ${creatives.id} end)`,
+      pctEscalou: sql<number>`round(100.0 * count(distinct case when ${creatives.status} = 'escalou' then ${creatives.id} end) / nullif(count(distinct ${creatives.id}), 0), 2)`,
+      pctEscalouX: sql<number>`round(100.0 * count(distinct case when ${creatives.status} = 'validou' then ${creatives.id} end) / nullif(count(distinct ${creatives.id}), 0), 2)`,
       createdAt: projects.createdAt,
     })
     .from(projects)
+    .leftJoin(vsls, eq(vsls.projectId, projects.id))
+    .leftJoin(creatives, eq(creatives.projectId, projects.id))
+    .leftJoin(campaigns, eq(campaigns.projectId, projects.id))
     .where(whereClause)
+    .groupBy(projects.id, projects.name, projects.niche, projects.language, projects.status, projects.createdAt)
     .orderBy(desc(projects.createdAt));
 }
 
@@ -770,9 +759,11 @@ export async function getComparisonData(
     campaignByOffer.get(c.offerName)!.push({ spend: c.spend, revenue: c.revenue, currency: c.currency });
   }
 
-  for (const value of values) {
+  // Resolve label e whereClause para cada valor — member lookups sao independentes entre si
+  // e entre os dois valores, entao paralelizamos tudo com Promise.all.
+  async function resolveValueContext(value: string): Promise<{ label: string; whereClause: ReturnType<typeof and> | undefined }> {
     let label = value;
-    const conditions = [];
+    const conditions: ReturnType<typeof eq>[] = [];
 
     switch (dimension) {
       case "language":
@@ -786,7 +777,7 @@ export async function getComparisonData(
           .where(eq(teamMembers.id, memberId));
         if (member) {
           label = member.name;
-          conditions.push(sql`(${offerTracking.copyVsl} ILIKE ${`%${member.name.split(" ")[0]}%`})`);
+          conditions.push(sql`(${offerTracking.copyVsl} ILIKE ${`%${member.name.split(" ")[0]}%`})` as unknown as ReturnType<typeof eq>);
         }
         break;
       }
@@ -798,7 +789,7 @@ export async function getComparisonData(
           .where(eq(teamMembers.id, memberId));
         if (member) {
           label = member.name;
-          conditions.push(sql`(${offerTracking.editorAds} ILIKE ${`%${member.name.split(" ")[0]}%`} OR ${offerTracking.editorVsl} ILIKE ${`%${member.name.split(" ")[0]}%`})`);
+          conditions.push(sql`(${offerTracking.editorAds} ILIKE ${`%${member.name.split(" ")[0]}%`} OR ${offerTracking.editorVsl} ILIKE ${`%${member.name.split(" ")[0]}%`})` as unknown as ReturnType<typeof eq>);
         }
         break;
       }
@@ -807,30 +798,44 @@ export async function getComparisonData(
         break;
     }
 
-    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    return { label, whereClause: conditions.length > 0 ? and(...conditions) : undefined };
+  }
 
-    const [stats] = await db
-      .select({
-        total: sql<number>`count(*)`,
-        escalou: sql<number>`count(*) filter (where ${offerTracking.validation} = 'SIM' and (${offerTracking.scale} = 'SIM' or ${offerTracking.scale} = 'EM ANDAMENTO'))`,
-        validou: sql<number>`count(*) filter (where ${offerTracking.validation} = 'SIM')`,
-        naoValidou: sql<number>`count(*) filter (where ${offerTracking.validation} in ('NAO', 'NÃO DEU CERTO'))`,
-        totalAds: sql<number>`coalesce(sum(${offerTracking.adsEditedCount}), 0)`,
-      })
-      .from(offerTracking)
-      .where(whereClause);
+  // Paralelizar resolucao de contexto dos 2 valores
+  const [ctxA, ctxB] = await Promise.all([
+    resolveValueContext(values[0]),
+    resolveValueContext(values[1]),
+  ]);
 
-    const [vslCount] = await db
-      .select({ total: sql<number>`count(*)` })
-      .from(offerTracking)
-      .where(whereClause ? and(whereClause, eq(offerTracking.copyVslStatus, "SIM")) : eq(offerTracking.copyVslStatus, "SIM"));
+  // Para cada valor, paralelizar as 3 queries independentes entre si
+  async function fetchValueData(ctx: { label: string; whereClause: ReturnType<typeof and> | undefined }) {
+    const { label, whereClause } = ctx;
+
+    const [statsRows, vslRows, offerNameRows] = await Promise.all([
+      db
+        .select({
+          total: sql<number>`count(*)`,
+          escalou: sql<number>`count(*) filter (where ${offerTracking.validation} = 'SIM' and (${offerTracking.scale} = 'SIM' or ${offerTracking.scale} = 'EM ANDAMENTO'))`,
+          validou: sql<number>`count(*) filter (where ${offerTracking.validation} = 'SIM')`,
+          naoValidou: sql<number>`count(*) filter (where ${offerTracking.validation} in ('NAO', 'NÃO DEU CERTO'))`,
+          totalAds: sql<number>`coalesce(sum(${offerTracking.adsEditedCount}), 0)`,
+        })
+        .from(offerTracking)
+        .where(whereClause),
+      db
+        .select({ total: sql<number>`count(*)` })
+        .from(offerTracking)
+        .where(whereClause ? and(whereClause, eq(offerTracking.copyVslStatus, "SIM")) : eq(offerTracking.copyVslStatus, "SIM")),
+      db
+        .selectDistinct({ name: offerTracking.name })
+        .from(offerTracking)
+        .where(whereClause),
+    ]);
+
+    const stats = statsRows[0];
+    const vslCount = vslRows[0];
 
     // Puxar nomes de ofertas distintos pra agregar UTMify
-    const offerNameRows = await db
-      .selectDistinct({ name: offerTracking.name })
-      .from(offerTracking)
-      .where(whereClause);
-
     let totalSpend = 0;
     let totalRevenue = 0;
     const currencyTally = new Map<string, number>();
@@ -851,7 +856,7 @@ export async function getComparisonData(
 
     const total = Number(stats.total);
 
-    results.push({
+    return {
       label,
       totalCreatives: total,
       totalVsls: Number(vslCount.total),
@@ -863,8 +868,16 @@ export async function getComparisonData(
       roas,
       currency,
       hasCampaignData,
-    });
+    } satisfies ComparisonData;
   }
+
+  // Paralelizar fetch dos 2 valores simultaneamente
+  const [dataA, dataB] = await Promise.all([
+    fetchValueData(ctxA),
+    fetchValueData(ctxB),
+  ]);
+
+  results.push(dataA, dataB);
 
   return results;
 }
@@ -898,28 +911,32 @@ export async function saveUtmifyCampaignData(campaignList: CampaignInput[]) {
     .delete(metricsSnapshots)
     .where(eq(metricsSnapshots.entityType, "utmify_campaign_by_offer"));
 
-  for (const campaign of campaignList) {
-    const offerName = extractOfferFromCampaignName(campaign.name);
-
-    await db.insert(metricsSnapshots).values({
-      date: now,
-      entityType: "utmify_campaign_by_offer",
-      entityId: 0,
-      source: "utmify",
-      impressions: campaign.impressions ?? null,
-      clicks: campaign.clicks ?? null,
-      spend: campaign.spend != null ? String(campaign.spend / 100) : null,
-      revenue: campaign.revenue != null ? String(campaign.revenue / 100) : null,
-      cpa: campaign.cpa != null ? String(campaign.cpa / 100) : null,
-      roas: campaign.roas != null ? String(campaign.roas) : null,
-      extraData: {
-        campaignName: campaign.name,
-        campaignId: campaign.id,
-        offerName,
-        dashboardId: campaign.dashboardId,
-        currency: campaign.currency,
-      },
+  // Batch insert: um unico round-trip ao banco em vez de N inserts sequenciais
+  if (campaignList.length > 0) {
+    const rows = campaignList.map((campaign) => {
+      const offerName = extractOfferFromCampaignName(campaign.name);
+      return {
+        date: now,
+        entityType: "utmify_campaign_by_offer" as const,
+        entityId: 0,
+        source: "utmify" as const,
+        impressions: campaign.impressions ?? null,
+        clicks: campaign.clicks ?? null,
+        spend: campaign.spend != null ? String(campaign.spend / 100) : null,
+        revenue: campaign.revenue != null ? String(campaign.revenue / 100) : null,
+        cpa: campaign.cpa != null ? String(campaign.cpa / 100) : null,
+        roas: campaign.roas != null ? String(campaign.roas) : null,
+        extraData: {
+          campaignName: campaign.name,
+          campaignId: campaign.id,
+          offerName,
+          dashboardId: campaign.dashboardId,
+          currency: campaign.currency,
+        },
+      };
     });
+
+    await db.insert(metricsSnapshots).values(rows);
   }
 
   return { saved: campaignList.length };

@@ -40,11 +40,20 @@ export async function anthropicFetch<T = unknown>(
     headers["anthropic-beta"] = MANAGED_AGENTS_BETA;
   }
 
-  const res = await fetch(url, {
-    method: options.method ?? "GET",
-    headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: options.method ?? "GET",
+      headers,
+      body: options.body ? JSON.stringify(options.body) : undefined,
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      throw new Error(`Anthropic API timeout (15s) on ${path}`);
+    }
+    throw err;
+  }
 
   if (!res.ok) {
     const text = await res.text();

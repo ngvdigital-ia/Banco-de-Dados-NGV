@@ -36,6 +36,13 @@
       "when": 1778932874276,
       "tag": "0004_add_agent_approvals",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780343744229,
+      "tag": "0005_flowery_energizer",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Plus, Trash2, ExternalLink } from "lucide-react";
 import {
   Dialog,
@@ -31,25 +31,13 @@ type Props = {
 };
 
 export function SiteUrlsDialog({ open, onOpenChange, offerId, offerName, initial }: Props) {
-  const [domain, setDomain] = useState("");
-  const [vsl, setVsl] = useState("");
-  const [whites, setWhites] = useState<string[]>([]);
-  const [quiz, setQuiz] = useState("");
-  const [custom, setCustom] = useState<CustomLink[]>([]);
+  const [domain, setDomain] = useState(initial?.domain ?? "");
+  const [vsl, setVsl] = useState(initial?.vsl ?? "");
+  const [whites, setWhites] = useState<string[]>(initial?.whites ?? []);
+  const [quiz, setQuiz] = useState(initial?.quiz ?? "");
+  const [custom, setCustom] = useState<CustomLink[]>(initial?.custom ?? []);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-
-  // Reset estado local sempre que o dialog abre com um initial diferente
-  useEffect(() => {
-    if (open) {
-      setDomain(initial?.domain ?? "");
-      setVsl(initial?.vsl ?? "");
-      setWhites(initial?.whites ?? []);
-      setQuiz(initial?.quiz ?? "");
-      setCustom(initial?.custom ?? []);
-      setError(null);
-    }
-  }, [open, initial]);
 
   const total = totalLinks({
     vsl: vsl || undefined,

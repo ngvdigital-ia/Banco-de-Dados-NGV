@@ -8,7 +8,7 @@ export async function GET(request: Request) {
 
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
   if (!webhookUrl) {
-    return NextResponse.json({ error: "SLACK_WEBHOOK_URL not configured" });
+    return NextResponse.json({ error: "SLACK_WEBHOOK_URL not configured" }, { status: 500 });
   }
 
   const dashboardUrl = "https://banco-de-dados-ngv.vercel.app/offers";
