@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  BellRing,
   Bot,
   ClipboardList,
   FolderOpen,
@@ -42,6 +43,7 @@ const navItems = [
   { title: "Métricas", href: "/metrics", icon: LineChart },
   { title: "Análises", href: "/analytics", icon: PieChart },
   { title: "Vendas", href: "/vendas", icon: ShoppingCart },
+  { title: "Alertas", href: "/alertas", icon: BellRing },
   { title: "Import CSV", href: "/import", icon: Upload },
   { title: "Integrações", href: "/settings", icon: Settings },
   { title: "Tags", href: "/tags", icon: Tags },

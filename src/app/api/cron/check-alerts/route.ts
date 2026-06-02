@@ -1,0 +1,116 @@
+import { NextResponse } from "next/server";
+import { db } from "@/db";
+import { alerts, alertHistory } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { computeMetricValue, alertTriggers } from "@/lib/alerts-eval";
+import {
+  alertMetricDef,
+  alertTargetByEntity,
+  operatorSymbol,
+  formatMetricValue,
+  type AlertMetric,
+} from "@/lib/alerts-config";
+
+export const maxDuration = 60;
+
+// 20h: enquanto a condição persistir, no máximo 1 aviso por dia por alerta (o cron roda 1x/dia).
+const COOLDOWN_MS = 20 * 60 * 60 * 1000;
+
+export async function GET(request: Request) {
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const active = await db.select().from(alerts).where(eq(alerts.active, true));
+  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+  const now = new Date();
+  const fired: string[] = [];
+  const onCooldown: string[] = [];
+
+  for (const a of active) {
+    try {
+      const res = await computeMetricValue(a.metric as AlertMetric, a.entityType, a.entityId);
+      const threshold = Number(a.threshold);
+      if (!alertTriggers(res.value, a.operator, threshold)) continue;
+
+      // cooldown: não re-notifica o mesmo alerta em menos de 20h
+      if (a.lastTriggeredAt && now.getTime() - a.lastTriggeredAt.getTime() < COOLDOWN_MS) {
+        onCooldown.push(a.name);
+        continue;
+      }
+
+      const mdef = alertMetricDef(a.metric);
+      const target = alertTargetByEntity(a.entityType, a.entityId);
+      const currentStr = formatMetricValue(res.value, mdef?.format ?? "number", res.currency);
+      const thresholdStr = formatMetricValue(threshold, mdef?.format ?? "number", res.currency);
+      const message = `${mdef?.label ?? a.metric} ${operatorSymbol(a.operator)} ${thresholdStr} em ${target?.label ?? a.entityType} — atual ${currentStr}`;
+
+      // registra o disparo + atualiza o cooldown ANTES do Slack (idempotência se o Slack falhar)
+      await db.insert(alertHistory).values({
+        alertId: a.id,
+        currentValue: res.value != null ? String(res.value) : null,
+        message,
+      });
+      await db.update(alerts).set({ lastTriggeredAt: now }).where(eq(alerts.id, a.id));
+
+      if (webhookUrl) {
+        await sendSlackAlert(webhookUrl, {
+          name: a.name,
+          line: message,
+          target: target?.label ?? a.entityType,
+          asOf: res.asOf,
+        });
+      }
+      fired.push(a.name);
+    } catch (err) {
+      console.error(`[check-alerts] erro no alerta "${a.name}":`, err);
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    evaluated: active.length,
+    fired,
+    onCooldown,
+    at: now.toISOString(),
+  });
+}
+
+async function sendSlackAlert(
+  url: string,
+  a: { name: string; line: string; target: string; asOf: Date | null },
+) {
+  const dashboardUrl = "https://banco-de-dados-ngv.vercel.app/alertas";
+  const asOfStr = a.asOf ? a.asOf.toISOString().slice(0, 10) : "—";
+  const message = {
+    blocks: [
+      {
+        type: "header",
+        text: { type: "plain_text", text: `🚨 Alerta: ${a.name}`, emoji: true },
+      },
+      {
+        type: "section",
+        text: { type: "mrkdwn", text: `*${a.line}*\n_Dado de: ${asOfStr}_` },
+      },
+      {
+        type: "context",
+        elements: [
+          { type: "mrkdwn", text: `Alvo: ${a.target}` },
+          { type: "mrkdwn", text: `<${dashboardUrl}|Ver alertas no dashboard>` },
+        ],
+      },
+    ],
+  };
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(message),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) console.error("[check-alerts] Slack respondeu", res.status, await res.text());
+  } catch (err) {
+    console.error("[check-alerts] falha ao enviar Slack:", err);
+  }
+}
