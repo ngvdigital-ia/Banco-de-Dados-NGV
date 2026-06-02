@@ -13,7 +13,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // ============================================================
 // ENUMS
@@ -406,10 +406,22 @@ export const metricsSnapshots = pgTable("metrics_snapshots", {
   // Extra
   videoRetentionJson: jsonb("video_retention_json"),
   extraData: jsonb("extra_data"),
+  // Colunas de idempotência do sync UTMify (0006).
+  // NULL para todos os outros entityTypes — o índice parcial só cobre as linhas UTMify.
+  utmifyCampaignId: text("utmify_campaign_id"),
+  utmifyDashboardId: text("utmify_dashboard_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   index("metrics_snapshots_entity_type_idx").on(t.entityType),
   index("metrics_snapshots_entity_type_entity_id_date_idx").on(t.entityType, t.entityId, t.date),
+  // Índices parciais de idempotência: garantem que um retry do Vercel não duplique.
+  // PARCIAIS (WHERE entity_type = '...') → não afetam os outros entityTypes.
+  uniqueIndex("metrics_snapshots_utmify_campaign_daily_uniq")
+    .on(t.date, t.utmifyCampaignId)
+    .where(sql`entity_type = 'utmify_campaign_daily'`),
+  uniqueIndex("metrics_snapshots_utmify_dashboard_uniq")
+    .on(t.date, t.utmifyDashboardId)
+    .where(sql`entity_type = 'dashboard'`),
 ]);
 
 // ============================================================

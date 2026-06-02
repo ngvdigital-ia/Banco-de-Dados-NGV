@@ -43,6 +43,13 @@
       "when": 1780343744229,
       "tag": "0005_flowery_energizer",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780393690530,
+      "tag": "0006_tiresome_crusher_hogan",
+      "breakpoints": true
     }
   ]
 }

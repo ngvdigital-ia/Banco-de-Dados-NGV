@@ -41,6 +41,8 @@ export async function GET(request: Request) {
         revenue: summary.revenue ? String(summary.revenue / 100) : null,
         cpa: summary.cpa ? String(summary.cpa / 100) : null,
         roas: summary.roas ? String(summary.roas) : null,
+        // Coluna de idempotência (migration 0006): identifica unicamente este dashboard no dia.
+        utmifyDashboardId: String(dashboard.id),
         extraData: {
           dashboardId: dashboard.id,
           dashboardName: dashboard.name,
@@ -72,6 +74,8 @@ export async function GET(request: Request) {
               revenue: campaign.revenue != null ? String(campaign.revenue / 100) : null,
               cpa: campaign.cpa != null ? String(campaign.cpa / 100) : null,
               roas: campaign.roas != null ? String(campaign.roas) : null,
+              // Coluna de idempotência (migration 0006): identifica unicamente esta campanha no dia.
+              utmifyCampaignId: String(campaign.id),
               extraData: {
                 campaignName: campaign.name,
                 campaignId: campaign.id,
@@ -98,15 +102,17 @@ export async function GET(request: Request) {
   }
 
   // Single batch insert per entity type — one round-trip instead of N.
-  // metrics_snapshots has no unique constraint on (date, entityType, entityId),
-  // so we rely on the caller (Vercel cron) running once per day; no onConflictDoNothing needed.
+  // onConflictDoNothing() usa os índices parciais criados na migration 0006:
+  //   - metrics_snapshots_utmify_dashboard_uniq      (date, utmify_dashboard_id) WHERE entity_type='dashboard'
+  //   - metrics_snapshots_utmify_campaign_daily_uniq (date, utmify_campaign_id)  WHERE entity_type='utmify_campaign_daily'
+  // Retries automáticos do Vercel (ou execuções manuais do mesmo dia) são seguros.
   if (dashboardRows.length > 0) {
-    await db.insert(metricsSnapshots).values(dashboardRows);
+    await db.insert(metricsSnapshots).values(dashboardRows).onConflictDoNothing();
   }
   if (campaignRows.length > 0) {
     const CHUNK = 500;
     for (let i = 0; i < campaignRows.length; i += CHUNK) {
-      await db.insert(metricsSnapshots).values(campaignRows.slice(i, i + CHUNK));
+      await db.insert(metricsSnapshots).values(campaignRows.slice(i, i + CHUNK)).onConflictDoNothing();
     }
   }
 
