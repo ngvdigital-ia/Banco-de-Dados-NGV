@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import {
   Card,
   CardContent,
@@ -41,17 +42,18 @@ type ComparisonViewProps = {
 // ---------------------------------------------------------------------------
 function ComparisonCard({
   data,
-  highlightColor,
+  highlightStyle,
 }: {
   data: ComparisonData;
-  highlightColor: string;
+  highlightStyle: React.CSSProperties;
 }) {
   return (
     <Card className="flex-1">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <span
-            className={cn("inline-block h-3 w-3 rounded-full", highlightColor)}
+            className="inline-block h-3 w-3 rounded-full"
+            style={highlightStyle}
             aria-hidden
           />
           {data.label}
@@ -67,13 +69,13 @@ function ComparisonCard({
           <PctRow
             label="Escalou"
             value={data.pctEscalou}
-            barColor="bg-emerald-500"
+            barColor="bg-success"
             isGood
           />
           <PctRow
-            label="Nao Escalou"
+            label="Não Escalou"
             value={data.pctNaoEscalou}
-            barColor="bg-red-400"
+            barColor="bg-danger"
           />
         </div>
 
@@ -81,13 +83,13 @@ function ComparisonCard({
           <div className="space-y-1 border-t pt-3">
             <p className="text-xs font-medium text-muted-foreground">Financeiro (UTMify)</p>
             <div className="grid grid-cols-2 gap-2">
-              <MoneyStat label="Gasto" value={data.totalSpend} currency={data.currency} color="text-red-500" />
-              <MoneyStat label="Faturamento" value={data.totalRevenue} currency={data.currency} color="text-emerald-600" />
+              <MoneyStat label="Gasto" value={data.totalSpend} currency={data.currency} color="text-danger" />
+              <MoneyStat label="Faturamento" value={data.totalRevenue} currency={data.currency} color="text-success" />
               <MoneyStat
                 label="Lucro"
                 value={data.totalProfit}
                 currency={data.currency}
-                color={data.totalProfit >= 0 ? "text-emerald-600" : "text-red-500"}
+                color={data.totalProfit >= 0 ? "text-success" : "text-danger"}
               />
               <div className="rounded-md bg-muted/50 px-3 py-2">
                 <p className="text-xs text-muted-foreground">ROAS</p>
@@ -147,7 +149,7 @@ function PctRow({
           variant={isGood && value >= 30 ? "default" : "secondary"}
           className={cn(
             "text-[10px]",
-            isGood && value >= 30 && "bg-emerald-600 text-white"
+            isGood && value >= 30 && "bg-success text-success-foreground"
           )}
         >
           {value.toFixed(1)}%
@@ -190,21 +192,27 @@ function ComparisonBar({
       </p>
       <div className="flex h-5 w-full overflow-hidden rounded-full">
         <div
-          className="flex items-center justify-center bg-violet-500 text-[10px] font-semibold text-white transition-all"
-          style={{ width: `${pctA}%` }}
-        >
-          {pctA >= 15 && `${valueA.toFixed(1)}%`}
-        </div>
+          className="transition-all"
+          style={{ width: `${pctA}%`, backgroundColor: "var(--chart-1)" }}
+        />
         <div
-          className="flex items-center justify-center bg-amber-500 text-[10px] font-semibold text-white transition-all"
-          style={{ width: `${pctB}%` }}
-        >
-          {pctB >= 15 && `${valueB.toFixed(1)}%`}
-        </div>
+          className="transition-all"
+          style={{ width: `${pctB}%`, backgroundColor: "var(--chart-3)" }}
+        />
       </div>
       <div className="flex justify-between text-[10px] text-muted-foreground">
-        <span>{labelA}</span>
-        <span>{labelB}</span>
+        <span>
+          {labelA}
+          {pctA >= 10 && (
+            <span className="ml-1 font-medium">{valueA.toFixed(1)}%</span>
+          )}
+        </span>
+        <span>
+          {pctB >= 10 && (
+            <span className="mr-1 font-medium">{valueB.toFixed(1)}%</span>
+          )}
+          {labelB}
+        </span>
       </div>
     </div>
   );
@@ -218,8 +226,8 @@ export function ComparisonView({ dataA, dataB }: ComparisonViewProps) {
     <div className="space-y-4">
       {/* Side-by-side cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <ComparisonCard data={dataA} highlightColor="bg-violet-500" />
-        <ComparisonCard data={dataB} highlightColor="bg-amber-500" />
+        <ComparisonCard data={dataA} highlightStyle={{ backgroundColor: "var(--chart-1)" }} />
+        <ComparisonCard data={dataB} highlightStyle={{ backgroundColor: "var(--chart-3)" }} />
       </div>
 
       {/* Visual comparison bars */}
@@ -240,7 +248,7 @@ export function ComparisonView({ dataA, dataB }: ComparisonViewProps) {
             labelB={dataB.label}
             valueA={dataA.pctNaoEscalou}
             valueB={dataB.pctNaoEscalou}
-            metric="% Nao Escalou"
+            metric="% Não Escalou"
           />
         </CardContent>
       </Card>

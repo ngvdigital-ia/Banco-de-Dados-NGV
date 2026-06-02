@@ -212,11 +212,11 @@ interface FiltroChipProps {
 function FiltroChip({ ativo, cor, onClick, children }: FiltroChipProps) {
   const corClasses = ativo
     ? cor === "green"
-      ? "bg-green-100 text-green-900 border-green-300"
+      ? "bg-success-muted text-success-muted-foreground border-success"
       : cor === "amber"
-        ? "bg-amber-100 text-amber-900 border-amber-300"
+        ? "bg-warning-muted text-warning-muted-foreground border-warning"
         : cor === "slate"
-          ? "bg-slate-200 text-slate-900 border-slate-400"
+          ? "bg-muted text-foreground border-border"
           : "bg-primary text-primary-foreground border-primary"
     : "bg-transparent border hover:bg-accent text-muted-foreground";
   return (

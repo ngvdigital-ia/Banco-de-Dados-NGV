@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, Ban, RotateCcw, Trash2, Mail, XCircle } from "lucide-react";
+import { UserPlus, Ban, RotateCcw, Trash2, Mail, XCircle, Users, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,8 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { TeamMember, TeamInvitation } from "@/lib/clerk-team";
 
 type Props = {
@@ -89,61 +91,79 @@ export function TeamManagementClient({ currentUserId, members, invitations }: Pr
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
-      <div className="mb-6 flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Gerenciar equipe</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Adicione, banira ou remova membros que têm acesso ao dashboard.
+    <div className="mx-auto max-w-5xl px-6 py-8 space-y-8">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Gerenciar equipe</h1>
+          <p className="text-sm text-muted-foreground">
+            Adicione, bania ou remova membros que têm acesso ao dashboard.
           </p>
         </div>
         <Button onClick={() => setInviteOpen(true)}>
-          <UserPlus className="mr-2 h-4 w-4" />
+          <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
           Adicionar membro
         </Button>
       </div>
 
+      {/* Banner de erro */}
       {error && (
-        <div className="mb-4 rounded border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
+        <div className="flex items-start gap-2.5 rounded-xl border border-danger bg-danger-muted px-4 py-3 text-sm text-danger-muted-foreground">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Pending invitations */}
+      {/* Convites pendentes */}
       {invitations.length > 0 && (
-        <section className="mb-8">
-          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">
-            Convites pendentes ({invitations.length})
-          </h2>
-          <div className="overflow-hidden rounded-md border">
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Convites pendentes
+            </h2>
+            <span className="tabular-nums text-xs text-muted-foreground/60">
+              ({invitations.length})
+            </span>
+            <div className="flex-1 border-t border-border" />
+          </div>
+          <div className="overflow-hidden rounded-xl border border-border shadow-sm ring-1 ring-foreground/5">
             <table className="w-full text-sm">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="px-3 py-2 text-left font-medium">Email</th>
-                  <th className="px-3 py-2 text-left font-medium">Enviado em</th>
-                  <th className="w-24 px-3 py-2"></th>
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Email
+                  </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Enviado em
+                  </th>
+                  <th className="w-16 px-4 py-2.5" />
                 </tr>
               </thead>
               <tbody>
-                {invitations.map((inv) => (
-                  <tr key={inv.id} className="border-t">
-                    <td className="px-3 py-2">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                        {inv.emailAddress}
+                {invitations.map((inv, idx) => (
+                  <tr
+                    key={inv.id}
+                    className={`border-t border-border transition-colors duration-150 hover:bg-muted/30 ${idx % 2 === 0 ? "" : "bg-muted/10"}`}
+                  >
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-1.5 text-sm">
+                        <Mail className="h-3.5 w-3.5 text-primary shrink-0" aria-hidden="true" />
+                        <span className="font-medium">{inv.emailAddress}</span>
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-muted-foreground">
+                    <td className="px-4 py-3 text-sm tabular-nums text-muted-foreground">
                       {new Date(inv.createdAt).toLocaleString("pt-BR")}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-4 py-3 text-right">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleRevokeInvite(inv.id)}
                         disabled={pendingAction === `revoke-${inv.id}`}
+                        aria-label={`Revogar convite para ${inv.emailAddress}`}
+                        className="text-muted-foreground hover:text-danger"
                       >
-                        <XCircle className="h-4 w-4" />
+                        <XCircle className="h-4 w-4" aria-hidden="true" />
                       </Button>
                     </td>
                   </tr>
@@ -154,92 +174,126 @@ export function TeamManagementClient({ currentUserId, members, invitations }: Pr
         </section>
       )}
 
-      {/* Active members */}
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-muted-foreground">
-          Membros ({members.length})
-        </h2>
-        <div className="overflow-hidden rounded-md border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">Email</th>
-                <th className="px-3 py-2 text-left font-medium">Status</th>
-                <th className="px-3 py-2 text-left font-medium">Último login</th>
-                <th className="w-40 px-3 py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((m) => {
-                const isSelf = m.id === currentUserId;
-                const last = m.lastSignInAt
-                  ? new Date(m.lastSignInAt).toLocaleDateString("pt-BR")
-                  : "nunca";
-                return (
-                  <tr key={m.id} className={`border-t ${m.banned ? "opacity-60" : ""}`}>
-                    <td className="px-3 py-2 font-mono text-xs">
-                      {m.email ?? "(sem email)"}
-                      {isSelf && (
-                        <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
-                          você
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      {m.banned ? (
-                        <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-950/40 dark:text-red-300">
-                          BANIDO
-                        </span>
-                      ) : (
-                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                          ATIVO
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground">{last}</td>
-                    <td className="px-3 py-2 text-right">
-                      <div className="flex justify-end gap-1">
-                        {m.banned ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleUnban(m)}
-                            disabled={pendingAction === `unban-${m.id}` || isSelf}
-                            title="Desbanir"
-                          >
-                            <RotateCcw className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleBan(m)}
-                            disabled={pendingAction === `ban-${m.id}` || isSelf}
-                            title="Banir (reversível)"
-                          >
-                            <Ban className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setConfirmDelete(m)}
-                          disabled={isSelf}
-                          title="Excluir definitivamente"
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {/* Membros ativos */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Membros
+          </h2>
+          <span className="tabular-nums text-xs text-muted-foreground/60">
+            ({members.length})
+          </span>
+          <div className="flex-1 border-t border-border" />
         </div>
+
+        {members.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border py-4">
+            <EmptyState
+              icon={Users}
+              title="Nenhum membro ainda"
+              description="Convide pessoas para dar acesso ao dashboard."
+            />
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-border shadow-sm ring-1 ring-foreground/5">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Email
+                  </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Status
+                  </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Último login
+                  </th>
+                  <th className="w-32 px-4 py-2.5" />
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((m, idx) => {
+                  const isSelf = m.id === currentUserId;
+                  const last = m.lastSignInAt
+                    ? new Date(m.lastSignInAt).toLocaleDateString("pt-BR")
+                    : "nunca";
+                  return (
+                    <tr
+                      key={m.id}
+                      className={`border-t border-border transition-colors duration-150 hover:bg-muted/30 ${m.banned ? "opacity-60" : ""} ${idx % 2 === 0 ? "" : "bg-muted/10"}`}
+                    >
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-2">
+                          <span className="font-mono text-xs text-foreground/80">
+                            {m.email ?? "(sem email)"}
+                          </span>
+                          {isSelf && (
+                            <StatusBadge variant="info" className="text-[10px] px-1.5 py-0">
+                              você
+                            </StatusBadge>
+                          )}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {m.banned ? (
+                          <StatusBadge variant="danger">BANIDO</StatusBadge>
+                        ) : (
+                          <StatusBadge variant="success">ATIVO</StatusBadge>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm tabular-nums text-muted-foreground">
+                        {last}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-1">
+                          {m.banned ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleUnban(m)}
+                              disabled={pendingAction === `unban-${m.id}` || isSelf}
+                              title="Desbanir"
+                              aria-label={`Desbanir ${m.email}`}
+                              className="text-muted-foreground hover:text-success"
+                            >
+                              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleBan(m)}
+                              disabled={pendingAction === `ban-${m.id}` || isSelf}
+                              title="Banir (reversível)"
+                              aria-label={`Banir ${m.email}`}
+                              className="text-muted-foreground hover:text-warning"
+                            >
+                              <Ban className="h-4 w-4" aria-hidden="true" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setConfirmDelete(m)}
+                            disabled={isSelf}
+                            title="Excluir definitivamente"
+                            aria-label={`Excluir ${m.email}`}
+                            className="text-muted-foreground hover:text-danger"
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
+      {/* Dialogs */}
       <InviteDialog
         open={inviteOpen}
         onOpenChange={setInviteOpen}
@@ -251,13 +305,13 @@ export function TeamManagementClient({ currentUserId, members, invitations }: Pr
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Excluir membro definitivamente</DialogTitle>
-            <p className="text-sm text-muted-foreground">
-              <strong>{confirmDelete?.email}</strong> perderá acesso ao dashboard e seu
-              registro Clerk será deletado.{" "}
-              <span className="font-semibold text-destructive">
+            <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+              <strong className="text-foreground">{confirmDelete?.email}</strong> perderá acesso ao
+              dashboard e seu registro Clerk será deletado.{" "}
+              <span className="font-semibold text-danger">
                 Esta ação não pode ser desfeita.
               </span>{" "}
-              Se quiser apenas bloquear o login (preservando dados), use o botão Banir.
+              Se quiser apenas bloquear o login preservando dados, use o botão Banir.
             </p>
           </DialogHeader>
           <DialogFooter>
@@ -323,19 +377,22 @@ function InviteDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Convidar novo membro</DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground leading-relaxed mt-1">
             Clerk envia um email pro convidado se cadastrar. Ele só consegue entrar
             depois de criar a senha.
           </p>
         </DialogHeader>
         <div className="grid gap-2 py-2">
-          <Label>Email</Label>
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Email
+          </Label>
           <Input
             type="email"
             placeholder="nome@dominio.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoFocus
+            className="font-mono text-sm"
           />
         </div>
         <DialogFooter>

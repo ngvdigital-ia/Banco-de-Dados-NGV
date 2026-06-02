@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -9,12 +8,15 @@ import { DateRangeFilter } from "@/components/filters/date-range-filter";
 import { parseMultiParam } from "@/lib/filter-utils";
 import { getDateRange } from "@/lib/date-utils";
 import { getFilterOptions, getTeamPerformance } from "../actions";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Users } from "lucide-react";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
   copywriter: "Copywriter",
   editor: "Editor",
-  gestor_trafego: "Gestor de Trafego",
+  gestor_trafego: "Gestor de Tráfego",
 };
 
 export default async function TeamAnalyticsPage({
@@ -45,11 +47,11 @@ export default async function TeamAnalyticsPage({
   ]);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Performance da Equipe</h1>
-      <p className="text-muted-foreground">
-        Produtividade de cada membro: quantas VSLs, criativos e campanhas cada um produziu.
-      </p>
+    <div className="space-y-8">
+      <PageHeader
+        title="Performance da Equipe"
+        description="Produtividade de cada membro: quantas VSLs, criativos e campanhas cada um produziu."
+      />
 
       <Suspense fallback={<div className="h-8" />}>
         <div className="space-y-3">
@@ -70,111 +72,108 @@ export default async function TeamAnalyticsPage({
       </Suspense>
 
       {performance.length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">
-          Nenhum membro ativo. Cadastre membros na aba Equipe.
-        </p>
+        <EmptyState
+          icon={Users}
+          title="Nenhum membro ativo"
+          description="Cadastre membros na aba Equipe para acompanhar a produtividade aqui."
+          action={{ label: "Ir para Equipe", href: "/team" }}
+        />
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Ranking de Produtividade</CardTitle>
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b border-border/50">
+            <CardTitle className="text-base">Ranking de Produtividade</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Funcao</TableHead>
-                    <TableHead className="text-center">Copy</TableHead>
-                    <TableHead className="text-center">Edicao</TableHead>
-                    <TableHead className="text-center">Sites/Dev</TableHead>
-                    <TableHead className="text-center">Trafego</TableHead>
-                    <TableHead className="text-center">Outros</TableHead>
-                    <TableHead className="text-center">Total (mes)</TableHead>
-                    <TableHead className="text-center">% No Prazo</TableHead>
-                    <TableHead className="text-center">% Escalou</TableHead>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableHead className="pl-4 w-10 text-xs font-semibold uppercase tracking-wide text-muted-foreground">#</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nome</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Função</TableHead>
+                  <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Copy</TableHead>
+                  <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Edição</TableHead>
+                  <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sites/Dev</TableHead>
+                  <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tráfego</TableHead>
+                  <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Outros</TableHead>
+                  <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total (mês)</TableHead>
+                  <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">% No Prazo</TableHead>
+                  <TableHead className="pr-4 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">% Escalou</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {performance.map((member, i) => (
+                  <TableRow key={member.id} className={i % 2 === 1 ? "bg-muted/20" : ""}>
+                    <TableCell className="pl-4 tabular-nums font-bold text-muted-foreground text-sm">
+                      {i + 1}
+                    </TableCell>
+                    <TableCell className="font-medium text-sm">{member.name}</TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                        {roleLabels[member.role] ?? member.role}
+                      </span>
+                    </TableCell>
+                    <TableCell className="tabular-nums text-center text-sm">
+                      {(member.clickupByCategory?.["Copy"] ?? 0) > 0
+                        ? member.clickupByCategory["Copy"]
+                        : <span className="text-muted-foreground/50">—</span>}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-center text-sm">
+                      {(member.clickupByCategory?.["Edição"] ?? 0) > 0
+                        ? member.clickupByCategory["Edição"]
+                        : <span className="text-muted-foreground/50">—</span>}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-center text-sm">
+                      {(member.clickupByCategory?.["Dev"] ?? 0) > 0
+                        ? member.clickupByCategory["Dev"]
+                        : <span className="text-muted-foreground/50">—</span>}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-center text-sm">
+                      {(member.clickupByCategory?.["Tráfego"] ?? 0) > 0
+                        ? member.clickupByCategory["Tráfego"]
+                        : <span className="text-muted-foreground/50">—</span>}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-center text-sm">
+                      {(() => {
+                        const cat = member.clickupByCategory ?? {};
+                        const outros = Object.entries(cat)
+                          .filter(([k]) => !["Copy", "Edição", "Dev", "Tráfego"].includes(k))
+                          .reduce((sum, [, v]) => sum + v, 0);
+                        return outros > 0 ? outros : <span className="text-muted-foreground/50">—</span>;
+                      })()}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-center">
+                      <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${member.clickupTasks > 0 ? "border-primary/30 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
+                        {member.clickupTasks}
+                      </span>
+                    </TableCell>
+                    <TableCell className="tabular-nums text-center">
+                      {member.clickupOnTimePct != null ? (
+                        <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${
+                          member.clickupOnTimePct >= 80
+                            ? "border-success bg-success-muted text-success-muted-foreground"
+                            : member.clickupOnTimePct >= 50
+                            ? "border-warning bg-warning-muted text-warning-muted-foreground"
+                            : "border-danger bg-danger-muted text-danger-muted-foreground"
+                        }`}>
+                          {member.clickupOnTimePct}%
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/50">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="tabular-nums pr-4 text-center">
+                      {member.pctEscalou > 0 ? (
+                        <span className="inline-flex items-center rounded-md border border-success bg-success-muted px-2 py-0.5 text-xs font-medium text-success-muted-foreground">
+                          {member.pctEscalou}%
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/50">—</span>
+                      )}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {performance.map((member, i) => (
-                    <TableRow key={member.id}>
-                      <TableCell className="font-bold text-muted-foreground">
-                        {i + 1}
-                      </TableCell>
-                      <TableCell className="font-medium">{member.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {roleLabels[member.role] ?? member.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {(member.clickupByCategory?.["Copy"] ?? 0) > 0
-                          ? member.clickupByCategory["Copy"]
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {(member.clickupByCategory?.["Edição"] ?? 0) > 0
-                          ? member.clickupByCategory["Edição"]
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {(member.clickupByCategory?.["Dev"] ?? 0) > 0
-                          ? member.clickupByCategory["Dev"]
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {(member.clickupByCategory?.["Tráfego"] ?? 0) > 0
-                          ? member.clickupByCategory["Tráfego"]
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {(() => {
-                          const cat = member.clickupByCategory ?? {};
-                          const outros = Object.entries(cat)
-                            .filter(([k]) => !["Copy", "Edição", "Dev", "Tráfego"].includes(k))
-                            .reduce((sum, [, v]) => sum + v, 0);
-                          return outros > 0 ? outros : "-";
-                        })()}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={member.clickupTasks > 0 ? "default" : "secondary"}>
-                          {member.clickupTasks}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {member.clickupOnTimePct != null ? (
-                          <Badge
-                            variant="outline"
-                            className={member.clickupOnTimePct >= 80
-                              ? "border-emerald-300 text-emerald-700"
-                              : member.clickupOnTimePct >= 50
-                              ? "border-yellow-300 text-yellow-700"
-                              : "border-red-300 text-red-700"}
-                          >
-                            {member.clickupOnTimePct}%
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {member.pctEscalou > 0 ? (
-                          <Badge
-                            variant="default"
-                            className="bg-emerald-600 text-white"
-                          >
-                            {member.pctEscalou}%
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}

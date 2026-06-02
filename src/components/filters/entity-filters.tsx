@@ -18,6 +18,8 @@ interface EntityFiltersProps {
 }
 
 const statusLabels: Record<string, string> = {
+  escalou: "Escalou",
+  nao_escalou: "Não Escalou",
   em_teste: "Em Teste",
   rodando: "Rodando",
   pausado: "Pausado",
@@ -42,6 +44,18 @@ export function EntityFilters({ filters }: EntityFiltersProps) {
     router.push(`${pathname}?${params.toString()}`);
   }
 
+  // Mapas de label para o SelectValue render function
+  // O base-ui SelectValue aceita children como função (value) => ReactNode
+  // para exibir o label correto sem depender do ItemText interno
+  const nicheLabel = (val: string) =>
+    val === "__all__" ? "Todos os Nichos" : val;
+
+  const languageLabel = (val: string) =>
+    val === "__all__" ? "Todos os Idiomas" : val;
+
+  const statusLabel = (val: string) =>
+    val === "__all__" ? "Todos os Status" : (statusLabels[val] ?? val);
+
   return (
     <div className="flex items-center gap-3">
       <Select
@@ -49,7 +63,7 @@ export function EntityFilters({ filters }: EntityFiltersProps) {
         onValueChange={(val) => updateParam("niche", val)}
       >
         <SelectTrigger className="w-[160px]">
-          <SelectValue placeholder="Nicho" />
+          <SelectValue>{(val: string) => nicheLabel(val)}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">Todos os Nichos</SelectItem>
@@ -66,7 +80,7 @@ export function EntityFilters({ filters }: EntityFiltersProps) {
         onValueChange={(val) => updateParam("language", val)}
       >
         <SelectTrigger className="w-[160px]">
-          <SelectValue placeholder="Idioma" />
+          <SelectValue>{(val: string) => languageLabel(val)}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">Todos os Idiomas</SelectItem>
@@ -83,7 +97,7 @@ export function EntityFilters({ filters }: EntityFiltersProps) {
         onValueChange={(val) => updateParam("status", val)}
       >
         <SelectTrigger className="w-[160px]">
-          <SelectValue placeholder="Status" />
+          <SelectValue>{(val: string) => statusLabel(val)}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">Todos os Status</SelectItem>

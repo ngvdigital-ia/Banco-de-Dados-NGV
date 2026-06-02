@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -10,7 +11,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
@@ -42,15 +43,38 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * Wrapper sobre o ButtonPrimitive do base-ui.
+ *
+ * Fix a11y: quando `render` é um ReactElement (ex: <Link/>), o base-ui emite
+ * o warning "expected a native <button> because nativeButton is true".
+ * Detectamos automaticamente e definimos `nativeButton={false}` nesses casos,
+ * evitando passar `nativeButton={false}` em cada callsite manualmente.
+ * O caller ainda pode sobrescrever via prop explícita.
+ */
 function Button({
   className,
   variant = "default",
   size = "default",
+  render,
+  nativeButton,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  // Quando render é um ReactElement (Link, a, div…) não é um <button> nativo.
+  // Inferimos nativeButton=false para suprimir o warning do base-ui.
+  // Se o caller passar nativeButton explicitamente, respeitamos.
+  const resolvedNativeButton =
+    nativeButton !== undefined
+      ? nativeButton
+      : React.isValidElement(render)
+        ? false
+        : undefined
+
   return (
     <ButtonPrimitive
       data-slot="button"
+      render={render}
+      nativeButton={resolvedNativeButton}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />

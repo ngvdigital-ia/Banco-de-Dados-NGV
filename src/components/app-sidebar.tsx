@@ -53,17 +53,19 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b px-4 py-3">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="h-6 w-6" />
-          <span className="text-lg font-bold">NGV Digital</span>
+      <SidebarHeader className="border-b border-sidebar-border px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          <BarChart3 className="h-5 w-5 shrink-0 text-primary" />
+          <span className="text-base font-semibold tracking-tight">NGV Digital</span>
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="py-2">
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+            Menu
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5 px-2">
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
@@ -73,9 +75,10 @@ export function AppSidebar() {
                         ? pathname === "/"
                         : pathname.startsWith(item.href)
                     }
+                    className="group/item h-9 rounded-md px-3 transition-all duration-150 ease-in-out"
                   >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                    <item.icon className="h-4 w-4 shrink-0 transition-transform duration-150 group-hover/item:scale-110" />
+                    <span className="text-sm">{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -83,17 +86,20 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         {isAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+          <SidebarGroup className="mt-2">
+            <SidebarGroupLabel className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+              Admin
+            </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-0.5 px-2">
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     render={<Link href="/admin/team" />}
                     isActive={pathname.startsWith("/admin/team")}
+                    className="group/item h-9 rounded-md px-3 transition-all duration-150 ease-in-out"
                   >
-                    <ShieldCheck className="h-4 w-4" />
-                    <span>Equipe & Acessos</span>
+                    <ShieldCheck className="h-4 w-4 shrink-0 transition-transform duration-150 group-hover/item:scale-110" />
+                    <span className="text-sm">Equipe & Acessos</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -101,8 +107,8 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
-      <SidebarFooter className="border-t p-4">
-        <div className="flex items-center gap-3">
+      <SidebarFooter className="border-t border-sidebar-border p-3">
+        <div className="flex items-center gap-3 rounded-md px-1 py-1">
           <UserButton />
           <span className="text-sm text-muted-foreground">Minha conta</span>
         </div>

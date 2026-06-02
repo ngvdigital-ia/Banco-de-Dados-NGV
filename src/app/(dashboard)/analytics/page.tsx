@@ -1,12 +1,11 @@
-import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, Video, Megaphone, Users, Trophy, ArrowLeftRight } from "lucide-react";
+import { Video, Megaphone, Users, Trophy, ArrowLeftRight } from "lucide-react";
+import { NavCard } from "@/components/ui/nav-card";
+import { PageHeader } from "@/components/ui/page-header";
 
 const sections = [
   {
     title: "Performance de VSLs",
-    description: "Analise a performance das VSLs por projeto, copywriter e métricas de pit de vendas.",
+    description: "Métricas VTurb ao vivo por oferta — views, plays, play rate e retenção ao pitch.",
     href: "/analytics/vsls",
     icon: Video,
   },
@@ -30,7 +29,7 @@ const sections = [
   },
   {
     title: "Comparar",
-    description: "Compare métricas entre nichos, línguas ou copywriters lado a lado.",
+    description: "Compare métricas entre nichos, idiomas, copywriters ou editores lado a lado.",
     href: "/analytics/compare",
     icon: ArrowLeftRight,
   },
@@ -38,26 +37,21 @@ const sections = [
 
 export default function AnalyticsPage() {
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Análises</h1>
-      <p className="text-muted-foreground">
-        Insights sobre VSLs, criativos, equipe e ofertas.
-      </p>
+    <div className="space-y-8">
+      <PageHeader
+        title="Análises"
+        description="Insights sobre VSLs, criativos, equipe e ofertas."
+      />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         {sections.map((section) => (
-          <Card key={section.href} className="hover:border-primary/50 transition-colors">
-            <CardHeader className="flex flex-row items-center gap-3">
-              <section.icon className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-lg">{section.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex items-end justify-between">
-              <p className="text-sm text-muted-foreground">{section.description}</p>
-              <Button variant="ghost" size="sm" render={<Link href={section.href} />}>
-                Ver <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
+          <NavCard
+            key={section.href}
+            href={section.href}
+            icon={section.icon}
+            title={section.title}
+            description={section.description}
+          />
         ))}
       </div>
     </div>

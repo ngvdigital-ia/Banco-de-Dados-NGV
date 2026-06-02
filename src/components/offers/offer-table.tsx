@@ -55,11 +55,11 @@ function nextStatus(current: string | null): StatusValue {
 }
 
 const statusColors: Record<string, string> = {
-  SIM: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800",
-  NAO: "bg-red-50 text-red-600 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800",
-  "EM ANDAMENTO": "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800",
+  SIM: "bg-success-muted text-success-muted-foreground border-success",
+  NAO: "bg-danger-muted text-danger-muted-foreground border-danger",
+  "EM ANDAMENTO": "bg-warning-muted text-warning-muted-foreground border-warning",
   "NÃO DEU CERTO":
-    "bg-zinc-100 text-zinc-500 border-zinc-200 line-through dark:bg-zinc-900 dark:text-zinc-500 dark:border-zinc-700",
+    "bg-muted text-muted-foreground border-border line-through",
 };
 
 function getStatusColor(val: string | null) {
@@ -299,7 +299,7 @@ function EditableCell({
         setLocalValue(String(value ?? ""));
         setEditing(true);
       }}
-      className={`cursor-pointer rounded px-1 py-0.5 text-xs hover:border-b hover:border-dashed hover:border-zinc-300 dark:hover:border-zinc-600 ${isPending ? "opacity-50" : ""}`}
+      className={`cursor-pointer rounded px-1 py-0.5 text-xs transition-colors duration-150 hover:border-b hover:border-dashed hover:border-zinc-300 dark:hover:border-zinc-600 ${isPending ? "opacity-50" : ""}`}
       title={String(value ?? "")}
     >
       {value !== null && value !== undefined && value !== "" && value !== 0 ? value : "-"}
@@ -348,16 +348,16 @@ function ProgressBar({ offer }: { offer: Offer }) {
 
   const color =
     pct >= 75
-      ? "bg-emerald-500"
+      ? "bg-success"
       : pct >= 50
-        ? "bg-amber-500"
+        ? "bg-warning"
         : pct >= 25
-          ? "bg-orange-500"
-          : "bg-red-500";
+          ? "bg-warning"
+          : "bg-danger";
 
   return (
     <div className="flex items-center gap-1.5">
-      <div className="h-2 w-16 rounded-full bg-zinc-200 dark:bg-zinc-700">
+      <div className="h-2 w-16 rounded-full bg-muted">
         <div
           className={`h-full rounded-full transition-all ${color}`}
           style={{ width: `${pct}%` }}
@@ -543,7 +543,7 @@ function AdsCopyDisplay({
               <span key={k} className="inline-flex items-center">
                 <span className={`font-semibold ${siglaColors[sigla] || "text-zinc-600 dark:text-zinc-400"}`}>{sigla}</span>
                 <span className="text-zinc-400 dark:text-zinc-500">:</span>
-                <span className="font-mono font-medium text-zinc-700 dark:text-zinc-300">{v}</span>
+                <span className="tabular-nums font-mono font-medium text-zinc-700 dark:text-zinc-300">{v}</span>
               </span>
             );
           })}
@@ -668,7 +668,7 @@ function AdsEditDisplay({
               <span key={k} className="inline-flex items-center">
                 <span className={`font-semibold ${siglaColors[k] || siglaColors[sigla] || "text-zinc-600 dark:text-zinc-400"}`}>{sigla}</span>
                 <span className="text-zinc-400 dark:text-zinc-500">:</span>
-                <span className="font-mono font-medium text-zinc-700 dark:text-zinc-300">{v}</span>
+                <span className="tabular-nums font-mono font-medium text-zinc-700 dark:text-zinc-300">{v}</span>
               </span>
             );
           })}
@@ -984,12 +984,14 @@ const columns: ColumnDef[] = [
     label: "Ticket",
     width: "w-[70px] min-w-[70px]",
     render: (o) => (
-      <EditableCell value={o.ticket} offerId={o.id} field="ticket" />
+      <span className="tabular-nums">
+        <EditableCell value={o.ticket} offerId={o.id} field="ticket" />
+      </span>
     ),
   },
   {
     key: "copyVslStatus",
-    label: "Copy VSL",
+    label: "Status VSL",
     width: "w-[80px] min-w-[80px]",
     render: (o) => (
       <StatusBadge
@@ -1040,12 +1042,14 @@ const columns: ColumnDef[] = [
     label: "Ads Rej",
     width: "w-[60px] min-w-[60px]",
     render: (o) => (
-      <EditableCell
-        value={o.adsRejectedCount}
-        offerId={o.id}
-        field="adsRejectedCount"
-        type="number"
-      />
+      <span className="tabular-nums">
+        <EditableCell
+          value={o.adsRejectedCount}
+          offerId={o.id}
+          field="adsRejectedCount"
+          type="number"
+        />
+      </span>
     ),
   },
   // Coluna "Editores" removida a pedido do Diogo (confunde)
@@ -1162,18 +1166,18 @@ const columns: ColumnDef[] = [
 
 export function OfferTable({ offers }: { offers: Offer[] }) {
   return (
-    <div className="rounded-lg border border-zinc-200 dark:border-zinc-800">
+    <div className="rounded-lg border border-border">
       <div className="overflow-x-auto">
         <table className="w-max table-fixed border-collapse text-sm">
           {/* Header */}
           <thead>
-            <tr className="sticky top-0 z-20 border-b-2 border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+            <tr className="sticky top-0 z-20 border-b border-border bg-muted/60 backdrop-blur-sm dark:bg-zinc-900/80">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`h-9 px-3 text-left text-[11px] font-semibold font-mono tracking-wide text-zinc-500 dark:text-zinc-400 ${col.width} ${
+                  className={`h-8 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground ${col.width} ${
                     col.sticky
-                      ? "sticky left-0 z-30 bg-zinc-50 dark:bg-zinc-900/50"
+                      ? "sticky left-0 z-30 bg-muted/60 dark:bg-zinc-900/80 border-r border-border/50"
                       : ""
                   }`}
                 >
@@ -1188,14 +1192,14 @@ export function OfferTable({ offers }: { offers: Offer[] }) {
             {offers.map((offer) => (
               <tr
                 key={offer.id}
-                className="group border-b border-zinc-100 border-l-2 border-l-transparent bg-background transition-all hover:border-l-emerald-500 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/30"
+                className="group border-b border-border/60 border-l-2 border-l-transparent bg-background transition-colors duration-150 odd:bg-muted/30 hover:border-l-primary hover:bg-accent/40 dark:odd:bg-muted/20 dark:hover:bg-accent/20"
               >
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className={`h-10 px-3 ${col.width} ${
+                    className={`h-10 px-3 transition-colors duration-150 ${col.width} ${
                       col.sticky
-                        ? "sticky left-0 z-10 bg-background group-hover:bg-zinc-50 dark:group-hover:bg-zinc-900/30"
+                        ? "sticky left-0 z-10 border-r border-border/50 bg-background group-hover:bg-accent/40 dark:group-hover:bg-accent/20"
                         : ""
                     }`}
                   >
@@ -1209,8 +1213,8 @@ export function OfferTable({ offers }: { offers: Offer[] }) {
       </div>
 
       {/* Row count footer */}
-      <div className="border-t border-zinc-200 px-4 py-2.5 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-        <span className="font-mono font-medium">{offers.length}</span> ofertas <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">&middot;</span> Última atualização: agora
+      <div className="border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
+        <span className="tabular-nums font-mono font-medium">{offers.length}</span> ofertas <span className="mx-1.5 text-border">&middot;</span> Última atualização: agora
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { statusOferta, statusPipeline, labelOf } from "@/lib/status-labels";
 
 // ---------------------------------------------------------------------------
 // Helper: parse comma-separated URL param into an array of non-empty strings
@@ -105,7 +106,7 @@ function MultiSelectDropdown({
         >
           {options.length === 0 && (
             <p className="px-2 py-1.5 text-xs text-muted-foreground">
-              Sem opcoes
+              Sem opções
             </p>
           )}
           {options.map((opt) => {
@@ -215,9 +216,13 @@ export function AnalyticsFilters({
     value: f,
     label: f,
   }));
+  // Mapa combinado: tenta statusPipeline primeiro (escalou/em_teste/etc.), depois statusOferta (SIM/NAO/etc.)
   const statusOpts: DropdownOption[] = options.statuses.map((s) => ({
     value: s,
-    label: s,
+    label:
+      s in statusPipeline
+        ? labelOf(statusPipeline, s)
+        : labelOf(statusOferta, s),
   }));
 
   return (

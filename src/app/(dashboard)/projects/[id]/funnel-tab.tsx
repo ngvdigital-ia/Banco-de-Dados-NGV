@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { Plus, Trash2, ArrowDown, ArrowRight } from "lucide-react";
+import { Plus, Trash2, ArrowDown, GitBranch, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Separator } from "@/components/ui/separator";
 import {
   getFunnels, getFunnelNodes, getOrderBumps,
   createFunnel, deleteFunnel,
@@ -29,6 +31,14 @@ const nodeTypeLabels: Record<string, string> = {
   checkout: "Checkout",
   upsell: "Upsell",
   downsell: "Downsell",
+};
+
+type StatusVariant = "success" | "danger" | "info" | "warning" | "neutral";
+
+const nodeTypeVariant: Record<string, StatusVariant> = {
+  checkout: "info",
+  upsell: "success",
+  downsell: "warning",
 };
 
 function FunnelFormDialog({
@@ -61,8 +71,10 @@ function FunnelFormDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger as React.ReactElement} />
       <DialogContent>
-        <DialogHeader><DialogTitle>Novo Funil</DialogTitle></DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <DialogHeader>
+          <DialogTitle>Novo Funil</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 pt-1">
           <div className="space-y-2">
             <Label>Nome do Funil</Label>
             <Input name="name" required />
@@ -75,9 +87,13 @@ function FunnelFormDialog({
             <Label>URL Checkout</Label>
             <Input name="checkoutUrl" placeholder="https://..." />
           </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isPending}>{isPending ? "Salvando..." : "Salvar"}</Button>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" size="sm" disabled={isPending}>
+              {isPending ? "Salvando..." : "Salvar"}
+            </Button>
           </div>
         </form>
       </DialogContent>
@@ -146,85 +162,171 @@ function FunnelDetail({ funnel, onDelete }: { funnel: Funnel; onDelete: () => vo
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>{funnel.name}</CardTitle>
-          <div className="mt-1 flex gap-4 text-sm text-muted-foreground">
-            {funnel.salesPageUrl && <span>Vendas: {funnel.salesPageUrl}</span>}
-            {funnel.checkoutUrl && <span>Checkout: {funnel.checkoutUrl}</span>}
+    <Card className="overflow-hidden transition-shadow duration-200 hover:shadow-md">
+      {/* Accent bar indigo no topo */}
+      <div className="h-0.5 w-full bg-primary/30" aria-hidden="true" />
+
+      <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
+        <div className="min-w-0 space-y-1">
+          <CardTitle className="text-base font-semibold">{funnel.name}</CardTitle>
+          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+            {funnel.salesPageUrl && (
+              <a
+                href={funnel.salesPageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 transition-colors hover:text-primary"
+              >
+                <ChevronRight className="h-3 w-3 text-primary/60" aria-hidden="true" />
+                Página de vendas
+              </a>
+            )}
+            {funnel.checkoutUrl && (
+              <a
+                href={funnel.checkoutUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 transition-colors hover:text-primary"
+              >
+                <ChevronRight className="h-3 w-3 text-primary/60" aria-hidden="true" />
+                Checkout
+              </a>
+            )}
           </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => {
-          if (confirm("Deletar funil e todos os nodes/bumps?")) {
-            startTransition(async () => {
-              await deleteFunnel(funnel.id, funnel.projectId);
-              onDelete();
-            });
-          }
-        }}>
-          <Trash2 className="h-4 w-4 text-destructive" />
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Excluir funil"
+          className="h-7 w-7 shrink-0 text-muted-foreground transition-colors hover:text-danger"
+          onClick={() => {
+            if (confirm("Deletar funil e todos os nodes/bumps?")) {
+              startTransition(async () => {
+                await deleteFunnel(funnel.id, funnel.projectId);
+                onDelete();
+              });
+            }
+          }}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </CardHeader>
-      <CardContent className="space-y-4">
+
+      <Separator />
+
+      <CardContent className="space-y-5 pt-4">
         {/* Order Bumps */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold">Order Bumps</h4>
-            <Button variant="outline" size="sm" onClick={addBump}>
-              <Plus className="mr-1 h-3 w-3" />Bump
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Order Bumps
+            </h4>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 gap-1 px-2 text-xs"
+              onClick={addBump}
+            >
+              <Plus className="h-3 w-3" />
+              Bump
             </Button>
           </div>
           {bumps.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum order bump</p>
+            <p className="text-xs text-muted-foreground/60">Nenhum order bump</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {bumps.map((b) => (
-                <Badge key={b.id} variant="secondary" className="flex items-center gap-1">
-                  {b.name} - R$ {b.price}
-                  <button onClick={() => startTransition(async () => { await deleteOrderBump(b.id); load(); })}
-                    className="ml-1 hover:text-destructive">x</button>
-                </Badge>
+                <div
+                  key={b.id}
+                  className="group flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1 text-xs font-medium"
+                >
+                  <span className="tabular-nums">{b.name}</span>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="tabular-nums text-primary">R$ {b.price}</span>
+                  <button
+                    type="button"
+                    aria-label={`Remover bump ${b.name}`}
+                    onClick={() => startTransition(async () => { await deleteOrderBump(b.id); load(); })}
+                    className="ml-0.5 rounded text-muted-foreground/60 transition-colors hover:text-danger"
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
             </div>
           )}
         </div>
 
+        <Separator />
+
         {/* Funnel Nodes */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold">Fluxo do Funil</h4>
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Fluxo do Funil
+            </h4>
             <div className="flex gap-1">
-              <Button variant="outline" size="sm" onClick={() => addNode("upsell")}>
-                <Plus className="mr-1 h-3 w-3" />Upsell
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 gap-1 px-2 text-xs"
+                onClick={() => addNode("upsell")}
+              >
+                <Plus className="h-3 w-3" />
+                Upsell
               </Button>
-              <Button variant="outline" size="sm" onClick={() => addNode("downsell")}>
-                <Plus className="mr-1 h-3 w-3" />Downsell
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 gap-1 px-2 text-xs"
+                onClick={() => addNode("downsell")}
+              >
+                <Plus className="h-3 w-3" />
+                Downsell
               </Button>
             </div>
           </div>
+
           {nodes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum node no funil</p>
+            <p className="text-xs text-muted-foreground/60">Nenhum node no funil</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {nodes.map((node, i) => (
-                <div key={node.id} className="flex items-center gap-2">
-                  {i > 0 && <ArrowDown className="h-4 w-4 text-muted-foreground" />}
-                  <div className="flex items-center gap-2 rounded-md border p-2 flex-1">
-                    <Badge variant={node.nodeType === "upsell" ? "default" : node.nodeType === "downsell" ? "secondary" : "outline"}>
+                <div key={node.id} className="flex flex-col items-start gap-1">
+                  {i > 0 && (
+                    <div className="ml-3 flex items-center">
+                      <ArrowDown className="h-3.5 w-3.5 text-primary/40" aria-hidden="true" />
+                    </div>
+                  )}
+                  <div className="group flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 transition-colors duration-150 hover:border-primary/30 hover:bg-primary/[0.02]">
+                    <StatusBadge variant={nodeTypeVariant[node.nodeType] ?? "neutral"}>
                       {nodeTypeLabels[node.nodeType]}
-                    </Badge>
-                    <span className="font-medium">{node.offerName}</span>
-                    <span className="text-sm text-muted-foreground">R$ {node.price}</span>
+                    </StatusBadge>
+                    <span className="flex-1 text-sm font-medium text-foreground">{node.offerName}</span>
+                    <span className="tabular-nums text-sm font-semibold text-primary">
+                      R$ {node.price}
+                    </span>
                     {node.contentType && (
-                      <Badge variant="outline">
-                        {node.contentType === "video" ? "Vídeo" : `Texto (${node.textLength === "longo" ? "Longo" : "Curto"})`}
-                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {node.contentType === "video"
+                          ? "Vídeo"
+                          : `Texto (${node.textLength === "longo" ? "Longo" : "Curto"})`}
+                      </span>
                     )}
-                    {node.url && <span className="text-xs text-muted-foreground truncate max-w-[200px]">{node.url}</span>}
-                    <button onClick={() => startTransition(async () => { await deleteFunnelNode(node.id); load(); })}
-                      className="ml-auto hover:text-destructive">
-                      <Trash2 className="h-3 w-3" />
+                    {node.url && (
+                      <span className="max-w-[160px] truncate text-xs text-muted-foreground">
+                        {node.url}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={`Remover node ${node.offerName}`}
+                      onClick={() =>
+                        startTransition(async () => { await deleteFunnelNode(node.id); load(); })
+                      }
+                      className="ml-auto rounded text-muted-foreground/40 transition-colors hover:text-danger"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
@@ -252,13 +354,30 @@ export function FunnelTab({ projectId }: { projectId: number }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <FunnelFormDialog projectId={projectId} trigger={
-          <Button><Plus className="mr-2 h-4 w-4" />Novo Funil</Button>
-        } onSaved={load} />
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {funnelList.length > 0 && `${funnelList.length} funil${funnelList.length !== 1 ? "s" : ""}`}
+        </p>
+        <FunnelFormDialog
+          projectId={projectId}
+          trigger={
+            <Button size="sm" className="h-8 gap-1.5 px-3 text-xs font-medium">
+              <Plus className="h-3.5 w-3.5" />
+              Novo Funil
+            </Button>
+          }
+          onSaved={load}
+        />
       </div>
+
       {funnelList.length === 0 ? (
-        <p className="py-8 text-center text-muted-foreground">Nenhum funil cadastrado</p>
+        <div className="rounded-xl border border-dashed">
+          <EmptyState
+            icon={GitBranch}
+            title="Nenhum funil cadastrado"
+            description="Adicione o primeiro funil para estruturar o fluxo de vendas."
+          />
+        </div>
       ) : (
         <div className="space-y-4">
           {funnelList.map((f) => (

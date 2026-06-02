@@ -1,6 +1,7 @@
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -11,6 +12,8 @@ import {
 } from "@/components/ui/table";
 import { TeamFormDialog } from "@/components/forms/team-form";
 import { getTeamMembers, deleteTeamMember } from "./actions";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
@@ -20,8 +23,10 @@ const roleLabels: Record<string, string> = {
   suporte: "Suporte",
 };
 
-const roleBadgeVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-  admin: "destructive",
+type RoleBadgeVariant = "info" | "default" | "secondary" | "outline";
+
+const roleBadgeVariant: Record<string, RoleBadgeVariant> = {
+  admin: "info",
   copywriter: "default",
   editor: "secondary",
   gestor_trafego: "outline",
@@ -31,61 +36,77 @@ export default async function TeamPage() {
   const members = await getTeamMembers();
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Equipe</h1>
+    <div className="space-y-8">
+      <PageHeader
+        title="Equipe"
+        description="Gerencie os membros da equipe NGV: copywriters, editores e gestores de tráfego."
+      >
         <TeamFormDialog
           trigger={
             <Button>
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
               Novo Membro
             </Button>
           }
         />
-      </div>
+      </PageHeader>
 
       {members.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
-          <h2 className="text-lg font-semibold">Nenhum membro ainda</h2>
-          <p className="text-sm text-muted-foreground">
-            Cadastre os membros da equipe (copywriters, editores, gestores de
-            tráfego).
-          </p>
+        <div className="rounded-xl border border-dashed border-border py-4">
+          <EmptyState
+            icon={Users}
+            title="Nenhum membro ainda"
+            description="Cadastre os membros da equipe (copywriters, editores, gestores de tráfego)."
+          />
         </div>
       ) : (
-        <div className="rounded-md border">
+        <div className="rounded-xl border border-border shadow-sm overflow-hidden ring-1 ring-foreground/5">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Função</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[100px]">Ações</TableHead>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nome</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Função</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</TableHead>
+                <TableHead className="w-[100px] text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {members.map((member) => (
-                <TableRow key={member.id}>
+                <TableRow
+                  key={member.id}
+                  className="transition-colors duration-150 hover:bg-muted/30"
+                >
                   <TableCell className="font-medium">{member.name}</TableCell>
-                  <TableCell>{member.email}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{member.email}</TableCell>
                   <TableCell>
-                    <Badge variant={roleBadgeVariant[member.role] ?? "default"}>
-                      {roleLabels[member.role] ?? member.role}
-                    </Badge>
+                    {roleBadgeVariant[member.role] === "info" ? (
+                      <StatusBadge variant="info">
+                        {roleLabels[member.role] ?? member.role}
+                      </StatusBadge>
+                    ) : (
+                      <Badge
+                        variant={
+                          (roleBadgeVariant[member.role] as Exclude<RoleBadgeVariant, "info">) ??
+                          "default"
+                        }
+                      >
+                        {roleLabels[member.role] ?? member.role}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={member.active ? "default" : "secondary"}>
+                    <StatusBadge variant={member.active ? "success" : "neutral"}>
                       {member.active ? "Ativo" : "Inativo"}
-                    </Badge>
+                    </StatusBadge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <TeamFormDialog
                         member={member}
                         trigger={
-                          <Button variant="ghost" size="icon">
-                            <Pencil className="h-4 w-4" />
+                          <Button variant="ghost" size="icon" aria-label={`Editar ${member.name}`}>
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         }
                       />
@@ -95,8 +116,8 @@ export default async function TeamPage() {
                           await deleteTeamMember(member.id);
                         }}
                       >
-                        <Button variant="ghost" size="icon" type="submit">
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                        <Button variant="ghost" size="icon" type="submit" aria-label={`Excluir ${member.name}`}>
+                          <Trash2 className="h-4 w-4 text-danger" aria-hidden="true" />
                         </Button>
                       </form>
                     </div>

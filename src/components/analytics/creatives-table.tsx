@@ -9,6 +9,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { statusOferta, labelOf } from "@/lib/status-labels";
 
 const formatLabels: Record<string, string> = {
   especialista: "Especialista",
@@ -96,7 +97,7 @@ export function CreativesTable({
             <TableHead>Idioma</TableHead>
             <TableHead>Copy VSL</TableHead>
             <TableHead className="text-right">Ads Editados</TableHead>
-            <TableHead>Validacao</TableHead>
+            <TableHead>Validação</TableHead>
             <TableHead>Escala</TableHead>
             {hasCampaignData && (
               <>
@@ -139,42 +140,42 @@ export function CreativesTable({
                     <Badge variant="outline">{row.language}</Badge>
                   </TableCell>
                   <TableCell>{row.copyVsl ?? "-"}</TableCell>
-                  <TableCell className="text-right">{row.adsEdited ?? 0}</TableCell>
+                  <TableCell className="tabular-nums text-right">{row.adsEdited ?? 0}</TableCell>
                   <TableCell>
                     <Badge
                       variant={row.validation === "SIM" ? "default" : "outline"}
                       className={
-                        row.validation === "SIM" ? "bg-emerald-600 text-white" :
-                        row.validation === "EM ANDAMENTO" ? "border-amber-300 text-amber-700" :
-                        row.validation === "NÃO DEU CERTO" ? "border-red-300 text-red-600" :
+                        row.validation === "SIM" ? "bg-success text-success-foreground" :
+                        row.validation === "EM ANDAMENTO" ? "border-warning text-warning" :
+                        row.validation === "NÃO DEU CERTO" ? "border-danger text-danger" :
                         ""
                       }
                     >
-                      {row.validation}
+                      {labelOf(statusOferta, row.validation)}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     {isEscalou ? (
-                      <Badge className="bg-emerald-600 text-white">ESCALOU</Badge>
+                      <Badge className="bg-success text-success-foreground">Escalou</Badge>
                     ) : isNaoEscalou ? (
-                      <Badge variant="outline" className="border-red-300 text-red-600">NAO ESCALOU</Badge>
+                      <Badge variant="outline" className="border-danger text-danger">Não Escalou</Badge>
                     ) : (
-                      <Badge variant="outline" className="border-amber-300 text-amber-700">{row.scale ?? "EM ANDAMENTO"}</Badge>
+                      <Badge variant="outline" className="border-warning text-warning">{labelOf(statusOferta, row.scale) ?? "Em andamento"}</Badge>
                     )}
                   </TableCell>
                   {hasCampaignData && (
                     <>
                       <TableCell className="text-right">{campaign?.activeCampaigns ?? "-"}</TableCell>
-                      <TableCell className="text-right text-red-500">
+                      <TableCell className="tabular-nums text-right text-danger">
                         {campaign ? formatCurrency(campaign.totalSpend, campaign.currency) : "-"}
                       </TableCell>
-                      <TableCell className="text-right text-emerald-600">
+                      <TableCell className="tabular-nums text-right text-success">
                         {campaign ? formatCurrency(campaign.totalRevenue, campaign.currency) : "-"}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="tabular-nums text-right">
                         {campaign?.roas != null ? `${campaign.roas}x` : "-"}
                       </TableCell>
-                      <TableCell className="text-right">{hasAds ? ads.length : "-"}</TableCell>
+                      <TableCell className="tabular-nums text-right">{hasAds ? ads.length : "-"}</TableCell>
                     </>
                   )}
                 </TableRow>
@@ -209,13 +210,13 @@ export function CreativesTable({
                     {hasCampaignData && (
                       <>
                         <TableCell></TableCell>
-                        <TableCell className="text-right text-red-500 text-sm">
+                        <TableCell className="tabular-nums text-right text-danger text-sm">
                           {formatCurrency(ad.spend, campaign?.currency ?? "USD")}
                         </TableCell>
-                        <TableCell className="text-right text-emerald-600 text-sm">
+                        <TableCell className="tabular-nums text-right text-success text-sm">
                           {formatCurrency(ad.revenue, campaign?.currency ?? "USD")}
                         </TableCell>
-                        <TableCell className="text-right text-sm">
+                        <TableCell className="tabular-nums text-right text-sm">
                           {ad.roas != null ? `${ad.roas}x` : "-"}
                         </TableCell>
                         <TableCell></TableCell>

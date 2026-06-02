@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Upload } from "lucide-react";
+import { Upload, FileText, Database } from "lucide-react";
 import Papa from "papaparse";
 import { OfferImport } from "./offer-import";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -64,26 +64,55 @@ export default function ImportPage() {
   const preview = rows.slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Import</h1>
+    <div className="space-y-8">
+      {/* Header inline — import page é client, PageHeader é server-safe mas não precisa de importação especial */}
+      <header className="flex flex-col gap-1">
+        <h1 className="text-3xl font-bold tracking-tight">Importar Dados</h1>
+        <p className="text-sm text-muted-foreground">
+          Importe ofertas e métricas via CSV para popular o dashboard.
+        </p>
+      </header>
 
-      <OfferImport />
+      {/* Seção: Ofertas */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center justify-center rounded-lg bg-primary/10 p-2">
+            <Database className="size-4 text-primary" aria-hidden="true" />
+          </div>
+          <h2 className="text-lg font-semibold">Acompanhamento de Ofertas</h2>
+        </div>
+        <OfferImport />
+      </section>
 
-      <h2 className="text-xl font-bold mt-8">Import de Métricas (CSV)</h2>
-      <p className="text-muted-foreground">
-        Importe métricas de uma planilha CSV. Colunas suportadas: date, entity_id,
-        impressions, clicks, spend, revenue, cpa, roas.
-      </p>
+      {/* Seção: Métricas CSV */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center justify-center rounded-lg bg-primary/10 p-2">
+            <FileText className="size-4 text-primary" aria-hidden="true" />
+          </div>
+          <h2 className="text-lg font-semibold">Métricas (CSV)</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Colunas suportadas: <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded border border-border">date</span>, <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded border border-border">entity_id</span>, <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded border border-border">impressions</span>, <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded border border-border">clicks</span>, <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded border border-border">spend</span>, <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded border border-border">revenue</span>, <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded border border-border">cpa</span>, <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded border border-border">roas</span>.
+        </p>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Upload</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 py-3 hover:bg-muted">
-              <Upload className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm">{fileName || "Selecionar arquivo CSV"}</span>
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4 border-b border-border">
+            <CardTitle className="text-base">Upload</CardTitle>
+            <CardDescription>
+              Selecione um arquivo CSV formatado para pré-visualizar e importar.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-5 space-y-4">
+            {/* Dropzone */}
+            <label
+              className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-border px-5 py-4 text-sm transition-colors duration-150 hover:border-primary/40 hover:bg-primary/5"
+              aria-label="Selecionar arquivo CSV"
+            >
+              <Upload className="h-5 w-5 text-muted-foreground shrink-0" aria-hidden="true" />
+              <span className={fileName ? "text-foreground font-medium" : "text-muted-foreground"}>
+                {fileName || "Selecionar arquivo CSV"}
+              </span>
               <input
                 type="file"
                 accept=".csv"
@@ -91,46 +120,52 @@ export default function ImportPage() {
                 onChange={handleFileChange}
               />
             </label>
-          </div>
 
-          {result && (
-            <p className="text-sm font-medium text-green-600">{result}</p>
-          )}
+            {result && (
+              <p className="text-sm font-medium text-success">{result}</p>
+            )}
 
-          {preview.length > 0 && (
-            <>
-              <p className="text-sm text-muted-foreground">
-                Preview ({rows.length} linhas total, mostrando 5):
-              </p>
-              <div className="rounded-md border overflow-auto max-h-[300px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {headers.map((h) => (
-                        <TableHead key={h}>{h}</TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {preview.map((row, i) => (
-                      <TableRow key={i}>
+            {preview.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Preview —{" "}
+                  <span className="tabular-nums font-medium text-foreground">{rows.length}</span> linha(s) total, mostrando 5:
+                </p>
+                <div className="rounded-xl border border-border overflow-auto max-h-[300px] shadow-sm">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
                         {headers.map((h) => (
-                          <TableCell key={h} className="text-xs">
-                            {row[h]}
-                          </TableCell>
+                          <TableHead key={h} className="text-xs font-semibold whitespace-nowrap">{h}</TableHead>
                         ))}
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {preview.map((row, i) => (
+                        <TableRow key={i} className="transition-colors hover:bg-muted/30">
+                          {headers.map((h) => (
+                            <TableCell key={h} className="text-xs tabular-nums whitespace-nowrap">
+                              {row[h]}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button onClick={handleImport} disabled={isPending}>
+                    {isPending ? "Importando…" : `Importar ${rows.length} linha(s)`}
+                  </Button>
+                  {isPending && (
+                    <p className="text-xs text-muted-foreground animate-pulse">Processando…</p>
+                  )}
+                </div>
               </div>
-              <Button onClick={handleImport} disabled={isPending}>
-                {isPending ? "Importando..." : `Importar ${rows.length} linhas`}
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }

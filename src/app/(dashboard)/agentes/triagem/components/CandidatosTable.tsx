@@ -3,25 +3,12 @@
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight, Inbox } from "lucide-react";
 import type { CandidatoTriado } from "@/lib/agentes/triagem/client";
+import { classifLabel, classifBadgeColor } from "@/lib/agentes/triagem/labels";
 
 interface Props {
   candidatos: CandidatoTriado[];
   totalSemFiltro: number;
   onSelecionar: (c: CandidatoTriado) => void;
-}
-
-function classifBadgeColor(c: string): string {
-  if (c === "MUITO_BOM") return "bg-green-100 text-green-900 hover:bg-green-100";
-  if (c === "TALVEZ") return "bg-amber-100 text-amber-900 hover:bg-amber-100";
-  if (c === "DESCARTAR") return "bg-slate-100 text-slate-700 hover:bg-slate-100";
-  return "bg-muted text-muted-foreground";
-}
-
-function classifLabel(c: string): string {
-  if (c === "MUITO_BOM") return "Muito bom";
-  if (c === "TALVEZ") return "Talvez";
-  if (c === "DESCARTAR") return "Descartar";
-  return c;
 }
 
 function formatDate(ts: string): string {

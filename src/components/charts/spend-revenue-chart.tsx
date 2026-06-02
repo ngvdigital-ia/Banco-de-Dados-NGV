@@ -6,6 +6,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  Legend,
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
@@ -22,12 +23,12 @@ export function SpendRevenueChart({ data }: { data: SpendRevenueData[] }) {
       <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="colorSpend" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+            <stop offset="5%" stopColor="var(--chart-4)" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="var(--chart-4)" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+            <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -43,10 +44,15 @@ export function SpendRevenueChart({ data }: { data: SpendRevenueData[] }) {
             v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)
           }
         />
+        <Legend
+          verticalAlign="top"
+          formatter={(value) => (value === "spend" ? "Gasto" : "Receita")}
+          wrapperStyle={{ fontSize: 12 }}
+        />
         <Tooltip
           contentStyle={{
-            backgroundColor: "hsl(var(--popover))",
-            border: "1px solid hsl(var(--border))",
+            backgroundColor: "var(--popover)",
+            border: "1px solid var(--border)",
             borderRadius: "8px",
             fontSize: 12,
           }}
@@ -59,7 +65,7 @@ export function SpendRevenueChart({ data }: { data: SpendRevenueData[] }) {
         <Area
           type="monotone"
           dataKey="spend"
-          stroke="#ef4444"
+          stroke="var(--chart-4)"
           fillOpacity={1}
           fill="url(#colorSpend)"
           strokeWidth={2}
@@ -68,7 +74,7 @@ export function SpendRevenueChart({ data }: { data: SpendRevenueData[] }) {
         <Area
           type="monotone"
           dataKey="revenue"
-          stroke="#22c55e"
+          stroke="var(--chart-1)"
           fillOpacity={1}
           fill="url(#colorRevenue)"
           strokeWidth={2}

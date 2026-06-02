@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -111,18 +113,28 @@ export function ProjectFormDialog({
     });
   }
 
+  const isEditing = !!project;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger as React.ReactElement} />
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {project ? "Editar Projeto" : "Novo Projeto"}
-          </DialogTitle>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="pb-2">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+              <FolderOpen className="h-4 w-4" />
+            </div>
+            <DialogTitle>
+              {isEditing ? "Editar Projeto" : "Novo Projeto"}
+            </DialogTitle>
+          </div>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="type">Tipo</Label>
+
+        <Separator className="opacity-50" />
+
+        <form onSubmit={handleSubmit} className="space-y-5 pt-1">
+          {/* Tipo */}
+          <FormField label="Tipo">
             <Select name="type" defaultValue={project?.type ?? "vsl"}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo" />
@@ -135,48 +147,54 @@ export function ProjectFormDialog({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome do Projeto</Label>
+          </FormField>
+
+          {/* Nome */}
+          <FormField label="Nome do Projeto">
             <Input
               id="name"
               name="name"
               defaultValue={project?.name}
+              placeholder="Ex: VSL Emagrecimento PT v3"
               required
             />
+          </FormField>
+
+          {/* Grid: Nicho + Idioma */}
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Nicho">
+              <Select name="niche" defaultValue={project?.niche ?? nicheOptions[0]}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Nicho" />
+                </SelectTrigger>
+                <SelectContent>
+                  {nicheOptions.map((niche) => (
+                    <SelectItem key={niche} value={niche}>
+                      {niche}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            <FormField label="Idioma">
+              <Select name="language" defaultValue={project?.language ?? languageOptions[0]}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Idioma" />
+                </SelectTrigger>
+                <SelectContent>
+                  {languageOptions.map((lang) => (
+                    <SelectItem key={lang} value={lang}>
+                      {lang}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="niche">Nicho</Label>
-            <Select name="niche" defaultValue={project?.niche ?? nicheOptions[0]}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o nicho" />
-              </SelectTrigger>
-              <SelectContent>
-                {nicheOptions.map((niche) => (
-                  <SelectItem key={niche} value={niche}>
-                    {niche}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="language">Idioma</Label>
-            <Select name="language" defaultValue={project?.language ?? languageOptions[0]}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o idioma" />
-              </SelectTrigger>
-              <SelectContent>
-                {languageOptions.map((lang) => (
-                  <SelectItem key={lang} value={lang}>
-                    {lang}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
+
+          {/* Status */}
+          <FormField label="Status">
             <Select name="status" defaultValue={project?.status ?? "em_teste"}>
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
@@ -189,42 +207,76 @@ export function ProjectFormDialog({
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </FormField>
+
+          {/* Datas de escala */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="scaleStartDate">Data início escala</Label>
+            <FormField label="Início da escala">
               <Input
                 id="scaleStartDate"
                 name="scaleStartDate"
                 type="date"
-                defaultValue={project?.scaleStartDate ? new Date(project.scaleStartDate).toISOString().split("T")[0] : ""}
+                defaultValue={
+                  project?.scaleStartDate
+                    ? new Date(project.scaleStartDate).toISOString().split("T")[0]
+                    : ""
+                }
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="scaleEndDate">Data fim escala</Label>
+            </FormField>
+            <FormField label="Fim da escala">
               <Input
                 id="scaleEndDate"
                 name="scaleEndDate"
                 type="date"
-                defaultValue={project?.scaleEndDate ? new Date(project.scaleEndDate).toISOString().split("T")[0] : ""}
+                defaultValue={
+                  project?.scaleEndDate
+                    ? new Date(project.scaleEndDate).toISOString().split("T")[0]
+                    : ""
+                }
               />
-            </div>
+            </FormField>
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+
+          {error && (
+            <p className="rounded-lg border border-danger/30 bg-danger-muted px-3 py-2 text-xs text-danger-muted-foreground">
+              {error}
+            </p>
+          )}
+
+          <Separator className="opacity-50" />
+
           <div className="flex justify-end gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
+              disabled={isPending}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Salvando..." : "Salvar"}
+            <Button type="submit" disabled={isPending} className="min-w-[80px]">
+              {isPending ? "Salvando…" : isEditing ? "Salvar" : "Criar"}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function FormField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        {label}
+      </Label>
+      {children}
+    </div>
   );
 }

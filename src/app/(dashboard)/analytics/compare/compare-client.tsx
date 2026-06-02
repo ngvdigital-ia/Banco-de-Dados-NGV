@@ -15,6 +15,9 @@ import { ComparisonView, type ComparisonData } from "@/components/analytics/comp
 import { DateRangeFilter } from "@/components/filters/date-range-filter";
 import { getDateRange } from "@/lib/date-utils";
 import { getComparisonData, type getFilterOptions } from "../actions";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ArrowLeftRight } from "lucide-react";
 
 type Dimension = "niche" | "language" | "copywriter" | "editor";
 
@@ -50,7 +53,7 @@ function ComparePageInner({ filterOptions }: ComparePageClientProps) {
     setResult(null);
     setOptionsLoaded(false);
 
-    // Deriva opcoes diretamente do filterOptions ja carregado no servidor — sem round-trip
+    // Deriva opções diretamente do filterOptions já carregado no servidor — sem round-trip
     startTransition(() => {
       let items: { value: string; label: string }[] = [];
 
@@ -104,28 +107,31 @@ function ComparePageInner({ filterOptions }: ComparePageClientProps) {
   const canCompare = dimension && valueA && valueB && valueA !== valueB;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Comparar</h1>
-      <p className="text-muted-foreground">
-        Compare metricas entre nichos, idiomas, copywriters ou editores lado a lado.
-      </p>
-      <p className="text-xs text-muted-foreground">
-        Periodo &quot;Tudo&quot; mostra totais acumulados. Periodos especificos somam snapshots diarios coletados pelo cron UTMify.
+    <div className="space-y-8">
+      <PageHeader
+        title="Comparar"
+        description="Compare métricas entre nichos, idiomas, copywriters ou editores lado a lado."
+      />
+
+      <p className="text-xs text-muted-foreground -mt-4">
+        Período &quot;Tudo&quot; mostra totais acumulados. Períodos específicos somam snapshots diários coletados pelo cron UTMify.
       </p>
 
       <DateRangeFilter />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Configurar Comparacao</CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b border-border/50">
+          <CardTitle className="text-base">Configurar Comparação</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5 pt-5">
           {/* Step 1: Select dimension */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">1. Selecione a dimensao</label>
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              1. Dimensão
+            </label>
             <Select onValueChange={handleDimensionChange}>
               <SelectTrigger className="w-full max-w-xs">
-                <SelectValue placeholder="Escolha uma dimensao..." />
+                <SelectValue placeholder="Escolha uma dimensão..." />
               </SelectTrigger>
               <SelectContent>
                 {(Object.keys(dimensionLabels) as Dimension[]).map((key) => (
@@ -141,7 +147,9 @@ function ComparePageInner({ filterOptions }: ComparePageClientProps) {
           {dimension && optionsLoaded && (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-sm font-medium">2. Item A</label>
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  2. Item A
+                </label>
                 <Select
                   onValueChange={(val: string | null) => {
                     setValueA(val);
@@ -162,7 +170,9 @@ function ComparePageInner({ filterOptions }: ComparePageClientProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Item B</label>
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Item B
+                </label>
                 <Select
                   onValueChange={(val: string | null) => {
                     setValueB(val);
@@ -188,15 +198,16 @@ function ComparePageInner({ filterOptions }: ComparePageClientProps) {
 
           {/* Step 3: Compare button */}
           {dimension && optionsLoaded && (
-            <div>
+            <div className="flex items-center gap-3">
               <Button
                 onClick={handleCompare}
                 disabled={!canCompare || isPending}
+                className="transition-all duration-150"
               >
                 {isPending ? "Comparando..." : "Comparar"}
               </Button>
               {valueA && valueB && valueA === valueB && (
-                <p className="mt-1 text-xs text-red-500">
+                <p className="text-xs text-danger">
                   Selecione itens diferentes para comparar.
                 </p>
               )}
@@ -204,14 +215,22 @@ function ComparePageInner({ filterOptions }: ComparePageClientProps) {
           )}
 
           {dimension && !optionsLoaded && isPending && (
-            <p className="text-sm text-muted-foreground">Carregando opcoes...</p>
+            <p className="text-sm text-muted-foreground">Carregando opções...</p>
           )}
         </CardContent>
       </Card>
 
-      {/* Results */}
-      {result && (
+      {/* Results or empty prompt */}
+      {result ? (
         <ComparisonView dataA={result[0]} dataB={result[1]} />
+      ) : (
+        !dimension && (
+          <EmptyState
+            icon={ArrowLeftRight}
+            title="Selecione uma dimensão para comparar"
+            description="Escolha a dimensão e dois itens acima para visualizar a comparação lado a lado."
+          />
+        )
       )}
     </div>
   );

@@ -6,6 +6,9 @@ import { parseMultiParam } from "@/lib/filter-utils";
 import { getDateRange } from "@/lib/date-utils";
 import { getFilterOptions, getCreativesByFormat, getOfferCampaignSummary, getOfferAdsSummary } from "../actions";
 import { CreativesTable } from "@/components/analytics/creatives-table";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Megaphone } from "lucide-react";
 
 export default async function CreativesAnalyticsPage({
   searchParams,
@@ -75,13 +78,14 @@ export default async function CreativesAnalyticsPage({
   }));
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Analise de Criativos</h1>
-      <p className="text-muted-foreground">
-        Clique numa oferta para ver os ads da UTMify. Selecione o formato de cada ad.
-      </p>
-      <p className="text-xs text-muted-foreground">
-        Periodo &quot;Tudo&quot; mostra o total acumulado (ultima sincronizacao UTMify). Outros periodos usam snapshots diarios coletados automaticamente desde a ativacao do cron.
+    <div className="space-y-8">
+      <PageHeader
+        title="Análise de Criativos"
+        description="Clique numa oferta para ver os ads da UTMify. Selecione o formato de cada ad."
+      />
+
+      <p className="text-xs text-muted-foreground -mt-4">
+        Período &quot;Tudo&quot; mostra o total acumulado (última sincronização UTMify). Outros períodos usam snapshots diários coletados automaticamente desde a ativação do cron.
       </p>
 
       <Suspense fallback={<div className="h-8" />}>
@@ -104,53 +108,53 @@ export default async function CreativesAnalyticsPage({
 
       {/* Summary cards */}
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-        <Card>
+        <Card className="border-border/60 bg-card/80">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Total Ofertas</CardTitle>
+            <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Ofertas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalOffers}</div>
+            <div className="tabular-nums text-2xl font-bold">{totalOffers}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-2 border-l-success border-border/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">% Escalou</CardTitle>
+            <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">% Escalou</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">{pctEscalou}%</div>
-            <p className="text-xs text-muted-foreground">{totalEscalou} ofertas</p>
+            <div className="tabular-nums text-2xl font-bold text-success">{pctEscalou}%</div>
+            <p className="tabular-nums mt-0.5 text-xs text-muted-foreground">{totalEscalou} ofertas</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-2 border-l-danger border-border/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">% Nao Escalou</CardTitle>
+            <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">% Não Escalou</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-500">{pctNaoEscalou}%</div>
-            <p className="text-xs text-muted-foreground">{totalNaoEscalou} ofertas</p>
+            <div className="tabular-nums text-2xl font-bold text-danger">{pctNaoEscalou}%</div>
+            <p className="tabular-nums mt-0.5 text-xs text-muted-foreground">{totalNaoEscalou} ofertas</p>
           </CardContent>
         </Card>
         {hasCampaignData && (
           <>
-            <Card>
+            <Card className="border-border/60 bg-card/80">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Campanhas / Ads</CardTitle>
+                <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Campanhas / Ads</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{totalCampaigns} / {totalAds}</div>
-                <p className="text-xs text-muted-foreground">via UTMify</p>
+                <div className="tabular-nums text-2xl font-bold">{totalCampaigns} / {totalAds}</div>
+                <p className="mt-0.5 text-xs text-muted-foreground">via UTMify</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-l-2 border-l-danger border-border/60">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Gasto Total</CardTitle>
+                <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Gasto Total</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-500">
+                <div className="tabular-nums text-2xl font-bold text-danger">
                   {formatCurrency(totalCampaignSpend, campaignData.offers[0]?.currency ?? "USD")}
                 </div>
                 {campaignData.lastSync && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     Atualizado: {campaignData.lastSync.toLocaleDateString("pt-BR")}
                   </p>
                 )}
@@ -161,15 +165,19 @@ export default async function CreativesAnalyticsPage({
       </div>
 
       {/* Offers table with expandable ads */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Detalhamento por Oferta</CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b border-border/50">
+          <CardTitle className="text-base">Detalhamento por Oferta</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {offers.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              Nenhuma oferta encontrada com os filtros selecionados.
-            </p>
+            <div className="p-6">
+              <EmptyState
+                icon={Megaphone}
+                title="Nenhuma oferta encontrada"
+                description="Nenhuma oferta corresponde aos filtros selecionados. Tente ampliar ou remover os filtros."
+              />
+            </div>
           ) : (
             <CreativesTable
               offers={offerRows}

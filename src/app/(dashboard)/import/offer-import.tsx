@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Upload } from "lucide-react";
+import { Upload, CheckCircle2 } from "lucide-react";
 import Papa from "papaparse";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -79,6 +79,20 @@ function mapLanguage(lang: string): string {
   return lang;
 }
 
+type StatusKey = "escalou" | "nao_escalou" | "rodando" | "em_teste";
+const statusVariant: Record<StatusKey, "success" | "danger" | "warning" | "neutral"> = {
+  escalou: "success",
+  nao_escalou: "danger",
+  rodando: "warning",
+  em_teste: "neutral",
+};
+const statusLabel: Record<StatusKey, string> = {
+  escalou: "Escalou",
+  nao_escalou: "Não Escalou",
+  rodando: "Rodando",
+  em_teste: "Em Teste",
+};
+
 export function OfferImport() {
   const [offers, setOffers] = useState<ParsedOffer[]>([]);
   const [fileName, setFileName] = useState("");
@@ -97,7 +111,6 @@ export function OfferImport() {
       complete: (results) => {
         const allRows = results.data as string[][];
 
-        // Find the header row (first row that contains "Oferta")
         let headerIndex = -1;
         for (let i = 0; i < allRows.length; i++) {
           if (allRows[i].some((cell) => cell && cell.toString().trim().toLowerCase().includes("oferta"))) {
@@ -114,7 +127,6 @@ export function OfferImport() {
         const headers = allRows[headerIndex].map((h) => h.toString().trim());
         const dataRows = allRows.slice(headerIndex + 1);
 
-        // Convert to objects
         const mapped: RawRow[] = dataRows
           .filter((row) => row.some((cell) => cell && cell.toString().trim() !== ""))
           .map((row) => {
@@ -165,72 +177,91 @@ export function OfferImport() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Importar Acompanhamento de Oferta</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
+    <Card className="shadow-sm">
+      <CardHeader className="pb-4 border-b border-border">
+        <CardTitle className="text-base">Importar Acompanhamento de Oferta</CardTitle>
+        <CardDescription>
           Importe a planilha de acompanhamento de ofertas (formato Meta Ads Tracking).
           Cada linha vira um projeto com status, copywriter, editor e observações.
-        </p>
-
-        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 py-3 hover:bg-muted">
-          <Upload className="h-5 w-5 text-muted-foreground" />
-          <span className="text-sm">{fileName || "Selecionar CSV de acompanhamento"}</span>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-5 space-y-4">
+        {/* Dropzone */}
+        <label
+          className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-border px-5 py-4 text-sm transition-colors duration-150 hover:border-primary/40 hover:bg-primary/5"
+          aria-label="Selecionar CSV de acompanhamento"
+        >
+          <Upload className="h-5 w-5 text-muted-foreground shrink-0" aria-hidden="true" />
+          <span className={fileName ? "text-foreground font-medium" : "text-muted-foreground"}>
+            {fileName || "Selecionar CSV de acompanhamento"}
+          </span>
           <input type="file" accept=".csv" className="hidden" onChange={handleFile} />
         </label>
 
-        {result && <p className="text-sm font-medium text-green-600">{result}</p>}
+        {/* Resultado */}
+        {result && (
+          <div className="flex items-center gap-2 rounded-lg bg-success-muted border border-success px-3 py-2">
+            <CheckCircle2 className="h-4 w-4 text-success-muted-foreground shrink-0" aria-hidden="true" />
+            <p className="text-sm font-medium text-success-muted-foreground">{result}</p>
+          </div>
+        )}
 
+        {/* Preview */}
         {offers.length > 0 && (
-          <>
+          <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {offers.length} oferta(s) encontrada(s):
+              <span className="tabular-nums font-medium text-foreground">{offers.length}</span> oferta(s) encontrada(s):
             </p>
-            <div className="rounded-md border overflow-auto max-h-[400px]">
+            <div className="rounded-xl border border-border overflow-auto max-h-[400px] shadow-sm">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Oferta</TableHead>
-                    <TableHead>Copy VSL</TableHead>
-                    <TableHead>Copy ADS</TableHead>
-                    <TableHead>Editor</TableHead>
-                    <TableHead>Ticket</TableHead>
-                    <TableHead>Língua</TableHead>
-                    <TableHead>Ads</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Obs</TableHead>
+                  <TableRow className="bg-muted/50 hover:bg-muted/50">
+                    <TableHead className="text-xs font-semibold whitespace-nowrap">Oferta</TableHead>
+                    <TableHead className="text-xs font-semibold whitespace-nowrap">Copy VSL</TableHead>
+                    <TableHead className="text-xs font-semibold whitespace-nowrap">Copy ADS</TableHead>
+                    <TableHead className="text-xs font-semibold whitespace-nowrap">Editor</TableHead>
+                    <TableHead className="text-xs font-semibold whitespace-nowrap">Ticket</TableHead>
+                    <TableHead className="text-xs font-semibold whitespace-nowrap">Língua</TableHead>
+                    <TableHead className="text-xs font-semibold whitespace-nowrap">Ads</TableHead>
+                    <TableHead className="text-xs font-semibold whitespace-nowrap">Status</TableHead>
+                    <TableHead className="text-xs font-semibold whitespace-nowrap">Obs</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {offers.map((o, i) => {
-                    const status = mapStatus(o.validation, o.preScale, o.scale);
+                    const status = mapStatus(o.validation, o.preScale, o.scale) as StatusKey;
                     return (
-                      <TableRow key={i}>
-                        <TableCell className="font-medium">{o.name}</TableCell>
-                        <TableCell className="text-xs">{o.copyVsl || "-"}</TableCell>
-                        <TableCell className="text-xs">{o.copyAds || "-"}</TableCell>
-                        <TableCell className="text-xs">{o.editorAds || "-"}</TableCell>
-                        <TableCell>{o.ticket || "-"}</TableCell>
-                        <TableCell>{mapLanguage(o.language)}</TableCell>
-                        <TableCell>{o.adsCount}</TableCell>
+                      <TableRow key={i} className="transition-colors duration-150 hover:bg-muted/30">
+                        <TableCell className="font-medium whitespace-nowrap">{o.name}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{o.copyVsl || "—"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{o.copyAds || "—"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{o.editorAds || "—"}</TableCell>
+                        <TableCell className="tabular-nums text-sm">{o.ticket || "—"}</TableCell>
+                        <TableCell className="text-sm">{mapLanguage(o.language)}</TableCell>
+                        <TableCell className="tabular-nums text-right text-sm font-medium">{o.adsCount}</TableCell>
                         <TableCell>
-                          <Badge variant={status === "escalou" ? "default" : status === "nao_escalou" ? "destructive" : "outline"}>
-                            {status === "escalou" ? "Escalou" : status === "nao_escalou" ? "Não Escalou" : status === "rodando" ? "Rodando" : "Em Teste"}
-                          </Badge>
+                          <StatusBadge variant={statusVariant[status]}>
+                            {statusLabel[status]}
+                          </StatusBadge>
                         </TableCell>
-                        <TableCell className="text-xs max-w-[200px] truncate">{o.notes || "-"}</TableCell>
+                        <TableCell className="text-xs max-w-[200px] truncate text-muted-foreground">
+                          {o.notes || "—"}
+                        </TableCell>
                       </TableRow>
                     );
                   })}
                 </TableBody>
               </Table>
             </div>
-            <Button onClick={handleImport} disabled={isPending}>
-              {isPending ? "Importando..." : `Importar ${offers.length} ofertas`}
-            </Button>
-          </>
+            <div className="flex items-center gap-3">
+              <Button onClick={handleImport} disabled={isPending}>
+                {isPending ? "Importando…" : `Importar ${offers.length} oferta(s)`}
+              </Button>
+              {isPending && (
+                <p className="text-xs text-muted-foreground animate-pulse">Processando…</p>
+              )}
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -1,9 +1,9 @@
 import { Plus, Trash2, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAbTests, deleteAbTest } from "./actions";
 import { AbTestFormDialog } from "./ab-test-form";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 const statusLabels: Record<string, string> = {
   running: "Em andamento",
@@ -11,10 +11,19 @@ const statusLabels: Record<string, string> = {
   cancelled: "Cancelado",
 };
 
-const statusVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-  running: "default",
-  completed: "secondary",
-  cancelled: "destructive",
+const entityTypeLabels: Record<string, string> = {
+  project: "Projeto",
+  creative: "Criativo",
+  campaign: "Campanha",
+  vsl: "VSL",
+  funnel: "Funil",
+  offer: "Oferta",
+};
+
+const statusVariant: Record<string, "warning" | "success" | "danger" | "neutral"> = {
+  running: "warning",
+  completed: "success",
+  cancelled: "danger",
 };
 
 export default async function AbTestsPage() {
@@ -50,11 +59,11 @@ export default async function AbTestsPage() {
                 <div>
                   <CardTitle className="text-lg">{test.name}</CardTitle>
                   <div className="flex items-center gap-2 mt-1">
-                    <Badge variant={statusVariant[test.status] ?? "outline"}>
+                    <StatusBadge variant={statusVariant[test.status] ?? "neutral"}>
                       {statusLabels[test.status] ?? test.status}
-                    </Badge>
+                    </StatusBadge>
                     <span className="text-xs text-muted-foreground">
-                      {test.entityType}
+                      {entityTypeLabels[test.entityType] ?? test.entityType}
                     </span>
                   </div>
                 </div>
@@ -80,11 +89,11 @@ export default async function AbTestsPage() {
                       <div
                         key={v.id}
                         className={`flex items-center gap-2 rounded-md border p-2 text-sm ${
-                          test.winnerId === v.id ? "border-green-500 bg-green-50" : ""
+                          test.winnerId === v.id ? "border-success bg-success-muted" : ""
                         }`}
                       >
                         {test.winnerId === v.id && (
-                          <Trophy className="h-3 w-3 text-green-600" />
+                          <Trophy className="h-3 w-3 text-success" />
                         )}
                         <span className="font-medium">{v.variantName}</span>
                         {v.description && (

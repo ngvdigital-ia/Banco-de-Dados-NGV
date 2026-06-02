@@ -314,7 +314,7 @@ export function MetricsForm({
       </div>
 
       {success && (
-        <p className="text-sm text-green-600 font-medium">Métricas salvas com sucesso!</p>
+        <p className="text-sm text-success font-medium">Métricas salvas com sucesso!</p>
       )}
 
       <Button type="submit" disabled={isPending}>

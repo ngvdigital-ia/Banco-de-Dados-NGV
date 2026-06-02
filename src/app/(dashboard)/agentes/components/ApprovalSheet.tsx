@@ -12,9 +12,12 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, ExternalLink, Star, RefreshCw } from "lucide-react";
 import { AudioRecorder } from "@/components/AudioRecorder";
 import type { Oferta } from "@/types/agentes";
+import { cn } from "@/lib/utils";
 
 interface ApprovalSheetProps {
   oferta: Oferta | null;
@@ -35,7 +38,6 @@ export function ApprovalSheet({
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  // Re-executar o Black com o feedback ao rejeitar (default ligado).
   const [reexecutar, setReexecutar] = useState(true);
   const router = useRouter();
 
@@ -45,7 +47,7 @@ export function ApprovalSheet({
       setAudioBlob(null);
       setIsSubmitting(false);
       setIsTranscribing(false);
-      setReexecutar(true); // volta ao default ON ao fechar/reabrir
+      setReexecutar(true);
     }
   }, [oferta]);
 
@@ -54,7 +56,6 @@ export function ApprovalSheet({
   const isReject = action === "reject";
   const agenteEstado = oferta.agentes[agente];
   const produto = agenteEstado.produto;
-  // Re-execução só existe pro Black (único com endpoint /re-execute hoje).
   const podeReexecutar = isReject && agente === "black";
 
   async function handleSubmit() {
@@ -84,7 +85,6 @@ export function ApprovalSheet({
         setIsTranscribing(false);
       }
 
-      // 1. Registra o approval — operação crítica. Se falhar, o request inteiro falha.
       const approvalRes = await fetch("/api/agentes/approvals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -109,8 +109,6 @@ export function ApprovalSheet({
       } else {
         toast.success("Rejeição registrada");
 
-        // 2. Re-execução opcional do Black — INDEPENDENTE da rejeição. Se falhar,
-        //    a rejeição NÃO é revertida; só avisamos o usuário de forma clara.
         if (podeReexecutar && reexecutar) {
           try {
             const reexecRes = await fetch("/api/agentes/black/re-execute", {
@@ -162,9 +160,9 @@ export function ApprovalSheet({
   }
 
   const botaoLabel = isTranscribing
-    ? "Transcrevendo áudio..."
+    ? "Transcrevendo áudio…"
     : isSubmitting
-      ? "Salvando..."
+      ? "Salvando…"
       : !isReject
         ? "Confirmar aprovação"
         : podeReexecutar
@@ -176,60 +174,116 @@ export function ApprovalSheet({
   return (
     <Sheet open={!!oferta} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="overflow-y-auto sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle>
-            {isReject ? "Rejeitar produto" : "Aprovar produto"}
-          </SheetTitle>
-          <SheetDescription>
-            {oferta.nome} · agente <span className="capitalize">{agente}</span>
-          </SheetDescription>
+        {/* Header com marca colorida */}
+        <SheetHeader className="pb-0">
+          <div
+            className={cn(
+              "flex items-start gap-3 rounded-xl border p-4",
+              isReject
+                ? "border-danger/20 bg-danger-muted"
+                : "border-success/20 bg-success-muted",
+            )}
+          >
+            <div
+              className={cn(
+                "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
+                isReject ? "bg-danger/15 text-danger" : "bg-success/15 text-success",
+              )}
+            >
+              {isReject ? (
+                <X className="h-4 w-4" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <SheetTitle
+                className={cn(
+                  "text-base",
+                  isReject ? "text-danger-muted-foreground" : "text-success-muted-foreground",
+                )}
+              >
+                {isReject ? "Rejeitar produto" : "Aprovar produto"}
+              </SheetTitle>
+              <SheetDescription className="mt-0.5 truncate text-xs">
+                {oferta.nome}
+                <span className="mx-1.5 opacity-40">·</span>
+                <span className="capitalize">{agente}</span>
+              </SheetDescription>
+            </div>
+          </div>
         </SheetHeader>
 
-        <div className="mt-6 space-y-4 px-4">
+        <div className="mt-5 space-y-5 px-1">
+          {/* Produto gerado */}
           {produto?.drive_url && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase mb-1">
-                Produto gerado
-              </p>
+            <InfoBlock label="Produto gerado">
               <a
                 href={produto.drive_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-blue-700 hover:underline"
+                className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline transition-colors duration-150"
               >
-                Abrir no Drive ↗
+                <ExternalLink className="h-3.5 w-3.5" />
+                Abrir no Drive
               </a>
-            </div>
+            </InfoBlock>
           )}
 
+          {/* Score Revisor */}
           {produto?.revisor_score !== undefined && (
-            <div className="flex items-center gap-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase">
-                Score Revisor
-              </p>
-              <Badge>{produto.revisor_score}/10</Badge>
-            </div>
+            <InfoBlock label="Score Revisor">
+              <div className="flex items-center gap-2">
+                <Star className="h-3.5 w-3.5 text-warning" />
+                <span className="tabular-nums text-sm font-semibold">
+                  {produto.revisor_score}
+                  <span className="text-xs font-normal text-muted-foreground">/10</span>
+                </span>
+                <Badge
+                  className={cn(
+                    "text-xs",
+                    produto.revisor_score >= 7
+                      ? "bg-success-muted text-success-muted-foreground border-success"
+                      : produto.revisor_score >= 5
+                        ? "bg-warning-muted text-warning-muted-foreground border-warning"
+                        : "bg-danger-muted text-danger-muted-foreground border-danger",
+                  )}
+                >
+                  {produto.revisor_score >= 7
+                    ? "Bom"
+                    : produto.revisor_score >= 5
+                      ? "Regular"
+                      : "Fraco"}
+                </Badge>
+              </div>
+            </InfoBlock>
           )}
 
+          {(produto?.drive_url || produto?.revisor_score !== undefined) && (
+            <Separator className="opacity-50" />
+          )}
+
+          {/* Feedback — rejeição */}
           {isReject && (
             <>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase mb-1.5 block">
-                  Feedback escrito
-                </label>
+              <div className="space-y-1.5">
+                <FieldLabel>Feedback escrito</FieldLabel>
                 <textarea
                   value={feedbackText}
                   onChange={(e) => setFeedbackText(e.target.value)}
                   placeholder="Por que está rejeitando? Que ajustes você quer?"
                   rows={5}
-                  className="w-full px-3 py-2 text-sm bg-background border rounded-md outline-none focus:ring-2 focus:ring-ring resize-none"
+                  className={cn(
+                    "w-full rounded-lg border bg-background px-3 py-2.5 text-sm outline-none resize-none",
+                    "placeholder:text-muted-foreground/50",
+                    "focus:ring-2 focus:ring-ring transition-shadow duration-150",
+                    "hover:border-border/80",
+                  )}
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase mb-1.5 block">
-                  Ou áudio (transcrito automaticamente)
-                </label>
+              <div className="space-y-1.5">
+                <FieldLabel>Ou áudio (transcrito automaticamente)</FieldLabel>
                 <AudioRecorder
                   onRecorded={(blob) => setAudioBlob(blob)}
                   disabled={isSubmitting}
@@ -237,44 +291,60 @@ export function ApprovalSheet({
               </div>
 
               {podeReexecutar && (
-                <label className="flex items-start gap-2 cursor-pointer select-none rounded-md border bg-muted/40 p-3">
-                  <input
-                    type="checkbox"
+                <label
+                  className={cn(
+                    "flex items-start gap-3 cursor-pointer select-none rounded-xl border p-4 transition-all duration-150",
+                    reexecutar
+                      ? "border-primary/30 bg-primary/6"
+                      : "border-border/50 bg-muted/20 hover:bg-muted/40",
+                  )}
+                >
+                  <Checkbox
                     checked={reexecutar}
-                    onChange={(e) => setReexecutar(e.target.checked)}
+                    onCheckedChange={(checked) => setReexecutar(checked === true)}
                     disabled={isSubmitting}
-                    className="mt-0.5 h-4 w-4 accent-slate-900"
+                    className="mt-0.5 shrink-0"
+                    aria-label="Re-executar o Black com este feedback"
                   />
-                  <span className="text-sm">
-                    <span className="font-medium">
-                      Re-executar o Black com este feedback
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <RefreshCw className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span className="text-sm font-medium">
+                        Re-executar o Black com este feedback
+                      </span>
+                    </div>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      Gera nova versão usando seu feedback. Custa ~$0,50 de créditos Anthropic.
                     </span>
-                    <span className="block text-xs text-muted-foreground mt-0.5">
-                      Gera uma nova versão do produto usando o seu feedback. Custa
-                      créditos da Anthropic (~$0,50 por execução).
-                    </span>
-                  </span>
+                  </div>
                 </label>
               )}
             </>
           )}
 
+          {/* Comentário — aprovação */}
           {!isReject && (
-            <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase mb-1.5 block">
-                Comentário (opcional)
-              </label>
+            <div className="space-y-1.5">
+              <FieldLabel>Comentário (opcional)</FieldLabel>
               <textarea
                 value={feedbackText}
                 onChange={(e) => setFeedbackText(e.target.value)}
                 placeholder="Algum comentário sobre a aprovação?"
                 rows={3}
-                className="w-full px-3 py-2 text-sm bg-background border rounded-md outline-none focus:ring-2 focus:ring-ring resize-none"
+                className={cn(
+                  "w-full rounded-lg border bg-background px-3 py-2.5 text-sm outline-none resize-none",
+                  "placeholder:text-muted-foreground/50",
+                  "focus:ring-2 focus:ring-ring transition-shadow duration-150",
+                  "hover:border-border/80",
+                )}
               />
             </div>
           )}
 
-          <div className="flex gap-2 pt-4">
+          <Separator className="opacity-50" />
+
+          {/* Ações */}
+          <div className="flex gap-2 pb-4">
             <Button
               onClick={handleSubmit}
               disabled={
@@ -293,5 +363,64 @@ export function ApprovalSheet({
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function InfoBlock({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1">
+      <FieldLabel>{label}</FieldLabel>
+      {children}
+    </div>
+  );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      {children}
+    </p>
+  );
+}
+
+// Ícones inline pra evitar import desnecessário
+function Check({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function X({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
   );
 }

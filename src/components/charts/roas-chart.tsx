@@ -6,6 +6,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  Legend,
   ResponsiveContainer,
   CartesianGrid,
   ReferenceLine,
@@ -33,23 +34,28 @@ export function RoasChart({ data }: { data: RoasData[] }) {
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: "hsl(var(--popover))",
-            border: "1px solid hsl(var(--border))",
+            backgroundColor: "var(--popover)",
+            border: "1px solid var(--border)",
             borderRadius: "8px",
             fontSize: 12,
           }}
           formatter={(value) => [`${Number(value).toFixed(2)}x`, "ROAS"]}
           labelFormatter={(label) => `Data: ${label}`}
         />
+        <Legend
+          verticalAlign="top"
+          formatter={() => "ROAS"}
+          wrapperStyle={{ fontSize: 12 }}
+        />
         <ReferenceLine
           y={1}
-          stroke="#f59e0b"
+          stroke="var(--chart-3)"
           strokeDasharray="3 3"
           label={{ value: "Break-even", position: "right", fontSize: 11 }}
         />
         <Bar
           dataKey="roas"
-          fill="#6366f1"
+          fill="var(--chart-1)"
           radius={[4, 4, 0, 0]}
           maxBarSize={40}
         />

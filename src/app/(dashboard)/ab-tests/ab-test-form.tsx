@@ -1,17 +1,21 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, X, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { createAbTest } from "./actions";
+import { cn } from "@/lib/utils";
+
+const VARIANT_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export function AbTestFormDialog({ trigger }: { trigger: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -22,7 +26,10 @@ export function AbTestFormDialog({ trigger }: { trigger: React.ReactNode }) {
   ]);
 
   function addVariant() {
-    setVariants([...variants, { name: `Variante ${String.fromCharCode(65 + variants.length)}`, description: "" }]);
+    setVariants([
+      ...variants,
+      { name: `Variante ${VARIANT_LETTERS[variants.length] ?? variants.length + 1}`, description: "" },
+    ]);
   }
 
   function removeVariant(index: number) {
@@ -52,20 +59,35 @@ export function AbTestFormDialog({ trigger }: { trigger: React.ReactNode }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger as React.ReactElement} />
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Novo Teste A/B</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Nome do Teste</Label>
-            <Input name="name" placeholder="Ex: Headline VSL v3 vs v4" required />
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader className="pb-2">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+              <FlaskConical className="h-4 w-4" />
+            </div>
+            <DialogTitle>Novo Teste A/B</DialogTitle>
           </div>
+        </DialogHeader>
+
+        <Separator className="opacity-50" />
+
+        <form onSubmit={handleSubmit} className="space-y-5 pt-1">
+          {/* Nome do teste */}
+          <FormField label="Nome do Teste">
+            <Input
+              name="name"
+              placeholder="Ex: Headline VSL v3 vs v4"
+              required
+            />
+          </FormField>
+
+          {/* Grid: Tipo + Data */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Tipo de Entidade</Label>
+            <FormField label="Tipo de Entidade">
               <Select name="entityType" defaultValue="vsl">
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="vsl">VSL</SelectItem>
                   <SelectItem value="creative">Criativo</SelectItem>
@@ -73,55 +95,118 @@ export function AbTestFormDialog({ trigger }: { trigger: React.ReactNode }) {
                   <SelectItem value="headline">Headline</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Data de Início</Label>
-              <Input name="startDate" type="date" defaultValue={new Date().toISOString().split("T")[0]} required />
-            </div>
+            </FormField>
+
+            <FormField label="Data de Início">
+              <Input
+                name="startDate"
+                type="date"
+                defaultValue={new Date().toISOString().split("T")[0]}
+                required
+              />
+            </FormField>
           </div>
+
+          {/* Variantes */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Variantes</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addVariant}>
-                <Plus className="mr-1 h-3 w-3" />Variante
-              </Button>
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Variantes
+                <span className="tabular-nums ml-1.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-primary/12 px-1.5 text-[10px] font-semibold text-primary">
+                  {variants.length}
+                </span>
+              </Label>
+              <button
+                type="button"
+                onClick={addVariant}
+                className="group flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary border border-primary/30 hover:bg-primary/6 hover:border-primary/60 transition-all duration-150"
+              >
+                <Plus className="h-3 w-3 transition-transform duration-150 group-hover:scale-110" />
+                Variante
+              </button>
             </div>
-            {variants.map((v, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Input
-                  value={v.name}
-                  onChange={(e) => {
-                    const updated = [...variants];
-                    updated[i].name = e.target.value;
-                    setVariants(updated);
-                  }}
-                  placeholder="Nome"
-                  className="w-1/3"
-                />
-                <Input
-                  value={v.description}
-                  onChange={(e) => {
-                    const updated = [...variants];
-                    updated[i].description = e.target.value;
-                    setVariants(updated);
-                  }}
-                  placeholder="Descrição"
-                  className="flex-1"
-                />
-                {variants.length > 2 && (
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(i)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
+
+            <div className="space-y-2">
+              {variants.map((v, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2.5 transition-colors duration-150",
+                    "hover:bg-muted/40",
+                  )}
+                >
+                  <span className="tabular-nums w-5 shrink-0 text-center text-xs font-bold text-primary/70">
+                    {VARIANT_LETTERS[i] ?? i + 1}
+                  </span>
+                  <Input
+                    value={v.name}
+                    onChange={(e) => {
+                      const updated = [...variants];
+                      updated[i].name = e.target.value;
+                      setVariants(updated);
+                    }}
+                    placeholder="Nome"
+                    className="h-8 w-28 shrink-0 text-xs"
+                  />
+                  <Input
+                    value={v.description}
+                    onChange={(e) => {
+                      const updated = [...variants];
+                      updated[i].description = e.target.value;
+                      setVariants(updated);
+                    }}
+                    placeholder="Descrição (opcional)"
+                    className="h-8 flex-1 text-xs"
+                  />
+                  {variants.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removeVariant(i)}
+                      aria-label="Remover variante"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground/50 hover:text-danger hover:bg-danger/8 transition-colors duration-150 shrink-0"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
+
+          <Separator className="opacity-50" />
+
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isPending}>{isPending ? "Criando..." : "Criar Teste"}</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={isPending}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isPending} className="min-w-[100px]">
+              {isPending ? "Criando…" : "Criar Teste"}
+            </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function FormField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        {label}
+      </Label>
+      {children}
+    </div>
   );
 }

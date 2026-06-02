@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -77,37 +79,51 @@ export function TeamFormDialog({
     });
   }
 
+  const isEditing = !!member;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger as React.ReactElement} />
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {member ? "Editar Membro" : "Novo Membro"}
-          </DialogTitle>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader className="pb-2">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+              <Users className="h-4 w-4" />
+            </div>
+            <DialogTitle>
+              {isEditing ? "Editar Membro" : "Novo Membro"}
+            </DialogTitle>
+          </div>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
+
+        <Separator className="opacity-50" />
+
+        <form onSubmit={handleSubmit} className="space-y-5 pt-1">
+          {/* Nome */}
+          <FormField label="Nome completo">
             <Input
               id="name"
               name="name"
               defaultValue={member?.name}
+              placeholder="Ex: João Silva"
               required
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+          </FormField>
+
+          {/* Email */}
+          <FormField label="E-mail">
             <Input
               id="email"
               name="email"
               type="email"
               defaultValue={member?.email}
+              placeholder="joao@ngvdigital.com"
               required
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="role">Função</Label>
+          </FormField>
+
+          {/* Função */}
+          <FormField label="Função">
             <Select name="role" defaultValue={member?.role ?? "copywriter"}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a função" />
@@ -120,22 +136,48 @@ export function TeamFormDialog({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          </FormField>
+
+          {error && (
+            <p className="rounded-lg border border-danger/30 bg-danger-muted px-3 py-2 text-xs text-danger-muted-foreground">
+              {error}
+            </p>
+          )}
+
+          <Separator className="opacity-50" />
+
           <div className="flex justify-end gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
+              disabled={isPending}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Salvando..." : "Salvar"}
+            <Button type="submit" disabled={isPending} className="min-w-[80px]">
+              {isPending ? "Salvando…" : isEditing ? "Salvar" : "Adicionar"}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function FormField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        {label}
+      </Label>
+      {children}
+    </div>
   );
 }

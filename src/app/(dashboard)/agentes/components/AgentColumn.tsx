@@ -82,11 +82,11 @@ export function AgentColumn({
         <span className="text-sm font-medium">{titulo}</span>
         <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1" title="Executadas">
-            <CheckCircle2 className="h-3 w-3 text-blue-600" aria-hidden="true" />
+            <CheckCircle2 className="h-3 w-3 text-success" aria-hidden="true" />
             {executadas}
           </span>
           <span className="flex items-center gap-1" title="Em execução">
-            <Play className="h-3 w-3 text-amber-600" aria-hidden="true" />
+            <Play className="h-3 w-3 text-warning" aria-hidden="true" />
             {emExecucao}
           </span>
           <span
