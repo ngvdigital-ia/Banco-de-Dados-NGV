@@ -28,6 +28,18 @@ const statusLabels: Record<string, string> = {
   expired: "Expirada",
 };
 
+const metodoLabels: Record<string, string> = {
+  visa: "Visa",
+  master: "Mastercard",
+  amex: "Amex",
+  elo: "Elo",
+  hipercard: "Hipercard",
+  melicard: "Melicard",
+  boleto: "Boleto",
+  pix: "Pix",
+  outros: "Outros",
+};
+
 function KpiCard({
   label,
   value,
@@ -73,7 +85,7 @@ export default async function VendasPage({
   const dateFrom = period === "all" ? undefined : from.toISOString();
   const dateTo = period === "all" ? undefined : to.toISOString();
 
-  const { kpis, timeline, porProduto, porStatus, porCampanha, totalRegistros, precheckoutIgnorados } =
+  const { kpis, timeline, porProduto, porStatus, porCampanha, porMetodo, totalRegistros, precheckoutIgnorados } =
     await getVendasAnalytics(dateFrom, dateTo);
   const moeda = kpis.moeda;
 
@@ -97,7 +109,7 @@ export default async function VendasPage({
       ) : (
         <>
           {/* KPIs */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <KpiCard
               label="Receita líquida"
               value={fmt(kpis.receitaLiquida, moeda)}
@@ -117,8 +129,14 @@ export default async function VendasPage({
             <KpiCard
               label="Taxa de reembolso"
               value={`${kpis.taxaReembolso.toFixed(1)}%`}
-              sub={`${kpis.reembolsosCount} reembolsos/chargebacks`}
+              sub={`${kpis.reembolsosCount} reembolso(s)`}
               accent={kpis.taxaReembolso >= 15 ? "danger" : kpis.taxaReembolso >= 8 ? "warning" : undefined}
+            />
+            <KpiCard
+              label="Taxa de chargeback"
+              value={`${kpis.taxaChargeback.toFixed(1)}%`}
+              sub={`${kpis.chargebacksCount} chargeback(s)`}
+              accent={kpis.taxaChargeback >= 2 ? "danger" : kpis.taxaChargeback >= 1 ? "warning" : undefined}
             />
           </div>
 
@@ -218,6 +236,45 @@ export default async function VendasPage({
               </CardContent>
             </Card>
           </div>
+
+          {/* Aprovação por método de pagamento (geral) */}
+          <Card className="overflow-hidden">
+            <CardHeader className="border-b border-border/50">
+              <CardTitle className="text-base">Aprovação por método de pagamento</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {porMetodo.length === 0 ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">
+                  Sem transações processadas no período.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                      <TableHead className="pl-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Método</TableHead>
+                      <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tentativas</TableHead>
+                      <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Aprovadas</TableHead>
+                      <TableHead className="pr-4 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Aprovação</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {porMetodo.map((m, i) => (
+                      <TableRow key={m.metodo} className={i % 2 === 1 ? "bg-muted/20" : ""}>
+                        <TableCell className="pl-4 text-sm font-medium">{metodoLabels[m.metodo] ?? m.metodo}</TableCell>
+                        <TableCell className="tabular-nums text-center text-sm text-muted-foreground">{m.tentativas}</TableCell>
+                        <TableCell className="tabular-nums text-center text-sm">{m.aprovadas}</TableCell>
+                        <TableCell className="tabular-nums pr-4 text-right text-sm font-semibold">
+                          <span className={m.taxaAprovacao >= 80 ? "text-success" : m.taxaAprovacao >= 60 ? "text-warning" : "text-danger"}>
+                            {m.taxaAprovacao.toFixed(1)}%
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Atribuição por campanha */}
           <Card className="overflow-hidden">

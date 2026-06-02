@@ -27,8 +27,10 @@ export interface VendasKpis {
   receitaLiquida: number;
   vendasAprovadas: number;
   ticketMedio: number;
-  taxaReembolso: number; // % sobre a receita aprovada
+  taxaReembolso: number;   // % (refunded) sobre a receita aprovada
+  taxaChargeback: number;  // % (charged_back) sobre a receita aprovada
   reembolsosCount: number;
+  chargebacksCount: number;
 }
 
 export interface VendaTimelinePoint {
@@ -58,12 +60,20 @@ export interface VendaPorCampanha {
   ticketMedio: number;
 }
 
+export interface VendaPorMetodo {
+  metodo: string;        // bandeira normalizada (visa/master/amex/… ou "outros")
+  tentativas: number;    // transações que o gateway processou (exclui precheckout)
+  aprovadas: number;     // passaram na cobrança (approved + refunded + charged_back)
+  taxaAprovacao: number; // %
+}
+
 export interface VendasAnalytics {
   kpis: VendasKpis;
   timeline: VendaTimelinePoint[];
   porProduto: VendaPorProduto[];
   porStatus: VendaPorStatus[];
   porCampanha: VendaPorCampanha[];
+  porMetodo: VendaPorMetodo[];
   totalRegistros: number;
   precheckoutIgnorados: number;
 }
@@ -89,7 +99,7 @@ export async function getVendasAnalytics(
   const approvedRevenue = sql`sum(${metricsSnapshots.revenue}) filter (where ${metricsSnapshots.extraData}->>'status' = ${APPROVED})`;
   const approvedCount = sql`count(*) filter (where ${metricsSnapshots.extraData}->>'status' = ${APPROVED})`;
 
-  const [kpiRows, timelineRows, produtoRows, statusRows, campanhaRows] = await Promise.all([
+  const [kpiRows, timelineRows, produtoRows, statusRows, campanhaRows, metodoRows] = await Promise.all([
     // 1) KPIs agregados + moeda dominante
     db
       .select({
@@ -98,7 +108,8 @@ export async function getVendasAnalytics(
         reembolsos: sql<string>`coalesce(sum(${metricsSnapshots.revenue}) filter (where ${status} = 'refunded'), 0)`,
         chargebacks: sql<string>`coalesce(sum(${metricsSnapshots.revenue}) filter (where ${status} = 'charged_back'), 0)`,
         vendasAprovadas: sql<string>`${approvedCount}`,
-        reembolsosCount: sql<string>`count(*) filter (where ${status} in ('refunded','charged_back'))`,
+        reembolsosCount: sql<string>`count(*) filter (where ${status} = 'refunded')`,
+        chargebacksCount: sql<string>`count(*) filter (where ${status} = 'charged_back')`,
         precheckout: sql<string>`count(*) filter (where ${status} = 'precheckout')`,
         total: sql<string>`count(*)`,
       })
@@ -154,6 +165,19 @@ export async function getVendasAnalytics(
       .where(where)
       .groupBy(sql`coalesce(nullif(${metricsSnapshots.extraData}->>'utmCampaign', ''), '(sem campanha)')`)
       .orderBy(sql`coalesce(${approvedRevenue}, 0) desc`),
+
+    // 6) Aprovação por método de pagamento (geral). Exclui precheckout (abandono, sem cobrança).
+    // Aprovadas = passaram na cobrança (approved/refunded/charged_back) — reembolso/cb vieram depois.
+    db
+      .select({
+        metodo: sql<string>`case when ${metricsSnapshots.extraData}->>'paymentMethod' in ('visa','master','amex','elo','hipercard','melicard','boleto','pix') then ${metricsSnapshots.extraData}->>'paymentMethod' else 'outros' end`,
+        tentativas: sql<string>`count(*)`,
+        aprovadas: sql<string>`count(*) filter (where ${status} in ('approved','refunded','charged_back'))`,
+      })
+      .from(metricsSnapshots)
+      .where(and(...baseConditions(dateFrom, dateTo), sql`${status} in ('approved','rejected','refunded','charged_back')`))
+      .groupBy(sql`case when ${metricsSnapshots.extraData}->>'paymentMethod' in ('visa','master','amex','elo','hipercard','melicard','boleto','pix') then ${metricsSnapshots.extraData}->>'paymentMethod' else 'outros' end`)
+      .orderBy(sql`count(*) desc`),
   ]);
 
   const k = kpiRows[0];
@@ -171,8 +195,10 @@ export async function getVendasAnalytics(
     receitaLiquida,
     vendasAprovadas,
     ticketMedio: vendasAprovadas > 0 ? receitaAprovada / vendasAprovadas : 0,
-    taxaReembolso: receitaAprovada > 0 ? ((reembolsos + chargebacks) / receitaAprovada) * 100 : 0,
+    taxaReembolso: receitaAprovada > 0 ? (reembolsos / receitaAprovada) * 100 : 0,
+    taxaChargeback: receitaAprovada > 0 ? (chargebacks / receitaAprovada) * 100 : 0,
     reembolsosCount: Number(k?.reembolsosCount ?? 0),
+    chargebacksCount: Number(k?.chargebacksCount ?? 0),
   };
 
   const timeline = timelineRows.map((r) => ({
@@ -205,12 +231,26 @@ export async function getVendasAnalytics(
     .filter((c) => c.vendas > 0)
     .slice(0, 25);
 
+  const porMetodo = metodoRows
+    .map((r) => {
+      const tentativas = Number(r.tentativas);
+      const aprovadas = Number(r.aprovadas);
+      return {
+        metodo: r.metodo,
+        tentativas,
+        aprovadas,
+        taxaAprovacao: tentativas > 0 ? (aprovadas / tentativas) * 100 : 0,
+      };
+    })
+    .filter((m) => m.tentativas > 0);
+
   return {
     kpis,
     timeline,
     porProduto,
     porStatus,
     porCampanha,
+    porMetodo,
     totalRegistros: Number(k?.total ?? 0),
     precheckoutIgnorados: Number(k?.precheckout ?? 0),
   };
