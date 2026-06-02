@@ -235,18 +235,18 @@ export default async function VendasPage({
                     <TableRow className="bg-muted/30 hover:bg-muted/30">
                       <TableHead className="pl-4 w-10 text-xs font-semibold uppercase tracking-wide text-muted-foreground">#</TableHead>
                       <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Campanha</TableHead>
-                      <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Origem</TableHead>
                       <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Vendas</TableHead>
+                      <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ticket</TableHead>
                       <TableHead className="pr-4 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Receita</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {porCampanha.map((c, i) => (
-                      <TableRow key={`${c.campanha}-${c.source}-${i}`} className={i % 2 === 1 ? "bg-muted/20" : ""}>
+                      <TableRow key={`${c.campanha}-${i}`} className={i % 2 === 1 ? "bg-muted/20" : ""}>
                         <TableCell className="pl-4 tabular-nums text-sm font-bold text-muted-foreground">{i + 1}</TableCell>
-                        <TableCell className="max-w-[360px] truncate font-mono text-xs" title={c.campanha}>{c.campanha}</TableCell>
-                        <TableCell className="max-w-[160px] truncate text-xs text-muted-foreground" title={c.source}>{c.source}</TableCell>
+                        <TableCell className="max-w-[420px] truncate font-mono text-xs" title={c.campanha}>{c.campanha}</TableCell>
                         <TableCell className="tabular-nums text-center text-sm">{c.vendas}</TableCell>
+                        <TableCell className="tabular-nums text-right text-sm text-muted-foreground">{fmt(c.ticketMedio, moeda)}</TableCell>
                         <TableCell className="tabular-nums pr-4 text-right text-sm font-semibold text-success">{fmt(c.receita, moeda)}</TableCell>
                       </TableRow>
                     ))}

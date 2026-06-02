@@ -53,9 +53,9 @@ export interface VendaPorStatus {
 
 export interface VendaPorCampanha {
   campanha: string;
-  source: string;
   vendas: number;
   receita: number;
+  ticketMedio: number;
 }
 
 export interface VendasAnalytics {
@@ -141,20 +141,18 @@ export async function getVendasAnalytics(
       .groupBy(sql`coalesce(nullif(${status}, ''), '(sem status)')`)
       .orderBy(sql`count(*) desc`),
 
-    // 5) Atribuição por campanha/origem (só aprovadas)
+    // 5) Atribuição por campanha (só aprovadas).
+    // Agrupa SÓ por utmCampaign — o utmSource do Facebook é um ID único por clique
+    // (ex: "FBjLj6a..."), que fragmentaria o ranking em 1 venda por linha.
     db
       .select({
         campanha: sql<string>`coalesce(nullif(${metricsSnapshots.extraData}->>'utmCampaign', ''), '(sem campanha)')`,
-        source: sql<string>`coalesce(nullif(${metricsSnapshots.extraData}->>'utmSource', ''), '-')`,
         vendas: sql<string>`${approvedCount}`,
         receita: sql<string>`coalesce(${approvedRevenue}, 0)`,
       })
       .from(metricsSnapshots)
       .where(where)
-      .groupBy(
-        sql`coalesce(nullif(${metricsSnapshots.extraData}->>'utmCampaign', ''), '(sem campanha)')`,
-        sql`coalesce(nullif(${metricsSnapshots.extraData}->>'utmSource', ''), '-')`,
-      )
+      .groupBy(sql`coalesce(nullif(${metricsSnapshots.extraData}->>'utmCampaign', ''), '(sem campanha)')`)
       .orderBy(sql`coalesce(${approvedRevenue}, 0) desc`),
   ]);
 
@@ -199,12 +197,11 @@ export async function getVendasAnalytics(
   }));
 
   const porCampanha = campanhaRows
-    .map((r) => ({
-      campanha: r.campanha,
-      source: r.source,
-      vendas: Number(r.vendas),
-      receita: Number(r.receita),
-    }))
+    .map((r) => {
+      const vendas = Number(r.vendas);
+      const receita = Number(r.receita);
+      return { campanha: r.campanha, vendas, receita, ticketMedio: vendas > 0 ? receita / vendas : 0 };
+    })
     .filter((c) => c.vendas > 0)
     .slice(0, 25);
 
