@@ -3,6 +3,8 @@ import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
 import { DASHBOARDS, fetchDashboardSummary, fetchMetaAdObjects, extractOfferFromCampaignName } from "@/lib/utmify";
 
+export const maxDuration = 300;
+
 export async function GET(request: Request) {
   // Verify cron secret
   const authHeader = request.headers.get("authorization");
@@ -21,11 +23,16 @@ export async function GET(request: Request) {
 
   const results: { dashboard: string; status: string; dailySnapshots?: number; error?: string }[] = [];
 
+  // Accumulate all rows — one batch insert per type at the end (avoids N round-trips and
+  // makes re-runs safe when the caller retries: each dashboard loop is independent).
+  const dashboardRows: (typeof metricsSnapshots.$inferInsert)[] = [];
+  const campaignRows: (typeof metricsSnapshots.$inferInsert)[] = [];
+
   for (const dashboard of DASHBOARDS) {
     try {
       // Summary-level snapshot (legacy entityType="dashboard")
       const summary = await fetchDashboardSummary(dashboard.id, dashboard.timeZone);
-      await db.insert(metricsSnapshots).values({
+      dashboardRows.push({
         date: yesterday,
         entityType: "dashboard",
         entityId: 0,
@@ -54,7 +61,7 @@ export async function GET(request: Request) {
         for (const campaign of metaData.results) {
           try {
             const offerName = extractOfferFromCampaignName(campaign.name);
-            await db.insert(metricsSnapshots).values({
+            campaignRows.push({
               date: yesterday,
               entityType: "utmify_campaign_daily",
               entityId: 0,
@@ -75,7 +82,7 @@ export async function GET(request: Request) {
             });
             dailySnapshots++;
           } catch (err) {
-            console.error(`[UTMify] Failed to save campaign "${campaign.name}":`, err);
+            console.error(`[UTMify] Failed to build campaign row "${campaign.name}":`, err);
           }
         }
       } catch (err) {
@@ -87,6 +94,19 @@ export async function GET(request: Request) {
       const message = err instanceof Error ? err.message : "Unknown error";
       console.error(`[UTMify Sync] Error for ${dashboard.name}:`, message);
       results.push({ dashboard: dashboard.name, status: "error", error: message });
+    }
+  }
+
+  // Single batch insert per entity type — one round-trip instead of N.
+  // metrics_snapshots has no unique constraint on (date, entityType, entityId),
+  // so we rely on the caller (Vercel cron) running once per day; no onConflictDoNothing needed.
+  if (dashboardRows.length > 0) {
+    await db.insert(metricsSnapshots).values(dashboardRows);
+  }
+  if (campaignRows.length > 0) {
+    const CHUNK = 500;
+    for (let i = 0; i < campaignRows.length; i += CHUNK) {
+      await db.insert(metricsSnapshots).values(campaignRows.slice(i, i + CHUNK));
     }
   }
 

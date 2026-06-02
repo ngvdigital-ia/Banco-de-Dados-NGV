@@ -21,7 +21,7 @@ import {
   MAX_LINKS,
   totalLinks,
   isValidHttpUrl,
-} from "@/lib/site-urls";
+} from "@/lib/site-urls-types";
 import { cn } from "@/lib/utils";
 
 type Props = {

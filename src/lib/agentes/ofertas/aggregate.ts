@@ -2,8 +2,7 @@ import {
   listExecutions,
   getTaskIdFromExecution,
   getRealExecutionsByTaskId,
-  extractRevisorDataFromExecution,
-  extractDriveDataFromExecution,
+  extractBlackDataFromExecution,
   N8nExecution,
 } from "@/lib/agentes/n8n/executions";
 import { db } from "@/db";
@@ -21,6 +20,7 @@ import {
   subGatilhoFinalizadaBlack,
 } from "./subs";
 import type { ApprovalInfo, Oferta } from "@/types/agentes";
+import { unstable_cache } from "next/cache";
 
 const CLICKUP_LIST_ID = "901326908721"; // PROD "Projetos de Oferta" (go-live 2026-05-23)
 const WORKFLOW_BLACK = "W7odSUjobmbeaQBC";
@@ -28,7 +28,10 @@ const WORKFLOW_WHITE = "4PGnjgJAuqQLDBHU";
 const ANTHROPIC_BLACK = "agent_014LergsnxrZH5RvCnnzhfGS";
 const ANTHROPIC_WHITE = "agent_01FocgmNBQz31rqZnhArZfuv";
 
-export async function aggregateOfertas(): Promise<Oferta[]> {
+// Função interna com a lógica real — envolvida em unstable_cache abaixo.
+// Revalida a cada 60s com tag "agentes-ofertas" (invalidada por revalidateTag em approvals/re-execute).
+async function _aggregateOfertas(): Promise<Oferta[]> {
+
   // 1. Tasks do ClickUp — pais (parent==null) + subs (com parent).
   const tasksTodas: ClickUpTask[] = [];
   for (let page = 0; page < 20; page++) {
@@ -130,10 +133,8 @@ export async function aggregateOfertas(): Promise<Oferta[]> {
   await Promise.all(
     ofertasComExecReal.map(async (t) => {
       const exec = execsRealizadasBlackPorTaskId.get(t.id)!;
-      const [revisor, drive] = await Promise.all([
-        extractRevisorDataFromExecution(exec.id),
-        extractDriveDataFromExecution(exec.id),
-      ]);
+      // 1 único getExecution retorna Revisor + Drive (era 2 round-trips antes)
+      const { revisor, drive } = await extractBlackDataFromExecution(exec.id);
       produtoMap.set(t.id, {
         revisor_score: revisor?.score,
         revisor_aprovado: revisor?.aprovado,
@@ -151,9 +152,12 @@ export async function aggregateOfertas(): Promise<Oferta[]> {
   try {
     const taskIds = ofertasPais.map((t) => t.id);
     if (taskIds.length > 0) {
+      // .limit protege contra histórico ilimitado: 2 rows por task (1 Black + 1 White)
+      // é suficiente porque o loop abaixo já guarda apenas a primeira por chave.
       const rows = await db.select().from(agentApprovals)
         .where(and(inArray(agentApprovals.taskId, taskIds), inArray(agentApprovals.agente, ["black", "white"])))
-        .orderBy(desc(agentApprovals.createdAt));
+        .orderBy(desc(agentApprovals.createdAt))
+        .limit(taskIds.length * 2);
       for (const row of rows) {
         const key = `${row.taskId}:${row.agente}`;
         if (!approvalsMap.has(key)) {
@@ -232,3 +236,10 @@ export async function aggregateOfertas(): Promise<Oferta[]> {
 
   return ofertas;
 }
+
+// Wrapper cacheado — TTL 60s, tag "agentes-ofertas" para invalidação on-demand.
+export const aggregateOfertas = unstable_cache(
+  _aggregateOfertas,
+  ["agentes-ofertas"],
+  { revalidate: 60, tags: ["agentes-ofertas"] },
+);

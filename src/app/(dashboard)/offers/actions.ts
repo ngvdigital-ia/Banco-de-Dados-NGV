@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { offerTracking } from "@/db/schema";
 import { eq, desc, and, gte, lt, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { logChange } from "@/lib/changelog";
@@ -215,6 +215,7 @@ export async function updateOfferField(
   }
 
   revalidatePath("/offers");
+  revalidateTag("analytics-filters", "max");
 }
 
 // Atualiza siteUrls (jsonb estruturado) e sincroniza siteUrl (text legacy) com a VSL.
@@ -261,6 +262,7 @@ export async function updateOfferSiteUrls(
     .where(eq(offerTracking.id, id));
 
   revalidatePath("/offers");
+  revalidateTag("analytics-filters", "max");
   return { siteUrls: normalized, siteUrl: newVsl };
 }
 
@@ -275,6 +277,7 @@ export async function createOffer() {
     .returning();
 
   revalidatePath("/offers");
+  revalidateTag("analytics-filters", "max");
   return newOffer;
 }
 
@@ -283,6 +286,7 @@ export async function deleteOffer(id: number) {
 
   await db.delete(offerTracking).where(eq(offerTracking.id, id));
   revalidatePath("/offers");
+  revalidateTag("analytics-filters", "max");
 }
 
 export async function duplicateOffer(id: number): Promise<number> {
@@ -327,6 +331,7 @@ export async function duplicateOffer(id: number): Promise<number> {
     .returning({ id: offerTracking.id });
 
   revalidatePath("/offers");
+  revalidateTag("analytics-filters", "max");
   return newOffer.id;
 }
 
@@ -428,5 +433,6 @@ export async function importOffers(rows: Record<string, unknown>[]) {
   }
 
   revalidatePath("/offers");
+  revalidateTag("analytics-filters", "max");
   return `${imported} oferta(s) importada(s) com sucesso!`;
 }

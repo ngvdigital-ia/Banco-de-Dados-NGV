@@ -10,6 +10,7 @@ import {
   getCustomFieldValue,
 } from "@/lib/agentes/clickup/tasks";
 import { notifyRejectionViaN8n } from "@/lib/agentes/notify";
+import { revalidateTag } from "next/cache";
 
 // Status da lista de ofertas pra onde a task volta ao ser rejeitada.
 const STATUS_EM_AJUSTES = "em ajustes";
@@ -81,6 +82,10 @@ export async function POST(req: NextRequest) {
     const message = err instanceof Error ? err.message : "unknown";
     return NextResponse.json({ error: message }, { status: 500 });
   }
+
+  // Invalida o cache do aggregateOfertas para que a próxima visita à aba /agentes
+  // reflita a approval recém-gravada (aprovação ou rejeição).
+  revalidateTag("agentes-ofertas", "max");
 
   // 2. Side effects do reject — ClickUp + notificação Slack (via n8n).
   //    Cada um é isolado: se falhar, loga mas NÃO invalida o approval salvo.

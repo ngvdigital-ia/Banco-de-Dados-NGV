@@ -3,6 +3,8 @@ import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+export const maxDuration = 300;
+
 const CLICKUP_API_BASE = "https://api.clickup.com/api/v2";
 
 // All lists in the NGV Digital workspace.

@@ -128,9 +128,122 @@ export async function getRealExecutionsByTaskId(
 }
 
 /**
+ * Extrai dados do Revisor v1 a partir de um runData já carregado.
+ * Uso interno — evita re-fetch do getExecution.
+ */
+function _extractRevisorFromRunData(
+  runData: RunDataMap,
+): { score?: number; aprovado?: boolean } | null {
+  const nodeCandidates = [
+    "Parse Revisor v1 RETRY",
+    "Parse Revisor v1",
+    "Revisor v1 (Sonnet)",
+  ];
+
+  for (const nodeName of nodeCandidates) {
+    const nodeOutput = getNodeJson(runData, nodeName);
+    if (!nodeOutput) continue;
+
+    const candidate =
+      (nodeOutput as { aprovado?: unknown }).aprovado !== undefined
+        ? nodeOutput
+        : ((nodeOutput as { body?: unknown }).body as
+            | Record<string, unknown>
+            | undefined) ?? nodeOutput;
+
+    const score = candidate.score;
+    const aprovado = candidate.aprovado;
+
+    if (typeof score === "number" || typeof aprovado === "boolean") {
+      return {
+        score: typeof score === "number" ? score : undefined,
+        aprovado: typeof aprovado === "boolean" ? aprovado : undefined,
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Extrai dados de Drive a partir de um runData já carregado.
+ * Uso interno — evita re-fetch do getExecution.
+ */
+function _extractDriveFromRunData(runData: RunDataMap): {
+  drive_file_id?: string;
+  drive_url?: string;
+  drive_filename?: string;
+} | null {
+  const nodeCandidates = [
+    "Upload Doc v1",
+    "Upload Doc v1 inicial",
+    "Renomear v1 → produto-black",
+    "Upload Produto Drive",
+    "Upload to Drive",
+    "Google Drive Upload",
+  ];
+
+  for (const nodeName of nodeCandidates) {
+    const out = getNodeJson(runData, nodeName);
+    if (!out) continue;
+    const drive_file_id =
+      (out.id as string | undefined) ?? (out.fileId as string | undefined);
+    const drive_url =
+      (out.webViewLink as string | undefined) ??
+      (out.webContentLink as string | undefined) ??
+      (out.url as string | undefined);
+    const drive_filename =
+      (out.name as string | undefined) ??
+      (out.filename as string | undefined);
+    if (drive_url) {
+      return { drive_file_id, drive_url, drive_filename };
+    }
+  }
+
+  // Fallback: regex no JSON inteiro
+  const str = JSON.stringify(runData);
+  const m = str.match(/https:\/\/drive\.google\.com\/[^\s"]+/);
+  if (m) return { drive_url: m[0] };
+  return null;
+}
+
+/**
+ * Faz 1 único getExecution e retorna Revisor + Drive combinados.
+ * Substitui o par extractRevisorDataFromExecution + extractDriveDataFromExecution
+ * — que antes faziam 2 round-trips ao n8n para o mesmo execId.
+ */
+export async function extractBlackDataFromExecution(execId: string): Promise<{
+  revisor: { score?: number; aprovado?: boolean } | null;
+  drive: {
+    drive_file_id?: string;
+    drive_url?: string;
+    drive_filename?: string;
+  } | null;
+}> {
+  try {
+    const exec = await getExecution(execId);
+    const runData = (
+      exec.data as { resultData?: { runData?: RunDataMap } } | undefined
+    )?.resultData?.runData;
+    if (!runData) return { revisor: null, drive: null };
+
+    return {
+      revisor: _extractRevisorFromRunData(runData),
+      drive: _extractDriveFromRunData(runData),
+    };
+  } catch (err) {
+    console.error(`Falha ao extrair dados Black de exec ${execId}:`, err);
+    return { revisor: null, drive: null };
+  }
+}
+
+/**
  * Extrai dados do Revisor v1 a partir de uma execução do Black.
  * Procura o nó "Parse Revisor v1" (ou retry / nó Anthropic direto) no runData
  * e retorna score + aprovado se disponíveis.
+ *
+ * @deprecated Preferir extractBlackDataFromExecution que combina Revisor + Drive
+ * num único getExecution, reduzindo round-trips ao n8n à metade.
  */
 export async function extractRevisorDataFromExecution(
   execId: string,
@@ -141,38 +254,7 @@ export async function extractRevisorDataFromExecution(
       exec.data as { resultData?: { runData?: RunDataMap } } | undefined
     )?.resultData?.runData;
     if (!runData) return null;
-
-    const nodeCandidates = [
-      "Parse Revisor v1 RETRY",
-      "Parse Revisor v1",
-      "Revisor v1 (Sonnet)",
-    ];
-
-    for (const nodeName of nodeCandidates) {
-      const nodeOutput = getNodeJson(runData, nodeName);
-      if (!nodeOutput) continue;
-
-      // Parse Revisor é tipicamente o JSON do schema (aprovado, score, criterios)
-      // Anthropic nó pode trazer { content: [...] } ou similar
-      const candidate =
-        (nodeOutput as { aprovado?: unknown }).aprovado !== undefined
-          ? nodeOutput
-          : ((nodeOutput as { body?: unknown }).body as
-              | Record<string, unknown>
-              | undefined) ?? nodeOutput;
-
-      const score = candidate.score;
-      const aprovado = candidate.aprovado;
-
-      if (typeof score === "number" || typeof aprovado === "boolean") {
-        return {
-          score: typeof score === "number" ? score : undefined,
-          aprovado: typeof aprovado === "boolean" ? aprovado : undefined,
-        };
-      }
-    }
-
-    return null;
+    return _extractRevisorFromRunData(runData);
   } catch (err) {
     console.error(`Falha ao extrair Revisor de exec ${execId}:`, err);
     return null;
@@ -182,6 +264,9 @@ export async function extractRevisorDataFromExecution(
 /**
  * Extrai dados de arquivos do Drive criados durante a execução do Black.
  * Procura nós de Google Drive upload e retorna URL do produto final.
+ *
+ * @deprecated Preferir extractBlackDataFromExecution que combina Revisor + Drive
+ * num único getExecution, reduzindo round-trips ao n8n à metade.
  */
 export async function extractDriveDataFromExecution(execId: string): Promise<{
   drive_file_id?: string;
@@ -194,42 +279,11 @@ export async function extractDriveDataFromExecution(execId: string): Promise<{
       exec.data as { resultData?: { runData?: RunDataMap } } | undefined
     )?.resultData?.runData;
     if (!runData) return null;
-
     // Nomes de nós conhecidos no workflow Black (exec 20277 confirmou estes):
     //   - "Upload Doc v1"           → produto final aprovado
     //   - "Renomear v1 → produto-black" → caso aprovação
     //   - "Mover v1 pra archive"   → caso rejeição (vai pra archive/)
-    const nodeCandidates = [
-      "Upload Doc v1",
-      "Upload Doc v1 inicial",
-      "Renomear v1 → produto-black",
-      "Upload Produto Drive",
-      "Upload to Drive",
-      "Google Drive Upload",
-    ];
-
-    for (const nodeName of nodeCandidates) {
-      const out = getNodeJson(runData, nodeName);
-      if (!out) continue;
-      const drive_file_id =
-        (out.id as string | undefined) ?? (out.fileId as string | undefined);
-      const drive_url =
-        (out.webViewLink as string | undefined) ??
-        (out.webContentLink as string | undefined) ??
-        (out.url as string | undefined);
-      const drive_filename =
-        (out.name as string | undefined) ??
-        (out.filename as string | undefined);
-      if (drive_url) {
-        return { drive_file_id, drive_url, drive_filename };
-      }
-    }
-
-    // Fallback: regex no JSON inteiro
-    const str = JSON.stringify(runData);
-    const m = str.match(/https:\/\/drive\.google\.com\/[^\s"]+/);
-    if (m) return { drive_url: m[0] };
-    return null;
+    return _extractDriveFromRunData(runData);
   } catch (err) {
     console.error(`Falha ao extrair Drive de exec ${execId}:`, err);
     return null;

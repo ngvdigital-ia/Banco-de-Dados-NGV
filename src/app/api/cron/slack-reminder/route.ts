@@ -48,6 +48,7 @@ export async function GET(request: Request) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(message),
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!res.ok) {

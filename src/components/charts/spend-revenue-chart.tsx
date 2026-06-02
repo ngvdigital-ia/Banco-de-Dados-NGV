@@ -11,7 +11,7 @@ import {
   CartesianGrid,
 } from "recharts";
 
-interface SpendRevenueData {
+export interface SpendRevenueData {
   date: string;
   spend: number;
   revenue: number;

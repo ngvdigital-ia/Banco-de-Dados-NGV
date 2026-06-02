@@ -3,6 +3,8 @@ import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
 import { fetchPlayers, fetchEventsByPlayer, fetchSessionStats } from "@/lib/vturb";
 
+export const maxDuration = 300;
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {

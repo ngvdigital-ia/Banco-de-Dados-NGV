@@ -1,8 +1,20 @@
 import { Plus, Download } from "lucide-react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { OfferTable } from "@/components/offers/offer-table";
-import { CsvImportDialog } from "@/components/offers/csv-import-dialog";
 import { getOffers, getOfferMonths, getOfferFilterOptions, createOffer } from "./actions";
+
+const CsvImportDialog = dynamic(
+  () => import("@/components/offers/csv-import-dialog").then((mod) => mod.CsvImportDialog),
+  {
+    loading: () => (
+      <Button variant="outline" disabled aria-label="Carregando importação CSV">
+        <Download className="mr-1.5 h-4 w-4" />
+        Importar CSV
+      </Button>
+    ),
+  }
+);
 
 export default async function OffersPage({
   searchParams,

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import {
   FolderOpen,
@@ -22,8 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getDashboardStats, getProjectsSummary, getMetricsTrend, getVturbSummary, getLatestUtmifySummary } from "./dashboard-actions";
-import { SpendRevenueChart } from "@/components/charts/spend-revenue-chart";
-import { RoasChart } from "@/components/charts/roas-chart";
+import { LazySpendRevenueChart, LazyRoasChart } from "@/components/charts/dashboard-charts";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +39,77 @@ const statusVariant: Record<string, "warning" | "success" | "neutral"> = {
   pausado: "neutral",
 };
 
-// KPI Card com hierarquia: número domina, label acima pequeno/muted
+// ── Skeletons inline (reutilizados do loading.tsx) ──────────────────────────
+
+function Shimmer({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <div
+      className={cn("animate-pulse rounded-md bg-muted", className)}
+      style={style}
+    />
+  );
+}
+
+function KpiCardSkeleton({ accent = false }: { accent?: boolean }) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-2 rounded-xl bg-card p-4 ring-1 ring-foreground/10",
+        accent && "border-t-2 border-t-primary"
+      )}
+    >
+      <Shimmer className="h-3 w-20" />
+      <Shimmer className="h-8 w-16" />
+      <Shimmer className="h-3 w-28" />
+    </div>
+  );
+}
+
+function ProgressCardSkeleton() {
+  return (
+    <div className="flex flex-col gap-2 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+      <Shimmer className="h-3 w-28" />
+      <Shimmer className="h-8 w-14" />
+      <Shimmer className="h-1.5 w-full rounded-full" />
+    </div>
+  );
+}
+
+function KpiHeroSkeleton() {
+  return (
+    <div className="col-span-full sm:col-span-2 md:col-span-3 xl:col-span-2 flex flex-col gap-2 rounded-xl bg-card p-4 ring-1 ring-foreground/10 border-t-2 border-t-primary">
+      <Shimmer className="h-3 w-36" />
+      <div className="flex items-baseline gap-3">
+        <Shimmer className="h-9 w-28" />
+        <Shimmer className="h-5 w-3" />
+        <Shimmer className="h-9 w-28" />
+      </div>
+      <Shimmer className="h-3 w-32" />
+    </div>
+  );
+}
+
+// Skeleton da seção VTurb completa (3 cards)
+function VturbSectionSkeleton() {
+  return (
+    <section>
+      <Shimmer className="mb-3 h-3 w-52" />
+      <div className="grid gap-4 md:grid-cols-3">
+        <KpiCardSkeleton />
+        <ProgressCardSkeleton />
+        <ProgressCardSkeleton />
+      </div>
+    </section>
+  );
+}
+
+// Skeleton do card UTMify (hero card)
+function UtmifySkeleton() {
+  return <KpiHeroSkeleton />;
+}
+
+// ── KPI Card ─────────────────────────────────────────────────────────────────
+
 function KpiCard({
   label,
   value,
@@ -62,7 +132,6 @@ function KpiCard({
         accent && "border-t-2 border-t-primary"
       )}
     >
-      {/* borda indigo superior apenas no card de destaque */}
       <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
         <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground leading-none">
           {label}
@@ -93,16 +162,135 @@ function KpiCard({
   );
 }
 
+// ── Async Server Components isolados para VTurb e UTMify ─────────────────────
+
+// Renderiza o card hero de Gasto/Receita (UTMify) — query DB rápida, mas
+// isolada em Suspense para não bloquear o resto da grid caso haja lentidão.
+async function UtmifyCard() {
+  const utmifySummary = await getLatestUtmifySummary();
+  return (
+    <Card
+      className={cn(
+        "relative overflow-hidden col-span-full sm:col-span-2 md:col-span-3 xl:col-span-2",
+        "border-t-2 border-t-primary transition-shadow duration-200 hover:shadow-md",
+        !utmifySummary && "opacity-60"
+      )}
+    >
+      <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
+        <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+          Gasto / Receita (UTMify)
+        </span>
+        <BarChart3 className="h-4 w-4 text-primary" />
+      </CardHeader>
+      <CardContent className="px-4 pb-4 pt-1">
+        {utmifySummary ? (
+          <>
+            <div className="flex items-baseline gap-2 tabular-nums">
+              <span className="text-3xl font-bold text-danger leading-none tracking-tight">
+                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: utmifySummary.currency }).format(utmifySummary.totalSpend / 100)}
+              </span>
+              <span className="text-muted-foreground text-lg font-medium">/</span>
+              <span className="text-3xl font-bold text-success leading-none tracking-tight">
+                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: utmifySummary.currency }).format(utmifySummary.totalRevenue / 100)}
+              </span>
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
+              {utmifySummary.offersCount} ofertas rastreadas
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="text-3xl font-bold text-muted-foreground leading-none">-</div>
+            <p className="mt-1.5 text-xs text-muted-foreground">Sem dados UTMify</p>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Renderiza a seção completa de VTurb — resultado cacheado via unstable_cache em getVturbSummary.
+// Streama depois dos KPIs de DB (que renderizam imediato).
+async function VturbSection() {
+  const vturbSummary = await getVturbSummary();
+  return (
+    <section>
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        Performance de Vídeo (VTurb — 30 dias)
+      </h2>
+      <div className="grid gap-4 md:grid-cols-3">
+        <KpiCard
+          label="Total de Plays"
+          value={vturbSummary.totalPlays.toLocaleString("pt-BR")}
+          sub={`${vturbSummary.totalViews.toLocaleString("pt-BR")} views totais`}
+          icon={Play}
+        />
+
+        {/* Play Rate com progress bar */}
+        <Card className="transition-shadow duration-200 hover:shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
+            <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              Play Rate Médio
+            </span>
+            <Play className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent className="px-4 pb-4 pt-1">
+            <div className="tabular-nums text-3xl font-bold leading-none tracking-tight">
+              {vturbSummary.avgPlayRate}%
+            </div>
+            <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-1.5 rounded-full bg-info transition-all duration-500"
+                style={{ width: `${Math.min(vturbSummary.avgPlayRate, 100)}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Retenção ao Pitch com progress bar */}
+        <Card className="transition-shadow duration-200 hover:shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
+            <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              Retenção ao Pitch
+            </span>
+            <Play className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent className="px-4 pb-4 pt-1">
+            {vturbSummary.avgPitchRetention != null ? (
+              <>
+                <div className="tabular-nums text-3xl font-bold leading-none tracking-tight">
+                  {vturbSummary.avgPitchRetention}%
+                </div>
+                <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-1.5 rounded-full bg-success transition-all duration-500"
+                    style={{ width: `${Math.min(vturbSummary.avgPitchRetention, 100)}%` }}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-3xl font-bold text-muted-foreground leading-none">-</div>
+                <p className="mt-1.5 text-xs text-muted-foreground">Sem dados recentes</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  );
+}
+
+// ── Page principal ────────────────────────────────────────────────────────────
+
 export default async function DashboardPage() {
-  const [stats, recentProjects, metricsTrend, vturbSummary, utmifySummary] = await Promise.all([
+  // KPIs de DB: renderizam imediato (sem VTurb/UTMify no critical path)
+  const [stats, recentProjects, metricsTrend] = await Promise.all([
     getDashboardStats(),
     getProjectsSummary(),
     getMetricsTrend(30),
-    getVturbSummary(),
-    getLatestUtmifySummary(),
   ]);
 
-  // Variação simples de tendência baseada em activeProjects vs total
   const activeFraction = stats.totalProjects > 0
     ? stats.activeProjects / stats.totalProjects
     : 0;
@@ -117,51 +305,18 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* ── KPI Principal: Gasto / Receita em destaque + 5 contadores ── */}
+      {/* ── KPI Principal: Gasto / Receita (UTMify) + 5 contadores de DB ── */}
       <section>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Visão Geral
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-          {/* Card de destaque: Gasto vs Receita — marca indigo na borda superior */}
-          <Card
-            className={cn(
-              "relative overflow-hidden col-span-full sm:col-span-2 md:col-span-3 xl:col-span-2",
-              "border-t-2 border-t-primary transition-shadow duration-200 hover:shadow-md",
-              !utmifySummary && "opacity-60"
-            )}
-          >
-            <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-              <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                Gasto / Receita (UTMify)
-              </span>
-              <BarChart3 className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent className="px-4 pb-4 pt-1">
-              {utmifySummary ? (
-                <>
-                  <div className="flex items-baseline gap-2 tabular-nums">
-                    <span className="text-3xl font-bold text-danger leading-none tracking-tight">
-                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: utmifySummary.currency }).format(utmifySummary.totalSpend / 100)}
-                    </span>
-                    <span className="text-muted-foreground text-lg font-medium">/</span>
-                    <span className="text-3xl font-bold text-success leading-none tracking-tight">
-                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: utmifySummary.currency }).format(utmifySummary.totalRevenue / 100)}
-                    </span>
-                  </div>
-                  <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
-                    {utmifySummary.offersCount} ofertas rastreadas
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="text-3xl font-bold text-muted-foreground leading-none">-</div>
-                  <p className="mt-1.5 text-xs text-muted-foreground">Sem dados UTMify</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          {/* Card UTMify streama separado — skeleton enquanto carrega */}
+          <Suspense fallback={<UtmifySkeleton />}>
+            <UtmifyCard />
+          </Suspense>
 
+          {/* KPIs de DB renderizam imediato */}
           <KpiCard
             label="Ofertas"
             value={stats.totalProjects}
@@ -198,73 +353,12 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {/* ── VTurb KPIs ── */}
-      <section>
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Performance de Vídeo (VTurb — 30 dias)
-        </h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          <KpiCard
-            label="Total de Plays"
-            value={vturbSummary.totalPlays.toLocaleString("pt-BR")}
-            sub={`${vturbSummary.totalViews.toLocaleString("pt-BR")} views totais`}
-            icon={Play}
-          />
+      {/* ── VTurb streama depois — skeleton enquanto ~11 chamadas HTTP resolvem ── */}
+      <Suspense fallback={<VturbSectionSkeleton />}>
+        <VturbSection />
+      </Suspense>
 
-          {/* Play Rate com progress bar */}
-          <Card className="transition-shadow duration-200 hover:shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-              <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                Play Rate Médio
-              </span>
-              <Play className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="px-4 pb-4 pt-1">
-              <div className="tabular-nums text-3xl font-bold leading-none tracking-tight">
-                {vturbSummary.avgPlayRate}%
-              </div>
-              <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-1.5 rounded-full bg-info transition-all duration-500"
-                  style={{ width: `${Math.min(vturbSummary.avgPlayRate, 100)}%` }}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Retenção ao Pitch com progress bar */}
-          <Card className="transition-shadow duration-200 hover:shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-              <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                Retenção ao Pitch
-              </span>
-              <Play className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="px-4 pb-4 pt-1">
-              {vturbSummary.avgPitchRetention != null ? (
-                <>
-                  <div className="tabular-nums text-3xl font-bold leading-none tracking-tight">
-                    {vturbSummary.avgPitchRetention}%
-                  </div>
-                  <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-1.5 rounded-full bg-success transition-all duration-500"
-                      style={{ width: `${Math.min(vturbSummary.avgPitchRetention, 100)}%` }}
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="text-3xl font-bold text-muted-foreground leading-none">-</div>
-                  <p className="mt-1.5 text-xs text-muted-foreground">Sem dados recentes</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      {/* ── Tabela + Gráficos ── */}
+      {/* ── Tabela + Gráficos (dados de DB — renderizam imediato) ── */}
       <section>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Projetos &amp; Métricas
@@ -334,7 +428,7 @@ export default async function DashboardPage() {
                   </p>
                 </div>
               ) : (
-                <SpendRevenueChart data={metricsTrend} />
+                <LazySpendRevenueChart data={metricsTrend} />
               )}
             </CardContent>
           </Card>
@@ -352,7 +446,7 @@ export default async function DashboardPage() {
                   </p>
                 </div>
               ) : (
-                <RoasChart data={metricsTrend} />
+                <LazyRoasChart data={metricsTrend} />
               )}
             </CardContent>
           </Card>

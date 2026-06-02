@@ -71,11 +71,20 @@ function buildDateRange(timezone: number) {
 export async function fetchDashboardSummary(dashboardId: string, timezone: number) {
   const dateRange = buildDateRange(timezone);
 
-  const res = await fetch(`${UTMIFY_BASE_URL}/v1/dashboards/${dashboardId}/summary`, {
-    method: "POST",
-    headers: getHeaders(),
-    body: JSON.stringify({ dateRange }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${UTMIFY_BASE_URL}/v1/dashboards/${dashboardId}/summary`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ dateRange }),
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      throw new Error(`UTMify summary timeout (15s) for dashboard ${dashboardId}`);
+    }
+    throw err;
+  }
 
   if (!res.ok) {
     const text = await res.text();
@@ -165,11 +174,21 @@ export async function fetchOfferMetrics(
   };
 
   try {
-    const res = await fetch(`${UTMIFY_BASE_URL}/v1/dashboards/${dashboardId}/summary`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({ dateRange, productNames }),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${UTMIFY_BASE_URL}/v1/dashboards/${dashboardId}/summary`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ dateRange, productNames }),
+        signal: AbortSignal.timeout(15_000),
+      });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "TimeoutError") {
+        console.error(`[UTMify] fetchOfferMetrics timeout (15s) for offer "${offerName}"`);
+        return null;
+      }
+      throw err;
+    }
 
     if (!res.ok) return null;
 
@@ -287,11 +306,20 @@ export function extractOfferFromCampaignName(campaignName: string): string {
 export async function fetchMetaAdObjects(dashboardId: string, timezone: number) {
   const dateRange = buildDateRange(timezone);
 
-  const res = await fetch(`${UTMIFY_BASE_URL}/v1/dashboards/${dashboardId}/meta/ad-objects`, {
-    method: "POST",
-    headers: getHeaders(),
-    body: JSON.stringify({ dateRange, level: "campaign" }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${UTMIFY_BASE_URL}/v1/dashboards/${dashboardId}/meta/ad-objects`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ dateRange, level: "campaign" }),
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      throw new Error(`UTMify Meta ads timeout (15s) for dashboard ${dashboardId}`);
+    }
+    throw err;
+  }
 
   if (!res.ok) {
     const text = await res.text();

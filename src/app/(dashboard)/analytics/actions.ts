@@ -5,6 +5,7 @@ import { projects, vsls, creatives, campaigns, teamMembers, metricsSnapshots, of
 import { fieldContainsMember, fieldMatchesMember, getMemberAliases } from "@/lib/team-utils";
 import { extractOfferFromCampaignName } from "@/lib/utmify";
 import { eq, sql, desc, and, inArray, gte, lte } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 
 // ========== TYPES ==========
 
@@ -33,51 +34,57 @@ export type ComparisonData = {
 
 // ========== FILTER OPTIONS ==========
 
-export async function getFilterOptions() {
-  const [nicheRows, languageRows, copywriters, editors, formatRows] = await Promise.all([
-    db
-      .selectDistinct({ niche: offerTracking.name })
-      .from(offerTracking)
-      .where(sql`${offerTracking.name} IS NOT NULL`)
-      .orderBy(offerTracking.name),
-    db
-      .selectDistinct({ language: offerTracking.language })
-      .from(offerTracking)
-      .orderBy(offerTracking.language),
-    db
-      .select({ id: teamMembers.id, name: teamMembers.name })
-      .from(teamMembers)
-      .where(
-        and(
-          eq(teamMembers.active, true),
-          sql`${teamMembers.role}::text IN ('copywriter', 'admin')`
+// Resultado cacheado por 300s com tag 'analytics-filters'.
+// Invalide com revalidateTag('analytics-filters', 'max') ao mutar offerTracking ou teamMembers.
+export const getFilterOptions = unstable_cache(
+  async function _getFilterOptions() {
+    const [nicheRows, languageRows, copywriters, editors, formatRows] = await Promise.all([
+      db
+        .selectDistinct({ niche: offerTracking.name })
+        .from(offerTracking)
+        .where(sql`${offerTracking.name} IS NOT NULL`)
+        .orderBy(offerTracking.name),
+      db
+        .selectDistinct({ language: offerTracking.language })
+        .from(offerTracking)
+        .orderBy(offerTracking.language),
+      db
+        .select({ id: teamMembers.id, name: teamMembers.name })
+        .from(teamMembers)
+        .where(
+          and(
+            eq(teamMembers.active, true),
+            sql`${teamMembers.role}::text IN ('copywriter', 'admin')`
+          )
         )
-      )
-      .orderBy(teamMembers.name),
-    db
-      .select({ id: teamMembers.id, name: teamMembers.name })
-      .from(teamMembers)
-      .where(
-        and(
-          eq(teamMembers.active, true),
-          sql`${teamMembers.role}::text IN ('editor', 'admin')`
+        .orderBy(teamMembers.name),
+      db
+        .select({ id: teamMembers.id, name: teamMembers.name })
+        .from(teamMembers)
+        .where(
+          and(
+            eq(teamMembers.active, true),
+            sql`${teamMembers.role}::text IN ('editor', 'admin')`
+          )
         )
-      )
-      .orderBy(teamMembers.name),
-    db
-      .selectDistinct({ format: offerTracking.adFormat })
-      .from(offerTracking)
-      .where(sql`${offerTracking.adFormat} IS NOT NULL`),
-  ]);
+        .orderBy(teamMembers.name),
+      db
+        .selectDistinct({ format: offerTracking.adFormat })
+        .from(offerTracking)
+        .where(sql`${offerTracking.adFormat} IS NOT NULL`),
+    ]);
 
-  return {
-    niches: nicheRows.map((r) => r.niche),
-    languages: languageRows.map((r) => r.language),
-    copywriters,
-    editors,
-    formats: formatRows.map((r) => r.format).filter(Boolean) as string[],
-  };
-}
+    return {
+      niches: nicheRows.map((r) => r.niche),
+      languages: languageRows.map((r) => r.language),
+      copywriters,
+      editors,
+      formats: formatRows.map((r) => r.format).filter(Boolean) as string[],
+    };
+  },
+  ["analytics-filter-options"],
+  { tags: ["analytics-filters"], revalidate: 300 },
+);
 
 // ========== HELPERS ==========
 

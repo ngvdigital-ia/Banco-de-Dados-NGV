@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { metricsSnapshots, offerTracking } from "@/db/schema";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/admin-auth";
 
 const MAX_ROWS = 500;
@@ -95,5 +95,6 @@ export async function importOfferTracking(
   revalidatePath("/offers");
   revalidatePath("/analytics/offers");
   revalidatePath("/");
+  revalidateTag("analytics-filters", "max");
   return `${rows.length} oferta(s) importada(s) com sucesso!`;
 }

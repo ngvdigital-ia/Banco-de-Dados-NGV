@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { Trash2, ExternalLink, Pencil, ChevronDown, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { updateOfferField, deleteOffer, duplicateOffer } from "@/app/(dashboard)/offers/actions";
-import { type SiteUrls, primaryUrl, totalLinks } from "@/lib/site-urls";
+import { type SiteUrls, primaryUrl, totalLinks } from "@/lib/site-urls-types";
 import { SiteUrlsDialog } from "@/components/offers/site-urls-dialog";
 
 // ---------- Types ----------

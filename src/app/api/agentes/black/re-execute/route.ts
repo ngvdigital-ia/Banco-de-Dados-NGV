@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getTask, findSubtaskByName } from "@/lib/agentes/clickup/tasks";
+import { revalidateTag } from "next/cache";
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -74,6 +75,9 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
+
+  // Invalida o cache para que a aba /agentes reflita o novo estado "em execução".
+  revalidateTag("agentes-ofertas", "max");
 
   return NextResponse.json({ ok: true });
 }

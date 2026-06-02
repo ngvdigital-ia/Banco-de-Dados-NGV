@@ -12,7 +12,7 @@ import {
   ReferenceLine,
 } from "recharts";
 
-interface RoasData {
+export interface RoasData {
   date: string;
   roas: number;
 }

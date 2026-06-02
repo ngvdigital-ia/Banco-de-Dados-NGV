@@ -65,7 +65,10 @@ export async function fetchPlayers(dateFrom?: string, dateTo?: string) {
     if (params.toString()) url += `?${params}`;
 
     // GET request — do NOT send Content-Type header
-    const res = await fetch(url, { headers: getHeaders(false) });
+    const res = await fetch(url, {
+      headers: getHeaders(false),
+      signal: AbortSignal.timeout(15_000),
+    });
 
     if (!res.ok) {
       const text = await res.text();
@@ -78,6 +81,10 @@ export async function fetchPlayers(dateFrom?: string, dateTo?: string) {
     const players = Array.isArray(data) ? data : data.players || [];
     return { players } as { players: VturbPlayer[] };
   } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      console.error("[VTurb] List players timeout (15s)");
+      return null;
+    }
     console.error("[VTurb] List players error:", err);
     return null;
   }
@@ -117,6 +124,7 @@ export async function fetchEventsByPlayer(
         end_date: dateTo,
         timezone,
       }),
+      signal: AbortSignal.timeout(15_000),
     });
 
     if (!res.ok) {
@@ -148,6 +156,10 @@ export async function fetchEventsByPlayer(
 
     return playerMap;
   } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      console.error("[VTurb] Events by player timeout (15s)");
+      return null;
+    }
     console.error("[VTurb] Events by player error:", err);
     return null;
   }
@@ -177,6 +189,7 @@ export async function fetchUserEngagement(
         end_date: dateTo,
         timezone,
       }),
+      signal: AbortSignal.timeout(15_000),
     });
 
     if (!res.ok) {
@@ -187,6 +200,10 @@ export async function fetchUserEngagement(
 
     return res.json();
   } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      console.error(`[VTurb] Engagement timeout (15s) for player ${playerId}`);
+      return null;
+    }
     console.error("[VTurb] Engagement error:", err);
     return null;
   }
@@ -220,6 +237,7 @@ export async function fetchSessionStats(
         end_date: endDate,
         timezone,
       }),
+      signal: AbortSignal.timeout(15_000),
     });
 
     if (!res.ok) {
@@ -230,6 +248,10 @@ export async function fetchSessionStats(
 
     return res.json() as Promise<VturbSessionStats>;
   } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      console.error(`[VTurb] Session stats timeout (15s) for player ${playerId}`);
+      return null;
+    }
     console.error("[VTurb] Session stats error:", err);
     return null;
   }
@@ -246,11 +268,16 @@ export async function fetchLiveUsers(minutes = 5) {
     // GET request — no Content-Type
     const res = await fetch(`${VTURB_BASE_URL}/sessions/live_users?minutes=${minutes}`, {
       headers: getHeaders(false),
+      signal: AbortSignal.timeout(15_000),
     });
 
     if (!res.ok) return null;
     return res.json();
-  } catch {
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      console.error("[VTurb] Live users timeout (15s)");
+      return null;
+    }
     return null;
   }
 }

@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { projects, teamMembers, vsls, creatives, campaigns, metricsSnapshots, offerTracking } from "@/db/schema";
 import { eq, sql, desc, gte } from "drizzle-orm";
 import { fetchEventsByPlayer, fetchPlayers, fetchSessionStats } from "@/lib/vturb";
+import { unstable_cache } from "next/cache";
 
 export async function getDashboardStats() {
   // Consolidar as 5 queries de offerTracking em 1 + teamMembers separada, ambas em paralelo
@@ -58,7 +59,9 @@ export async function getProjectsSummary() {
     .limit(10);
 }
 
-export async function getVturbSummary() {
+// Função interna — envolvida em unstable_cache abaixo (TTL 300s, tag "vturb-summary").
+async function _getVturbSummary() {
+
   // Fetch live data from VTurb API (last 30 days)
   const now = new Date();
   const ago = new Date(now);
@@ -147,6 +150,13 @@ export async function getVturbSummary() {
     topPlayers,
   };
 }
+
+// Wrapper cacheado — TTL 300s, tag "vturb-summary" para invalidação on-demand.
+export const getVturbSummary = unstable_cache(
+  _getVturbSummary,
+  ["vturb-summary"],
+  { revalidate: 300, tags: ["vturb-summary"] },
+);
 
 export async function getLatestUtmifySummary() {
   // Read latest UTMify offer data from DB (saved via MCP)

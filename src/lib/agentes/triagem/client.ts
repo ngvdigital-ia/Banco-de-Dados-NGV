@@ -47,14 +47,14 @@ function getUrl(): string {
  * Robustez: webhook tem latência ~3.7s em prod (lê 3 Sheets em paralelo)
  * e cold start serverless Vercel pode abortar o fetch. Pra evitar erro
  * intermitente "Unexpected end of JSON input", aplica:
- *   - timeout explícito 15s via AbortSignal
- *   - retry 3x com backoff exponencial (500ms, 1.5s, 4.5s)
+ *   - timeout explícito 8s via AbortSignal (pior caso SSR: 2 tentativas × 8s = 16s)
+ *   - retry 2x com backoff exponencial (500ms, 1.5s)
  *   - guard contra body vazio
  */
 export async function listCandidatos(): Promise<CandidatoTriado[]> {
   const url = getUrl();
-  const MAX_RETRIES = 3;
-  const TIMEOUT_MS = 15000;
+  const MAX_RETRIES = 2;
+  const TIMEOUT_MS = 8000;
 
   let lastError: Error | null = null;
 

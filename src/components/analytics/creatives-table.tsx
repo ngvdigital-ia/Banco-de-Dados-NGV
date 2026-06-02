@@ -135,7 +135,7 @@ export function CreativesTable({
                       )
                     ) : null}
                   </TableCell>
-                  <TableCell className="font-medium">{row.format}</TableCell>
+                  <TableCell className="font-medium">{formatLabels[row.format] ?? row.format}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{row.language}</Badge>
                   </TableCell>

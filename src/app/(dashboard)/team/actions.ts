@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { teamMembers } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod/v4";
 import { logChange } from "@/lib/changelog";
 
@@ -25,6 +25,7 @@ export async function createTeamMember(data: TeamMemberFormData) {
   const [result] = await db.insert(teamMembers).values(parsed).returning({ id: teamMembers.id });
   await logChange("team_member", result.id, "create", parsed);
   revalidatePath("/team");
+  revalidateTag("analytics-filters", "max");
 }
 
 export async function updateTeamMember(id: number, data: TeamMemberFormData) {
@@ -35,10 +36,12 @@ export async function updateTeamMember(id: number, data: TeamMemberFormData) {
     .where(eq(teamMembers.id, id));
   await logChange("team_member", id, "update", parsed);
   revalidatePath("/team");
+  revalidateTag("analytics-filters", "max");
 }
 
 export async function deleteTeamMember(id: number) {
   await db.delete(teamMembers).where(eq(teamMembers.id, id));
   await logChange("team_member", id, "delete");
   revalidatePath("/team");
+  revalidateTag("analytics-filters", "max");
 }
