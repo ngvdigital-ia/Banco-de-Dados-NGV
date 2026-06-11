@@ -267,7 +267,10 @@ export async function updateOfferSiteUrls(
 }
 
 export async function createOffer() {
-  await requireAdmin();
+  // Criar oferta é operação do dia-a-dia do time (igual editar) — exige login,
+  // não admin. Admin fica pra destrutivas/massa (delete, import CSV).
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
 
   const [newOffer] = await db
     .insert(offerTracking)
@@ -290,7 +293,9 @@ export async function deleteOffer(id: number) {
 }
 
 export async function duplicateOffer(id: number): Promise<number> {
-  await requireAdmin();
+  // Duplicar = criar (operação do time) — exige login, não admin.
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
 
   const [original] = await db
     .select()
