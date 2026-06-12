@@ -10,6 +10,7 @@ import {
   formatMetricValue,
   type AlertMetric,
 } from "@/lib/alerts-config";
+import { checkAgentsHealth } from "@/lib/agentes/n8n/health";
 
 export const maxDuration = 60;
 
@@ -68,13 +69,89 @@ export async function GET(request: Request) {
     }
   }
 
+  // Saúde dos agentes — detecção de silêncio anômalo
+  let silentCount = 0;
+  try {
+    const health = await checkAgentsHealth();
+    silentCount = health.silent.length;
+
+    if (health.silent.length > 0 && webhookUrl) {
+      await sendAgentsHealthAlert(webhookUrl, health.silent);
+    }
+  } catch (err) {
+    console.error("[check-alerts] falha ao checar saúde dos agentes:", err);
+  }
+
   return NextResponse.json({
     success: true,
     evaluated: active.length,
     fired,
     onCooldown,
+    agentsHealth: { silentCount },
     at: now.toISOString(),
   });
+}
+
+async function sendAgentsHealthAlert(
+  url: string,
+  silent: { name: string; lastSuccessAt: string | null; hoursSilent: number | null }[],
+) {
+  const n8nUrl = process.env.N8N_BASE_URL ?? "https://n8n.example.com";
+  const lines = silent
+    .map((s) => {
+      const horas =
+        s.hoursSilent !== null
+          ? `${s.hoursSilent}h sem execução bem-sucedida`
+          : "sem nenhuma execução bem-sucedida recente";
+      return `• *${s.name}* — ${horas}`;
+    })
+    .join("\n");
+
+  const message = {
+    blocks: [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: "🤖 Agente em silêncio anômalo",
+          emoji: true,
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: lines,
+        },
+      },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: `Verificar execuções no n8n: <${n8nUrl}|abrir n8n>`,
+          },
+        ],
+      },
+    ],
+  };
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(message),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok)
+      console.error(
+        "[check-alerts] Slack (saúde agentes) respondeu",
+        res.status,
+        await res.text(),
+      );
+  } catch (err) {
+    console.error("[check-alerts] falha ao enviar alerta de saúde dos agentes:", err);
+  }
 }
 
 async function sendSlackAlert(

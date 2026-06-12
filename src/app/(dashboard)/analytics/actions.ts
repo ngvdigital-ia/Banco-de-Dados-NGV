@@ -1132,3 +1132,79 @@ export async function getOfferAdsSummary(
 
   return map;
 }
+
+// ========== TEAM MONTHLY TREND ==========
+
+export type TeamMonthlyTrendResult = {
+  months: string[];
+  series: { member: string; data: { month: string; tasks: number }[] }[];
+};
+
+/**
+ * Retorna a evolução mensal de tarefas concluídas por membro ClickUp.
+ *
+ * Estratégia SQL:
+ *   1. DISTINCT ON (entity_id, periodMonth) ORDER BY date DESC → o snapshot de
+ *      fechamento (max date) de cada (membro, mês).
+ *   2. Filtra entity_type = 'clickup_member' e periodMonth IS NOT NULL
+ *      (exclui snapshots antigos sem periodMonth).
+ *   3. Apenas membros com ao menos 1 mês com tasks > 0.
+ */
+export async function getTeamMonthlyTrend(): Promise<TeamMonthlyTrendResult> {
+  // CTE: snapshot de fechamento por (entity_id, periodMonth)
+  const rows = await db.execute(sql`
+    WITH latest AS (
+      SELECT DISTINCT ON (entity_id, extra_data->>'periodMonth')
+        entity_id,
+        extra_data->>'memberName'   AS member_name,
+        extra_data->>'periodMonth'  AS period_month,
+        (extra_data->>'tasksCompleted')::int AS tasks_completed
+      FROM metrics_snapshots
+      WHERE
+        entity_type = 'clickup_member'
+        AND extra_data->>'periodMonth' IS NOT NULL
+      ORDER BY
+        entity_id,
+        extra_data->>'periodMonth',
+        date DESC
+    )
+    SELECT member_name, period_month, tasks_completed
+    FROM latest
+    WHERE tasks_completed > 0
+    ORDER BY member_name, period_month
+  `);
+
+  type Row = { member_name: string; period_month: string; tasks_completed: number };
+  const rawRows = rows.rows as Row[];
+
+  // Agrupa por membro
+  const byMember = new Map<string, Map<string, number>>();
+  const allMonthsSet = new Set<string>();
+
+  for (const row of rawRows) {
+    const name = row.member_name ?? "Desconhecido";
+    const month = row.period_month;
+    const tasks = Number(row.tasks_completed ?? 0);
+
+    allMonthsSet.add(month);
+
+    if (!byMember.has(name)) byMember.set(name, new Map());
+    byMember.get(name)!.set(month, tasks);
+  }
+
+  // Meses ordenados cronologicamente
+  const months = [...allMonthsSet].sort();
+
+  // Membros com pelo menos 1 entrada (já filtrado no SQL: tasks > 0)
+  const series = [...byMember.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([member, monthMap]) => ({
+      member,
+      data: months.map((month) => ({
+        month,
+        tasks: monthMap.get(month) ?? 0,
+      })),
+    }));
+
+  return { months, series };
+}

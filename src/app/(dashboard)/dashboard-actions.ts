@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { projects, teamMembers, vsls, creatives, campaigns, metricsSnapshots, offerTracking } from "@/db/schema";
-import { eq, sql, desc, gte } from "drizzle-orm";
+import { and, eq, sql, desc, gte } from "drizzle-orm";
 import { fetchEventsByPlayer, fetchPlayers, fetchSessionStats } from "@/lib/vturb";
 import { unstable_cache } from "next/cache";
 
@@ -200,7 +200,10 @@ export async function getMetricsTrend(days: number) {
       roas: sql<string>`case when coalesce(sum(${metricsSnapshots.spend}), 0) = 0 then 0 else coalesce(sum(${metricsSnapshots.revenue}), 0) / sum(${metricsSnapshots.spend}) end`,
     })
     .from(metricsSnapshots)
-    .where(gte(metricsSnapshots.date, since))
+    // BUGFIX: sem este filtro o trend somava revenue de TODOS os entity_types
+    // (vendas + campanhas + dashboard) sobre spend só de campanha → ROAS errado.
+    // O gráfico da home é de MÍDIA: só utmify_campaign_daily.
+    .where(and(gte(metricsSnapshots.date, since), eq(metricsSnapshots.entityType, "utmify_campaign_daily")))
     .groupBy(sql`to_char(${metricsSnapshots.date}, 'YYYY-MM-DD')`)
     .orderBy(sql`to_char(${metricsSnapshots.date}, 'YYYY-MM-DD')`);
 

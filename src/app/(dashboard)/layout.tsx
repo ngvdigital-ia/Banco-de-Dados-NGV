@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
+import { CommandPalette, CommandPaletteTrigger } from "@/components/command-palette";
 
 export default function DashboardLayout({
   children,
@@ -17,9 +18,13 @@ export default function DashboardLayout({
           {/* Divisor visual sutil entre trigger e breadcrumb */}
           <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
           <BreadcrumbNav />
+          <div className="ml-auto">
+            <CommandPaletteTrigger />
+          </div>
         </header>
         <div className="p-6">{children}</div>
       </main>
+      <CommandPalette />
     </SidebarProvider>
   );
 }
