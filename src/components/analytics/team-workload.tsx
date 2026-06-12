@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,10 +55,11 @@ function MemberSheet({ memberId, memberName, open, onOpenChange }: MemberSheetPr
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Carrega ao abrir (lazy)
-  function handleOpenChange(v: boolean) {
-    onOpenChange(v);
-    if (v && !data && !isPending) {
+  // Carrega ao abrir (lazy). useEffect — NÃO onOpenChange: o sheet é aberto pelo
+  // card pai mudando a prop `open` direto, e o onOpenChange do Sheet só dispara
+  // em interações internas (Esc/X). Sem o effect, o fetch nunca rodava.
+  useEffect(() => {
+    if (open && !data && !isPending) {
       setError(null);
       startTransition(async () => {
         try {
@@ -71,6 +72,11 @@ function MemberSheet({ memberId, memberName, open, onOpenChange }: MemberSheetPr
         }
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  function handleOpenChange(v: boolean) {
+    onOpenChange(v);
   }
 
   return (
