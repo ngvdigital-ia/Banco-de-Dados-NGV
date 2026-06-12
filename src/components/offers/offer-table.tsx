@@ -555,6 +555,15 @@ function AdsCopyDisplay({
   );
 }
 
+// Pessoas EDITÁVEIS no popup de "ads por pessoa" — mudança de equipe = mexer SÓ aqui.
+// 2026-06-12: saem VA (Victor) e CA (Camile); entra RO (Romulo). Keys históricas fora
+// desta lista (VA/CA de ofertas antigas) são PRESERVADAS no save e seguem no display.
+const ADS_PEOPLE: { key: string; sigla: string; color: string }[] = [
+  { key: "MALU", sigla: "MA", color: "text-pink-600" },
+  { key: "RO", sigla: "RO", color: "text-violet-600" },
+  { key: "LF", sigla: "LF", color: "text-teal-600" },
+];
+
 function AdsEditDisplay({
   value,
   offerId,
@@ -567,22 +576,22 @@ function AdsEditDisplay({
   const data = (value as Record<string, number> | null) ?? {};
   const entries = Object.entries(data).filter(([, v]) => Number(v) > 0);
 
-  const [maluVal, setMaluVal] = useState(String(data.MALU ?? 0));
-  const [vaVal, setVaVal] = useState(String(data.VA ?? 0));
-  const [caVal, setCaVal] = useState(String(data.CA ?? 0));
-  const [lfVal, setLfVal] = useState(String(data.LF ?? 0));
+  const [vals, setVals] = useState<Record<string, string>>(() =>
+    Object.fromEntries(ADS_PEOPLE.map((p) => [p.key, String(data[p.key] ?? 0)])),
+  );
 
   function handleSave() {
     setEditing(false);
     const newData: Record<string, number> = {};
-    const m = parseInt(maluVal, 10) || 0;
-    const v = parseInt(vaVal, 10) || 0;
-    const c = parseInt(caVal, 10) || 0;
-    const l = parseInt(lfVal, 10) || 0;
-    if (m) newData.MALU = m;
-    if (v) newData.VA = v;
-    if (c) newData.CA = c;
-    if (l) newData.LF = l;
+    // Preserva keys históricas que o popup não gerencia (ex: VA/CA de quem saiu).
+    const managed = new Set(ADS_PEOPLE.map((p) => p.key));
+    for (const [k, v] of Object.entries(data)) {
+      if (!managed.has(k) && Number(v) > 0) newData[k] = Number(v);
+    }
+    for (const p of ADS_PEOPLE) {
+      const n = parseInt(vals[p.key], 10) || 0;
+      if (n) newData[p.key] = n;
+    }
     startTransition(async () => {
       await updateOfferField(
         offerId,
@@ -595,42 +604,17 @@ function AdsEditDisplay({
   if (editing) {
     return (
       <div className="flex items-center gap-1">
-        <label className="flex items-center gap-0.5 text-[10px]">
-          <span className="text-pink-600 font-semibold">MA</span>:
-          <input
-            className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
-            value={maluVal}
-            onChange={(e) => setMaluVal(e.target.value)}
-            type="number"
-          />
-        </label>
-        <label className="flex items-center gap-0.5 text-[10px]">
-          <span className="text-cyan-600 font-semibold">VA</span>:
-          <input
-            className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
-            value={vaVal}
-            onChange={(e) => setVaVal(e.target.value)}
-            type="number"
-          />
-        </label>
-        <label className="flex items-center gap-0.5 text-[10px]">
-          <span className="text-amber-600 font-semibold">CA</span>:
-          <input
-            className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
-            value={caVal}
-            onChange={(e) => setCaVal(e.target.value)}
-            type="number"
-          />
-        </label>
-        <label className="flex items-center gap-0.5 text-[10px]">
-          <span className="text-teal-600 font-semibold">LF</span>:
-          <input
-            className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
-            value={lfVal}
-            onChange={(e) => setLfVal(e.target.value)}
-            type="number"
-          />
-        </label>
+        {ADS_PEOPLE.map((p) => (
+          <label key={p.key} className="flex items-center gap-0.5 text-[10px]">
+            <span className={`${p.color} font-semibold`}>{p.sigla}</span>:
+            <input
+              className="h-5 w-8 rounded border px-0.5 text-[10px] text-center"
+              value={vals[p.key]}
+              onChange={(e) => setVals((prev) => ({ ...prev, [p.key]: e.target.value }))}
+              type="number"
+            />
+          </label>
+        ))}
         <button
           onClick={handleSave}
           className="rounded bg-primary px-1.5 py-0.5 text-[9px] text-primary-foreground"
@@ -644,6 +628,7 @@ function AdsEditDisplay({
   const siglaColors: Record<string, string> = {
     MALU: "text-pink-600 dark:text-pink-400",
     MA: "text-pink-600 dark:text-pink-400",
+    RO: "text-violet-600 dark:text-violet-400",
     VA: "text-cyan-600 dark:text-cyan-400",
     CA: "text-amber-600 dark:text-amber-400",
     LF: "text-teal-600 dark:text-teal-400",
@@ -652,10 +637,7 @@ function AdsEditDisplay({
   return (
     <div
       onClick={() => {
-        setMaluVal(String(data.MALU ?? 0));
-        setVaVal(String(data.VA ?? 0));
-        setCaVal(String(data.CA ?? 0));
-        setLfVal(String(data.LF ?? 0));
+        setVals(Object.fromEntries(ADS_PEOPLE.map((p) => [p.key, String(data[p.key] ?? 0)])));
         setEditing(true);
       }}
       className={`relative cursor-pointer truncate rounded px-1 py-0.5 text-[10px] hover:border-b hover:border-dashed hover:border-zinc-300 dark:hover:border-zinc-600 ${isPending ? "opacity-50" : ""}`}

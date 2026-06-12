@@ -1,7 +1,10 @@
 // Shared team sigla/name mappings used by offer-table and analytics
 
-export const COPYWRITERS = ["DG", "GF", "GL", "RO", "MALU", "VA", "CA", "LF"];
-export const EDITORS = ["DG", "GF", "GL", "RO", "MALU", "VA", "CA", "LF"];
+// 2026-06-12: VA (Victor Andrade) e CA (Camile) saíram da equipe — removidos das
+// OPÇÕES (selects/popup). Os mapeamentos deles ficam abaixo pro HISTÓRICO continuar
+// atribuível. RO agora é Romulo (uso real do time; Robert é marcado como "ROBERT").
+export const COPYWRITERS = ["DG", "GF", "GL", "RO", "MALU", "LF"];
+export const EDITORS = ["DG", "GF", "GL", "RO", "MALU", "LF"];
 export const LANGUAGES = ["EN", "FR", "DE", "ITA", "ES", "PT"];
 
 export const AD_FORMATS = [
@@ -25,7 +28,7 @@ export const FORMAT_LABELS: Record<string, string> = {
 };
 
 export const SIGLA_TO_NAME: Record<string, string> = {
-  DG: "Diogo", GF: "Gabriel Fischer", GL: "Gabriel Lima", GA: "Gabriel Fischer", RO: "Robert",
+  DG: "Diogo", GF: "Gabriel Fischer", GL: "Gabriel Lima", GA: "Gabriel Fischer", RO: "Romulo",
   MALU: "Malu", VA: "Victor Andrade", CA: "Camile", LF: "Luis Felipe",
   ICARO: "Icaro", LUIZA: "Luiza",
 };
@@ -36,7 +39,9 @@ export const NAME_TO_SIGLA: Record<string, string> = {
   diogo: "DG",
   gabriel: "GF", "gabriel fischer": "GF", "gabriel backes fischer": "GF", fischer: "GF",
   "gabriel lima": "GL", lima: "GL",
-  robert: "RO", "robert oliveira": "RO",
+  // Robert NÃO tem sigla: os dados sempre o marcam como "ROBERT" (16 ofertas) — o
+  // matching por nome (getMemberAliases) cobre. RO é o Romulo (uso real do time).
+  romulo: "RO", "romulo santos": "RO",
   camile: "CA", camille: "CA",
   luis: "LF", "luis felipe": "LF",
   victor: "VA", "victor andrade": "VA",
