@@ -27,6 +27,8 @@ export interface Oferta {
     black: AgenteEstado;
     white: AgenteEstado;
   };
+  /** Última atividade real no ClickUp — max(date_updated) entre pai e todas as subtasks. */
+  ultima_atividade_em: string | null;
   atualizado_em: string; // ISO timestamp
 }
 

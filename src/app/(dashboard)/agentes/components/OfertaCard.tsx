@@ -76,6 +76,46 @@ function formatDurationFrom(isoStart: string): string {
   return `${h}h${min % 60}min`;
 }
 
+/** Retorna a idade em dias completos desde `isoDate`. */
+function idadeEmDias(isoDate: string): number {
+  return Math.floor((Date.now() - new Date(isoDate).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+interface IdadeBadgeProps {
+  ultimaAtividadeEm: string | null;
+}
+
+function IdadeBadge({ ultimaAtividadeEm }: IdadeBadgeProps) {
+  if (!ultimaAtividadeEm) return null;
+  const dias = idadeEmDias(ultimaAtividadeEm);
+  const label = dias === 0 ? "hoje" : `há ${dias}d`;
+  const dataCompleta = new Date(ultimaAtividadeEm).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const corClasse =
+    dias >= 7
+      ? "text-danger border-danger/40 bg-danger/5"
+      : dias >= 3
+        ? "text-warning border-warning/40 bg-warning/5"
+        : "text-muted-foreground border-border bg-transparent";
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded border px-1.5 py-0 text-[10px] font-medium tabular-nums",
+        corClasse,
+      )}
+      title={`Última atividade: ${dataCompleta}`}
+    >
+      {label}
+    </span>
+  );
+}
+
 export function OfertaCard({ oferta, estado, agente, onAction }: OfertaCardProps) {
   const agenteEstado = oferta.agentes[agente];
   const borda = BORDA_POR_ESTADO[estado];
@@ -118,8 +158,11 @@ export function OfertaCard({ oferta, estado, agente, onAction }: OfertaCardProps
         </div>
       )}
 
-      {/* Nome da oferta */}
-      <p className="text-sm font-medium mb-2 line-clamp-2 leading-snug">{oferta.nome}</p>
+      {/* Nome da oferta + badge de idade */}
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <p className="text-sm font-medium line-clamp-2 leading-snug flex-1">{oferta.nome}</p>
+        <IdadeBadge ultimaAtividadeEm={oferta.ultima_atividade_em} />
+      </div>
 
       {/* Tags de nicho e idioma */}
       <div className="flex gap-1.5 flex-wrap mb-2">

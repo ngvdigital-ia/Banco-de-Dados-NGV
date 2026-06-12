@@ -567,3 +567,26 @@ export const agentApprovals = pgTable("agent_approvals", {
   userEmail: text("user_email").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ============================================================
+// 19. AGENT PRODUCTS (histórico PERSISTENTE dos produtos gerados pelos agentes)
+// O n8n faz prune das executions antigas — sem esta tabela, score do revisor e
+// link do Drive somem do dash quando a execution expira. Upsert idempotente
+// feito pelo aggregate (onConflictDoNothing no unique abaixo).
+// ============================================================
+
+export const agentProducts = pgTable("agent_products", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  taskId: text("task_id").notNull(),
+  agente: text("agente").notNull(), // black | white
+  executionId: text("execution_id").notNull(),
+  revisorScore: numeric("revisor_score", { precision: 5, scale: 2 }),
+  revisorAprovado: boolean("revisor_aprovado"),
+  driveFileId: text("drive_file_id"),
+  driveUrl: text("drive_url"),
+  driveFilename: text("drive_filename"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("agent_products_task_agente_exec_uniq").on(t.taskId, t.agente, t.executionId),
+  index("agent_products_task_id_idx").on(t.taskId),
+]);

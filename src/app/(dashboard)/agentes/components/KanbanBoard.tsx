@@ -3,12 +3,32 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { AlertTriangle } from "lucide-react";
 import { DashboardHeader } from "./DashboardHeader";
 import { AgentColumn } from "./AgentColumn";
 import { TriagemPlaceholder } from "./TriagemPlaceholder";
 import { EmptyKanban } from "./EmptyKanban";
 import { ApprovalSheet } from "./ApprovalSheet";
+import { cn } from "@/lib/utils";
 import type { Oferta } from "@/types/agentes";
+
+function idadeEmDias(isoDate: string): number {
+  return Math.floor((Date.now() - new Date(isoDate).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function contarParadas(ofertas: Oferta[]): { total3d: number; alguma7d: boolean } {
+  let total3d = 0;
+  let alguma7d = false;
+  for (const o of ofertas) {
+    if (!o.ultima_atividade_em) continue;
+    const dias = idadeEmDias(o.ultima_atividade_em);
+    if (dias >= 3) {
+      total3d++;
+      if (dias >= 7) alguma7d = true;
+    }
+  }
+  return { total3d, alguma7d };
+}
 
 interface KanbanBoardProps {
   initialOfertas: Oferta[];
@@ -69,6 +89,8 @@ export function KanbanBoard({
     await handleRefresh();
   }
 
+  const { total3d, alguma7d } = contarParadas(ofertas);
+
   return (
     <div className="space-y-4">
       <DashboardHeader
@@ -77,6 +99,22 @@ export function KanbanBoard({
         onRefresh={handleRefresh}
         isRefreshing={isRefreshing}
       />
+
+      {total3d > 0 && (
+        <div
+          className={cn(
+            "flex items-center gap-2 rounded-md border px-3 py-2 text-sm",
+            alguma7d
+              ? "border-danger/40 bg-danger/5 text-danger"
+              : "border-warning/40 bg-warning/5 text-warning",
+          )}
+        >
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+          <span>
+            {total3d} oferta{total3d > 1 ? "s" : ""} sem atividade há 3+ dias
+          </span>
+        </div>
+      )}
 
       {ofertas.length === 0 ? (
         <EmptyKanban />

@@ -6,8 +6,8 @@ import {
   N8nExecution,
 } from "@/lib/agentes/n8n/executions";
 import { db } from "@/db";
-import { agentApprovals } from "@/db/schema";
-import { and, desc, inArray } from "drizzle-orm";
+import { agentApprovals, agentProducts } from "@/db/schema";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { listSessions } from "@/lib/agentes/anthropic/sessions";
 import {
   listTasksInList,
@@ -146,6 +146,67 @@ async function _aggregateOfertas(): Promise<Oferta[]> {
     }),
   );
 
+  // 4b-persist. Upsert em lote dos produtos do Black no banco (write-through).
+  // Defensivo: a tabela pode não existir em prod enquanto a migration não for aplicada.
+  try {
+    const rows = Array.from(produtoMap.entries()).map(([taskId, p]) => ({
+      taskId,
+      agente: "black" as const,
+      executionId: p.execId,
+      revisorScore: p.revisor_score != null ? String(p.revisor_score) : null,
+      revisorAprovado: p.revisor_aprovado ?? null,
+      driveFileId: p.drive_file_id ?? null,
+      driveUrl: p.drive_url ?? null,
+      driveFilename: p.drive_filename ?? null,
+    }));
+    if (rows.length > 0) {
+      await db.insert(agentProducts).values(rows).onConflictDoNothing();
+    }
+  } catch (err) {
+    console.error("agentProducts upsert falhou (segue sem):", err);
+  }
+
+  // 4b-fallback. Para ofertas-pai com subtarefa Black finalizada mas SEM entrada
+  // no produtoMap (execution expirada no n8n), busca o registro mais recente do banco.
+  try {
+    const taskIdsSemProduto = ofertasPais
+      .filter((t) => {
+        const subs = extractSubsStatusBlack(t);
+        return subGatilhoFinalizadaBlack(subs) && !produtoMap.has(t.id);
+      })
+      .map((t) => t.id);
+
+    if (taskIdsSemProduto.length > 0) {
+      const historico = await db
+        .select()
+        .from(agentProducts)
+        .where(
+          and(
+            inArray(agentProducts.taskId, taskIdsSemProduto),
+            eq(agentProducts.agente, "black"),
+          ),
+        )
+        .orderBy(desc(agentProducts.createdAt));
+
+      // Mantém apenas a linha mais recente por taskId (o select já veio ordenado desc)
+      const visto = new Set<string>();
+      for (const row of historico) {
+        if (visto.has(row.taskId)) continue;
+        visto.add(row.taskId);
+        produtoMap.set(row.taskId, {
+          revisor_score: row.revisorScore != null ? Number(row.revisorScore) : undefined,
+          revisor_aprovado: row.revisorAprovado ?? undefined,
+          drive_file_id: row.driveFileId ?? undefined,
+          drive_url: row.driveUrl ?? undefined,
+          drive_filename: row.driveFilename ?? undefined,
+          execId: row.executionId,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("agentProducts fallback read falhou (segue sem):", err);
+  }
+
   // 4c. Buscar ÚLTIMA approval por task_id+agente no Drizzle (Black e White)
   // Chave do map: `${taskId}:${agente}` — evita colisão entre Black e White da mesma oferta.
   const approvalsMap = new Map<string, ApprovalInfo>();
@@ -178,6 +239,23 @@ async function _aggregateOfertas(): Promise<Oferta[]> {
 
   // 5. Montar Oferta por task pai
   const ofertas: Oferta[] = ofertasPais.map((t) => {
+    // Calcular última atividade real: max(date_updated) entre pai + todas subtasks.
+    // date_updated é epoch em ms como string no tipo ClickUpTask.
+    const toMs = (raw: string | undefined): number | null => {
+      if (!raw) return null;
+      const n = Number(raw);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
+    const candidatos: (number | null)[] = [
+      toMs(t.date_updated),
+      ...(t.subtasks ?? []).map((s) => toMs(s.date_updated)),
+    ];
+    const validos = candidatos.filter((v): v is number => v !== null);
+    const ultimaAtividadeEm =
+      validos.length > 0
+        ? new Date(Math.max(...validos)).toISOString()
+        : null;
+
     const subs = extractSubsStatusBlack(t);
     return {
       task_id: t.id,
@@ -230,6 +308,7 @@ async function _aggregateOfertas(): Promise<Oferta[]> {
           return { ...estadoBase, approval };
         })(),
       },
+      ultima_atividade_em: ultimaAtividadeEm,
       atualizado_em: new Date().toISOString(),
     };
   });
