@@ -7,7 +7,8 @@ import { AnalyticsFilters } from "@/components/filters/analytics-filters";
 import { DateRangeFilter } from "@/components/filters/date-range-filter";
 import { parseMultiParam } from "@/lib/filter-utils";
 import { getDateRange } from "@/lib/date-utils";
-import { getFilterOptions, getTeamPerformance, getTeamMonthlyTrend } from "../actions";
+import { getFilterOptions, getTeamPerformance, getTeamMonthlyTrend, getTeamWorkload } from "../actions";
+import { TeamWorkload } from "@/components/analytics/team-workload";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LazyTeamMonthlyChart } from "@/components/charts/team-charts";
@@ -42,10 +43,11 @@ export default async function TeamAnalyticsPage({
   const dateFrom = period === "all" ? undefined : from.toISOString();
   const dateTo = period === "all" ? undefined : to.toISOString();
 
-  const [options, performance, monthlyTrend] = await Promise.all([
+  const [options, performance, monthlyTrend, workload] = await Promise.all([
     getFilterOptions(),
     getTeamPerformance(dateFrom, dateTo),
     getTeamMonthlyTrend(),
+    getTeamWorkload(),
   ]);
 
   return (
@@ -72,6 +74,15 @@ export default async function TeamAnalyticsPage({
           />
         </div>
       </Suspense>
+
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b border-border/50">
+          <CardTitle className="text-base">Carga de trabalho (agora)</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <TeamWorkload members={workload.members} syncedAt={workload.syncedAt} />
+        </CardContent>
+      </Card>
 
       {performance.length === 0 ? (
         <EmptyState

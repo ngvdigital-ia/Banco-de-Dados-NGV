@@ -290,12 +290,131 @@ export async function GET(request: Request) {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // 2ª passada — tasks ABERTAS (WIP) por pessoa (feature 5.1)
+  // -------------------------------------------------------------------------
+  type OpenTaskRow = {
+    taskId: string;
+    taskName: string;
+    listId: string;
+    listName: string;
+    category: string;
+    memberId: string;
+    memberName: string;
+    status: string;
+    dueDate: number | null;
+    dateUpdated: number;
+    overdue: boolean;
+  };
+
+  const openTaskRows: OpenTaskRow[] = [];
+  const openResults: { list: string; status: string; tasksFound: number; error?: string }[] = [];
+
+  for (const list of LISTS) {
+    let totalOpen = 0;
+    try {
+      let page = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const url = `${CLICKUP_API_BASE}/list/${list.id}/task?include_closed=false&subtasks=true&page=${page}`;
+        const res = await fetch(url, {
+          headers: { Authorization: apiKey },
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`ClickUp API failed (${res.status}): ${text}`);
+        }
+
+        const data = (await res.json()) as ClickUpResponse;
+        const tasks = data.tasks || [];
+
+        for (const task of tasks) {
+          // Ignorar tasks sem assignee — não há a quem atribuir
+          if (!task.assignees || task.assignees.length === 0) continue;
+
+          const category = list.categoryByTaskName
+            ? categoryFromTaskName(task.name)
+            : list.name.split(" > ")[0];
+
+          const dueDate = task.due_date ? parseInt(task.due_date, 10) : null;
+          const dateUpdated = parseInt(task.date_updated, 10);
+          const overdue = dueDate != null && dueDate < now.getTime();
+
+          totalOpen++;
+
+          for (const assignee of task.assignees) {
+            const memberId = String(assignee.id);
+            const memberName = assignee.username || assignee.email || `User ${memberId}`;
+
+            openTaskRows.push({
+              taskId: task.id,
+              taskName: task.name,
+              listId: list.id,
+              listName: list.name,
+              category,
+              memberId,
+              memberName,
+              status: task.status.status,
+              dueDate,
+              dateUpdated,
+              overdue,
+            });
+          }
+        }
+
+        hasMore = !data.last_page && tasks.length > 0;
+        page++;
+        // Safety: máx 20 páginas por lista
+        if (page >= 20) break;
+      }
+
+      openResults.push({ list: list.name, status: "ok", tasksFound: totalOpen });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      console.error(`[ClickUp Sync] Error (open tasks) for list ${list.name}:`, message);
+      openResults.push({ list: list.name, status: "error", tasksFound: 0, error: message });
+    }
+  }
+
+  // Replace atômico: apaga todos os clickup_open_task e insere os novos
+  await db.delete(metricsSnapshots).where(eq(metricsSnapshots.entityType, "clickup_open_task"));
+
+  if (openTaskRows.length > 0) {
+    const openRowsToInsert = openTaskRows.map((r) => ({
+      date: now,
+      entityType: "clickup_open_task",
+      entityId: parseInt(r.memberId) || 0,
+      source: "manual" as const,
+      extraData: {
+        taskId: r.taskId,
+        taskName: r.taskName,
+        listId: r.listId,
+        listName: r.listName,
+        category: r.category,
+        memberId: r.memberId,
+        memberName: r.memberName,
+        status: r.status,
+        dueDate: r.dueDate,
+        dateUpdated: r.dateUpdated,
+        overdue: r.overdue,
+      },
+    }));
+    const CHUNK = 500;
+    for (let i = 0; i < openRowsToInsert.length; i += CHUNK) {
+      await db.insert(metricsSnapshots).values(openRowsToInsert.slice(i, i + CHUNK));
+    }
+  }
+
   return NextResponse.json({
     success: true,
     syncedAt: new Date().toISOString(),
     historyDays: HISTORY_DAYS,
     tasksIndexed: taskRows.length,
     membersSyncedMonthly: Object.keys(memberMonthly).length,
+    openTasksIndexed: openTaskRows.length,
     results,
+    openResults,
   });
 }

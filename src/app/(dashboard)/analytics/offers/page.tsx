@@ -8,7 +8,8 @@ import { AnalyticsFilters } from "@/components/filters/analytics-filters";
 import { DateRangeFilter } from "@/components/filters/date-range-filter";
 import { parseMultiParam } from "@/lib/filter-utils";
 import { getDateRange } from "@/lib/date-utils";
-import { getFilterOptions, getOffersRanking } from "../actions";
+import { getFilterOptions, getOffersRanking, getOfferProductionTimeline } from "../actions";
+import { ProductionTimeline } from "@/components/analytics/production-timeline";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Trophy } from "lucide-react";
@@ -51,9 +52,10 @@ export default async function OffersRankingPage({
   const dateFrom = period === "all" ? undefined : from.toISOString();
   const dateTo = period === "all" ? undefined : to.toISOString();
 
-  const [options, offers] = await Promise.all([
+  const [options, offers, productionData] = await Promise.all([
     getFilterOptions(),
     getOffersRanking(hasAnyFilter ? filters : undefined, dateFrom, dateTo),
+    getOfferProductionTimeline(),
   ]);
 
   const total = offers.length;
@@ -201,6 +203,10 @@ export default async function OffersRankingPage({
             </Table>
           </CardContent>
         </Card>
+      )}
+
+      {productionData.offers.length > 0 && (
+        <ProductionTimeline offers={productionData.offers} />
       )}
     </div>
   );

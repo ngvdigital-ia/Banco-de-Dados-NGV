@@ -1133,6 +1133,347 @@ export async function getOfferAdsSummary(
   return map;
 }
 
+// ========== OFFER PRODUCTION TIMELINE ==========
+
+export type OfferProductionStage = {
+  stage: string;
+  doneAt: string; // ISO
+};
+
+export type OfferProductionEntry = {
+  offer: string;
+  stages: OfferProductionStage[];
+  firstDoneAt: string;
+  lastDoneAt: string;
+  totalDays: number;
+  stageCount: number;
+};
+
+/**
+ * Retorna a linha do tempo de produção por oferta a partir das tasks do ClickUp.
+ *
+ * Fonte: metrics_snapshots onde entity_type = 'clickup_task' e
+ *        extra_data->>'listId' = '901326908721' (lista "Produção de Ofertas > Projetos de Oferta").
+ *
+ * Padrão do taskName: "<Etapa> - <Nome da Oferta>" (split pelo ÚLTIMO ' - ').
+ * Linhas duplicadas por assignee → dedupe por taskId (primeiro encontrado).
+ * Só exibe ofertas com >= 2 etapas concluídas.
+ */
+export async function getOfferProductionTimeline(): Promise<{ offers: OfferProductionEntry[] }> {
+  const LIST_ID = "901326908721";
+
+  // Filtra no SQL: entity_type = 'clickup_task' e listId no extraData.
+  // O cast ->>'listId' opera sobre JSONB, filtrável sem full scan (entity_type_idx já existe).
+  const rows = await db
+    .select({
+      entityId: metricsSnapshots.entityId,
+      extraData: metricsSnapshots.extraData,
+    })
+    .from(metricsSnapshots)
+    .where(
+      and(
+        eq(metricsSnapshots.entityType, "clickup_task"),
+        sql`${metricsSnapshots.extraData}->>'listId' = ${LIST_ID}`,
+      )
+    )
+    // 2000 cobre com folga: clickup_task tem ~500 linhas no total (90d, todas as listas).
+    .limit(2000);
+
+  type ClickupTaskData = {
+    taskId?: string;
+    taskName?: string;
+    listId?: string;
+    doneAt?: number; // ms timestamp
+  };
+
+  // Dedupe por taskId → pegamos a 1ª linha encontrada por task
+  const seenTaskIds = new Set<string>();
+  const deduped: { taskId: string; taskName: string; doneAt: number }[] = [];
+
+  for (const row of rows) {
+    const data = row.extraData as ClickupTaskData | null;
+    if (!data?.taskId || !data?.taskName || !data?.doneAt) continue;
+
+    const taskId = data.taskId;
+    if (seenTaskIds.has(taskId)) continue;
+    seenTaskIds.add(taskId);
+
+    deduped.push({
+      taskId,
+      taskName: data.taskName,
+      doneAt: data.doneAt,
+    });
+  }
+
+  // Parse taskName pelo ÚLTIMO ' - ' → (etapa, oferta)
+  // Se não houver ' - ', ignorar a task.
+  const offerMap = new Map<string, { stage: string; doneAt: number }[]>();
+
+  for (const task of deduped) {
+    const lastDashIdx = task.taskName.lastIndexOf(" - ");
+    if (lastDashIdx === -1) continue;
+
+    const stage = task.taskName.slice(0, lastDashIdx).trim();
+    const offer = task.taskName.slice(lastDashIdx + 3).trim();
+
+    if (!stage || !offer) continue;
+
+    const normalizedOffer = offer;
+    const existing = offerMap.get(normalizedOffer) ?? [];
+    existing.push({ stage, doneAt: task.doneAt });
+    offerMap.set(normalizedOffer, existing);
+  }
+
+  // Montar resultado: só ofertas com >= 2 etapas; ordenar etapas por doneAt asc
+  const offers: OfferProductionEntry[] = [];
+
+  for (const [offer, stages] of offerMap) {
+    if (stages.length < 2) continue;
+
+    stages.sort((a, b) => a.doneAt - b.doneAt);
+
+    const firstMs = stages[0].doneAt;
+    const lastMs = stages[stages.length - 1].doneAt;
+    const totalDays = Math.round(((lastMs - firstMs) / 86400000) * 10) / 10;
+
+    offers.push({
+      offer,
+      stages: stages.map((s) => ({
+        stage: s.stage,
+        doneAt: new Date(s.doneAt).toISOString(),
+      })),
+      firstDoneAt: new Date(firstMs).toISOString(),
+      lastDoneAt: new Date(lastMs).toISOString(),
+      totalDays,
+      stageCount: stages.length,
+    });
+  }
+
+  // Ordenar por lastDoneAt desc (mais recentes primeiro)
+  offers.sort((a, b) => new Date(b.lastDoneAt).getTime() - new Date(a.lastDoneAt).getTime());
+
+  return { offers };
+}
+
+// ========== TEAM WORKLOAD (open tasks) ==========
+
+export type TeamWorkloadMember = {
+  memberId: number;
+  memberName: string;
+  open: number;
+  overdue: number;
+  byCategory: Record<string, number>;
+};
+
+export type TeamWorkloadResult = {
+  members: TeamWorkloadMember[];
+  syncedAt: string | null;
+};
+
+/**
+ * Agrega clickup_open_task por membro.
+ * Cada linha é (task × assignee); dedupe por (taskId, memberId) por segurança.
+ * Retorna ordenado por open desc.
+ */
+export async function getTeamWorkload(): Promise<TeamWorkloadResult> {
+  const rows = await db
+    .select({
+      entityId: metricsSnapshots.entityId,
+      extraData: metricsSnapshots.extraData,
+      date: metricsSnapshots.date,
+    })
+    .from(metricsSnapshots)
+    .where(eq(metricsSnapshots.entityType, "clickup_open_task"))
+    .limit(5000);
+
+  if (rows.length === 0) {
+    return { members: [], syncedAt: null };
+  }
+
+  type OpenTaskData = {
+    taskId?: string;
+    taskName?: string;
+    listId?: string;
+    listName?: string;
+    category?: string;
+    memberId?: number | string;
+    memberName?: string;
+    status?: string;
+    dueDate?: number | null;
+    dateUpdated?: number;
+    overdue?: boolean;
+  };
+
+  // Dedupe por (taskId, memberId)
+  const seen = new Set<string>();
+  const byMember = new Map<
+    number,
+    { memberName: string; open: number; overdue: number; byCategory: Record<string, number> }
+  >();
+
+  let maxDate: Date | null = null;
+
+  for (const row of rows) {
+    if (row.date && (!maxDate || row.date > maxDate)) {
+      maxDate = row.date;
+    }
+
+    const data = row.extraData as OpenTaskData | null;
+    if (!data?.taskId || data.memberId == null) continue;
+
+    const memberId = Number(data.memberId);
+    const dedupeKey = `${data.taskId}::${memberId}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    let agg = byMember.get(memberId);
+    if (!agg) {
+      agg = {
+        memberName: data.memberName ?? `Membro ${memberId}`,
+        open: 0,
+        overdue: 0,
+        byCategory: {},
+      };
+      byMember.set(memberId, agg);
+    }
+
+    agg.open += 1;
+    if (data.overdue) agg.overdue += 1;
+    if (data.category) {
+      agg.byCategory[data.category] = (agg.byCategory[data.category] ?? 0) + 1;
+    }
+  }
+
+  const members: TeamWorkloadMember[] = [...byMember.entries()]
+    .map(([memberId, agg]) => ({
+      memberId,
+      memberName: agg.memberName,
+      open: agg.open,
+      overdue: agg.overdue,
+      byCategory: agg.byCategory,
+    }))
+    .sort((a, b) => b.open - a.open);
+
+  return {
+    members,
+    syncedAt: maxDate ? maxDate.toISOString() : null,
+  };
+}
+
+// ========== MEMBER TASKS DRILL-DOWN ==========
+
+export type MemberTasksResult = {
+  open: {
+    taskName: string;
+    listName: string;
+    category: string;
+    dueDate: number | null;
+    overdue: boolean;
+  }[];
+  done: {
+    taskName: string;
+    category: string;
+    doneAt: number;
+  }[];
+};
+
+/**
+ * Tasks abertas + concluídas recentes de um membro específico.
+ * Abertas: dedupe por taskId, ordena overdue primeiro, depois dueDate asc, sem due por último.
+ * Concluídas: últimas 15 (clickup_task do memberId, doneAt desc).
+ */
+export async function getMemberTasks(memberId: number): Promise<MemberTasksResult> {
+  const [openRows, doneRows] = await Promise.all([
+    db
+      .select({ extraData: metricsSnapshots.extraData })
+      .from(metricsSnapshots)
+      .where(
+        and(
+          eq(metricsSnapshots.entityType, "clickup_open_task"),
+          sql`(${metricsSnapshots.extraData}->>'memberId')::int = ${memberId}`,
+        )
+      )
+      .limit(500),
+    db
+      .select({ extraData: metricsSnapshots.extraData })
+      .from(metricsSnapshots)
+      .where(
+        and(
+          eq(metricsSnapshots.entityType, "clickup_task"),
+          sql`(${metricsSnapshots.extraData}->>'memberId')::int = ${memberId}`,
+        )
+      )
+      .orderBy(desc(metricsSnapshots.createdAt))
+      .limit(100),
+  ]);
+
+  type OpenTaskData = {
+    taskId?: string;
+    taskName?: string;
+    listName?: string;
+    category?: string;
+    memberId?: number | string;
+    dueDate?: number | null;
+    overdue?: boolean;
+  };
+
+  type DoneTaskData = {
+    taskId?: string;
+    taskName?: string;
+    category?: string;
+    memberId?: number | string;
+    doneAt?: number;
+  };
+
+  // Abertas: dedupe por taskId
+  const seenOpen = new Set<string>();
+  const open: MemberTasksResult["open"] = [];
+
+  for (const row of openRows) {
+    const data = row.extraData as OpenTaskData | null;
+    if (!data?.taskId) continue;
+    if (seenOpen.has(data.taskId)) continue;
+    seenOpen.add(data.taskId);
+
+    open.push({
+      taskName: data.taskName ?? "(sem nome)",
+      listName: data.listName ?? "",
+      category: data.category ?? "",
+      dueDate: data.dueDate ?? null,
+      overdue: data.overdue ?? false,
+    });
+  }
+
+  // Ordenação: overdue primeiro, depois dueDate asc, sem due por último
+  open.sort((a, b) => {
+    if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+    if (a.dueDate == null && b.dueDate == null) return 0;
+    if (a.dueDate == null) return 1;
+    if (b.dueDate == null) return -1;
+    return a.dueDate - b.dueDate;
+  });
+
+  // Concluídas: dedupe por taskId, pegar as 15 mais recentes
+  const seenDone = new Set<string>();
+  const done: MemberTasksResult["done"] = [];
+
+  for (const row of doneRows) {
+    if (done.length >= 15) break;
+    const data = row.extraData as DoneTaskData | null;
+    if (!data?.taskId || !data.doneAt) continue;
+    if (seenDone.has(data.taskId)) continue;
+    seenDone.add(data.taskId);
+
+    done.push({
+      taskName: data.taskName ?? "(sem nome)",
+      category: data.category ?? "",
+      doneAt: data.doneAt,
+    });
+  }
+
+  return { open, done };
+}
+
 // ========== TEAM MONTHLY TREND ==========
 
 export type TeamMonthlyTrendResult = {
