@@ -3,8 +3,9 @@ import { externalMappings, offerTracking } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { extractOfferFromCampaignName } from "@/lib/utmify";
 
-export const PLATFORM_UTMIFY_CAMPAIGN = "utmify_campaign";
-export const PLATFORM_UTMIFY_PRODUCT = "utmify_product";
+// Constantes re-exportadas do modulo CLIENT-SAFE (ver offer-mappings-shared.ts).
+export { PLATFORM_UTMIFY_CAMPAIGN, PLATFORM_UTMIFY_PRODUCT } from "@/lib/offer-mappings-shared";
+import { PLATFORM_UTMIFY_CAMPAIGN } from "@/lib/offer-mappings-shared";
 
 /**
  * Busca todos os mapeamentos de campanha do banco e retorna um mapa normalizado:

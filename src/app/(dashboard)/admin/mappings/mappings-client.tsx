@@ -28,7 +28,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { saveMapping, deleteMapping, backfillCampaignOffers } from "./actions";
 import type { OrphanCampaign, OfferOption, ActiveMapping } from "./actions";
-import { PLATFORM_UTMIFY_CAMPAIGN } from "@/lib/offer-mappings";
+import { PLATFORM_UTMIFY_CAMPAIGN } from "@/lib/offer-mappings-shared";
 
 type Props = {
   orphans: OrphanCampaign[];
