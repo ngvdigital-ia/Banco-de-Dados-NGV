@@ -2,6 +2,7 @@ import { Plus, Download } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { OfferTable } from "@/components/offers/offer-table";
+import { OfferCardsMobile } from "@/components/offers/offer-cards-mobile";
 import { getOffers, getOfferMonths, getOfferFilterOptions, createOffer } from "./actions";
 
 const CsvImportDialog = dynamic(
@@ -118,7 +119,14 @@ export default async function OffersPage({
           </p>
         </div>
       ) : (
-        <OfferTable offers={offers} />
+        <>
+          <div className="hidden md:block">
+            <OfferTable offers={offers} />
+          </div>
+          <div className="md:hidden">
+            <OfferCardsMobile offers={offers} />
+          </div>
+        </>
       )}
     </div>
   );

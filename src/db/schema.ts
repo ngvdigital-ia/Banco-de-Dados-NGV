@@ -436,7 +436,10 @@ export const externalMappings = pgTable("external_mappings", {
   externalId: text("external_id").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
-  uniqueIndex("external_mappings_entity_type_entity_id_platform_idx").on(t.entityType, t.entityId, t.platform),
+  // (platform, external_id): cada nome externo aponta pra UMA oferta — e uma oferta
+  // pode ter N campanhas/produtos. O unique antigo (entity_type, entity_id, platform)
+  // limitava a 1 mapeamento por oferta, o que inviabilizava a central de mapeamento.
+  uniqueIndex("external_mappings_platform_external_id_idx").on(t.platform, t.externalId),
 ]);
 
 // ============================================================

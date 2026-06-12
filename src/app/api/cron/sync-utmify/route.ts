@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
-import { DASHBOARDS, fetchDashboardSummary, fetchMetaAdObjects, extractOfferFromCampaignName } from "@/lib/utmify";
+import { DASHBOARDS, fetchDashboardSummary, fetchMetaAdObjects } from "@/lib/utmify";
+import { getDbCampaignMappings, resolveOfferFromCampaign } from "@/lib/offer-mappings";
 
 export const maxDuration = 300;
 
@@ -15,6 +16,10 @@ export async function GET(request: Request) {
   if (!process.env.UTMIFY_API_KEY) {
     return NextResponse.json({ error: "UTMIFY_API_KEY not configured" }, { status: 500 });
   }
+
+  // Carrega mapeamentos do banco 1x por execução do cron.
+  // Se falhar, getDbCampaignMappings() retorna {} e o fallback hardcoded assume.
+  const dbMap = await getDbCampaignMappings();
 
   // Yesterday at 00:00 (stored as snapshot date — represents the day the data refers to)
   const yesterday = new Date();
@@ -62,7 +67,7 @@ export async function GET(request: Request) {
         const metaData = await fetchMetaAdObjects(dashboard.id, dashboard.timeZone);
         for (const campaign of metaData.results) {
           try {
-            const offerName = extractOfferFromCampaignName(campaign.name);
+            const offerName = resolveOfferFromCampaign(campaign.name, dbMap);
             campaignRows.push({
               date: yesterday,
               entityType: "utmify_campaign_daily",

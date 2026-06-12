@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import Link from "next/link";
 import { Trash2, ExternalLink, Pencil, ChevronDown, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { updateOfferField, deleteOffer, duplicateOffer } from "@/app/(dashboard)/offers/actions";
@@ -905,7 +906,21 @@ const columns: ColumnDef[] = [
     label: "Oferta",
     width: "w-[160px] min-w-[160px]",
     sticky: true,
-    render: (o) => <EditableCell value={o.name} offerId={o.id} field="name" />,
+    render: (o) => (
+      <div className="flex items-center gap-1 min-w-0">
+        <div className="flex-1 min-w-0">
+          <EditableCell value={o.name} offerId={o.id} field="name" />
+        </div>
+        <Link
+          href={`/offers/${o.id}`}
+          className="flex-shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:bg-accent hover:text-foreground"
+          title={`Ver detalhes: ${o.name}`}
+          aria-label={`Ver detalhes da oferta ${o.name}`}
+        >
+          <ExternalLink className="h-3 w-3" />
+        </Link>
+      </div>
+    ),
   },
   {
     key: "progress",

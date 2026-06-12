@@ -1,0 +1,2 @@
+DROP INDEX "external_mappings_entity_type_entity_id_platform_idx";--> statement-breakpoint
+CREATE UNIQUE INDEX "external_mappings_platform_external_id_idx" ON "external_mappings" USING btree ("platform","external_id");
