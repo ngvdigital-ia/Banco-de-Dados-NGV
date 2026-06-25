@@ -2,7 +2,13 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Trash2, ExternalLink, Pencil, ChevronDown, Copy } from "lucide-react";
+import { Trash2, ExternalLink, Pencil, ChevronDown, Copy, Check } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { updateOfferField, deleteOffer, duplicateOffer } from "@/app/(dashboard)/offers/actions";
 import { type SiteUrls, primaryUrl, totalLinks } from "@/lib/site-urls-types";
@@ -49,11 +55,6 @@ const STATUS_CYCLE = ["SIM", "NAO", "EM ANDAMENTO", "NÃO DEU CERTO"] as const;
 
 type StatusValue = (typeof STATUS_CYCLE)[number];
 
-function nextStatus(current: string | null): StatusValue {
-  const upper = (current || "NAO").toUpperCase().trim();
-  const idx = STATUS_CYCLE.findIndex((s) => s === upper);
-  return STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
-}
 
 const statusColors: Record<string, string> = {
   SIM: "bg-success-muted text-success-muted-foreground border-success",
@@ -320,26 +321,47 @@ function StatusBadge({
   const [isPending, startTransition] = useTransition();
   const display = (value || "NAO").toUpperCase().trim();
 
-  function handleClick() {
-    const next = nextStatus(value);
+  function handleSelect(opt: string) {
     startTransition(async () => {
-      await updateOfferField(offerId, field, next);
+      await updateOfferField(offerId, field, opt);
     });
   }
 
+  const triggerLabel =
+    display === "NÃO DEU CERTO"
+      ? "N/CERTO"
+      : display === "EM ANDAMENTO"
+        ? "ANDAMENTO"
+        : display;
+
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={isPending}
-      className={`inline-flex h-7 items-center justify-center rounded-full border px-2.5 text-[11px] font-medium whitespace-nowrap transition-all duration-150 select-none hover:scale-105 hover:opacity-90 ${getStatusColor(display)} ${isPending ? "opacity-50" : ""}`}
-    >
-      {display === "NÃO DEU CERTO"
-        ? "N/CERTO"
-        : display === "EM ANDAMENTO"
-          ? "ANDAMENTO"
-          : display}
-    </button>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        disabled={isPending}
+        aria-label={`Alterar status: ${display}`}
+        className={`inline-flex h-7 items-center justify-center rounded-full border px-2.5 text-[11px] font-medium whitespace-nowrap transition-all duration-150 select-none hover:scale-105 hover:opacity-90 disabled:pointer-events-none ${getStatusColor(display)} ${isPending ? "opacity-50" : ""}`}
+      >
+        {triggerLabel}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent side="bottom" align="start">
+        {STATUS_CYCLE.map((opt) => {
+          const isSelected = display === opt;
+          return (
+            <DropdownMenuItem
+              key={opt}
+              onClick={() => handleSelect(opt)}
+              className={isSelected ? "bg-accent text-accent-foreground" : ""}
+            >
+              <span
+                className={`mr-1.5 inline-block h-2 w-2 rounded-full border flex-shrink-0 ${getStatusColor(opt)}`}
+              />
+              {opt}
+              {isSelected && <Check className="ml-auto h-3 w-3" />}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
