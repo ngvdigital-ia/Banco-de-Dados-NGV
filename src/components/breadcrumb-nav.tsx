@@ -13,6 +13,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   // Raiz
   "": "Dashboard",
   // Seções principais
+  operacao: "Operação",
   projects: "Projetos",
   offers: "Ofertas",
   agentes: "Agentes",

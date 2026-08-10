@@ -46,3 +46,4 @@ next-env.d.ts
 whats-next.md
 test-results/
 .playwright-mcp/
+src/lib/operacao/operation.live.json

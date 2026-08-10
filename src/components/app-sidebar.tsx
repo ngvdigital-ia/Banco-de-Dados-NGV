@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LineChart,
   PieChart,
+  RadioTower,
   Settings,
   ShieldCheck,
   ShoppingCart,
@@ -21,6 +22,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { isAdminEmail } from "@/lib/admin-emails";
+import { isOperationCockpitEnabled } from "@/lib/operacao/feature";
 import {
   Sidebar,
   SidebarContent,
@@ -35,9 +37,10 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
-  { title: "Dashboard", href: "/", icon: LayoutDashboard },
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Projetos", href: "/projects", icon: FolderOpen },
   { title: "Ofertas", href: "/offers", icon: ClipboardList },
+  ...(isOperationCockpitEnabled ? [{ title: "Operação", href: "/operacao", icon: RadioTower }] : []),
   { title: "Agentes", href: "/agentes", icon: Bot },
   { title: "Equipe", href: "/team", icon: Users },
   { title: "Métricas", href: "/metrics", icon: LineChart },

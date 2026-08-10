@@ -8,6 +8,7 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { isOperationCockpitEnabled } from "@/lib/operacao/feature";
 import { getSearchIndex } from "@/app/(dashboard)/search-actions";
 import type { SearchIndex } from "@/app/(dashboard)/search-actions";
 
@@ -15,7 +16,8 @@ import type { SearchIndex } from "@/app/(dashboard)/search-actions";
 // Páginas estáticas
 // ---------------------------------------------------------------------------
 const STATIC_PAGES = [
-  { label: "Dashboard", href: "/" },
+  { label: "Dashboard", href: "/dashboard" },
+  ...(isOperationCockpitEnabled ? [{ label: "Operação", href: "/operacao" }] : []),
   { label: "Projetos", href: "/projects" },
   { label: "Ofertas", href: "/offers" },
   { label: "Agentes", href: "/agentes" },

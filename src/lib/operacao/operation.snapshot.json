@@ -1,0 +1,1012 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-10T12:58:01.138Z",
+  "source": "ngv-hub-local-projection",
+  "mode": "read-only",
+  "phases": [
+    {
+      "phase": 0,
+      "label": "Identidade"
+    },
+    {
+      "phase": 1,
+      "label": "Cockpit"
+    },
+    {
+      "phase": 2,
+      "label": "Preflight"
+    },
+    {
+      "phase": 3,
+      "label": "Execução local"
+    },
+    {
+      "phase": 4,
+      "label": "Publicação"
+    },
+    {
+      "phase": 5,
+      "label": "Entrega"
+    },
+    {
+      "phase": 6,
+      "label": "Comando"
+    },
+    {
+      "phase": 7,
+      "label": "Métricas"
+    }
+  ],
+  "offers": [
+    {
+      "offer_id": "ngv:benchmark-page",
+      "offer_slug": "benchmark-page",
+      "display_name": "(teste de velocidade)",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:allicin-reset-protocol",
+      "offer_slug": "allicin-reset-protocol",
+      "display_name": "Allicin Reset Protocol",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:alpha-flow",
+      "offer_slug": "alpha-flow",
+      "display_name": "AlphaFlow",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:afrikanisches-ritual",
+      "offer_slug": "afrikanisches-ritual",
+      "display_name": "Ancient Water Ritual",
+      "language": "de",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:automatic-video-factory",
+      "offer_slug": "automatic-video-factory",
+      "display_name": "Automatic Video Factory",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:bumbumflix",
+      "offer_slug": "bumbumflix",
+      "display_name": "Bumbumflix",
+      "language": "en/fr",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:calistenia-21d",
+      "offer_slug": "calistenia-21d",
+      "display_name": "Calistenia 21D",
+      "language": "es",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Meta Pixel e UTMify ainda não foram fornecidos; não promover para launch-ready sem esse gate.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": "2026-07-22T13:41:00.000Z"
+        }
+      ],
+      "last_evidence_at": "2026-07-22T13:41:00.000Z"
+    },
+    {
+      "offer_id": "ngv:celestino",
+      "offer_slug": "celestino",
+      "display_name": "Celestino",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:clean-sweet-app",
+      "offer_slug": "clean-sweet-app",
+      "display_name": "Clean Sweet App",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:codigo-divino",
+      "offer_slug": "codigo-divino",
+      "display_name": "CODIGO DIVINO",
+      "language": "es",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:davinci-wave",
+      "offer_slug": "davinci-wave",
+      "display_name": "DaVinci Wave",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:defi-pilates-maison-50",
+      "offer_slug": "defi-pilates-maison-50",
+      "display_name": "Défi Pilates Maison 50+",
+      "language": "fr",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:desafio-reconexion-7-dias",
+      "offer_slug": "desafio-reconexion-7-dias",
+      "display_name": "Desafío Reconexión en 7 Días",
+      "language": "es",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:el-protocolo-juventud-epigenetica",
+      "offer_slug": "el-protocolo-juventud-epigenetica",
+      "display_name": "El Protocolo de Juventud Epigenética",
+      "language": "es",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:filex2",
+      "offer_slug": "filex2",
+      "display_name": "File X 2.0",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:app-gelatine-bariatrique",
+      "offer_slug": "app-gelatine-bariatrique",
+      "display_name": "Gelatine Bariatrique",
+      "language": "fr",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:v-spot",
+      "offer_slug": "v-spot",
+      "display_name": "God Mode / The Squirting System",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:gourmet-round-popcorn",
+      "offer_slug": "gourmet-round-popcorn",
+      "display_name": "Gourmet Round Popcorn - Carmela Vega",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:horse-honey",
+      "offer_slug": "horse-honey",
+      "display_name": "Horse Honey",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:le-brule-24h",
+      "offer_slug": "le-brule-24h",
+      "display_name": "Le Brûle 24h",
+      "language": "fr",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:lecodedelafemme",
+      "offer_slug": "lecodedelafemme",
+      "display_name": "Le Code de la Femme",
+      "language": "fr",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:les-secrets-masculins",
+      "offer_slug": "les-secrets-masculins",
+      "display_name": "Les Secrets de la Reconquête",
+      "language": "fr",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:reconquista-silenciosa",
+      "offer_slug": "reconquista-silenciosa",
+      "display_name": "Mapa de La Reconquista Silenciosa",
+      "language": "pt",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:meister-im-bett",
+      "offer_slug": "meister-im-bett",
+      "display_name": "Meister im Bett",
+      "language": "de",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:natural-care-protocol",
+      "offer_slug": "natural-care-protocol",
+      "display_name": "Natural Care Protocol",
+      "language": "es",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:neuro-honey",
+      "offer_slug": "neuro-honey",
+      "display_name": "Neuro Honey Protocol",
+      "language": "pt",
+      "phase": 6,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identificador do Banco NGV.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": "2026-07-21T16:50:00.000Z"
+        },
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar project_slug no Monitoramento NGV.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": "2026-07-21T16:50:00.000Z"
+        },
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar se a oferta possui produto no Apps Ofertas.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": "2026-07-21T16:50:00.000Z"
+        }
+      ],
+      "last_evidence_at": "2026-07-21T23:44:34.614Z"
+    },
+    {
+      "offer_id": "ngv:onlymoney",
+      "offer_slug": "onlymoney",
+      "display_name": "Only Money",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:mos",
+      "offer_slug": "mos",
+      "display_name": "Orgasmic Cowgirl / Massages",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:pastor-rhema",
+      "offer_slug": "pastor-rhema",
+      "display_name": "Pastor Rhema",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:penna-naturale",
+      "offer_slug": "penna-naturale",
+      "display_name": "Penna Naturale",
+      "language": "it",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:prosperityprayer",
+      "offer_slug": "prosperityprayer",
+      "display_name": "Prosperity Prayer",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:protocolo-restart",
+      "offer_slug": "protocolo-restart",
+      "display_name": "Protocol Restart",
+      "language": "en/fr",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:el-truco-de-la-secuencia",
+      "offer_slug": "el-truco-de-la-secuencia",
+      "display_name": "Protocolo Glúteos Al Tope",
+      "language": "es",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:ambiguous-quiz-man",
+      "offer_slug": "quiz-man",
+      "display_name": "quiz_man",
+      "language": "PENDING",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "IDENTITY_AMBIGUOUS",
+          "detail": "projects.json identifies Quiz Titan Pulse but the canonical offer_id is unresolved",
+          "source": "offer-id-map",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:reconquest-map",
+      "offer_slug": "reconquest-map",
+      "display_name": "Reconquest Map",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:sciatic-shield",
+      "offer_slug": "sciatic-shield",
+      "display_name": "Sciatic Shield",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:skyvault",
+      "offer_slug": "skyvault",
+      "display_name": "SkyVault",
+      "language": "en",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:truco-del-bicarbonato",
+      "offer_slug": "truco-del-bicarbonato",
+      "display_name": "Truco Del Bicarbonato",
+      "language": "es",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:vigor-max",
+      "offer_slug": "vigor-max",
+      "display_name": "Vigor Max",
+      "language": "de",
+      "phase": 0,
+      "state": "BLOCKED",
+      "blockers": [
+        {
+          "code": "MANIFEST_BLOCKER",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    }
+  ],
+  "sources": [
+    {
+      "id": "registry",
+      "label": "Registry",
+      "state": "OPERANT",
+      "coverage": "38/38",
+      "detail": "Manifestos locais lidos e projetados.",
+      "last_read_at": "2026-08-10T12:58:01.138Z"
+    },
+    {
+      "id": "ledger",
+      "label": "Ledger",
+      "state": "OPERANT",
+      "coverage": "7 eventos",
+      "detail": "Ledger local sanitizado lido sem rede.",
+      "last_read_at": "2026-08-10T12:58:01.138Z"
+    },
+    {
+      "id": "clickup",
+      "label": "ClickUp",
+      "state": "OPERANT",
+      "coverage": "3/3",
+      "detail": "Tarefas explícitas observadas via leitura read-only.",
+      "last_read_at": "2026-08-10T12:57:59.216Z"
+    },
+    {
+      "id": "drive",
+      "label": "Drive",
+      "state": "UNVERIFIED",
+      "coverage": "2/38",
+      "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
+      "last_read_at": null
+    },
+    {
+      "id": "vercel",
+      "label": "Publicação",
+      "state": "UNVERIFIED",
+      "coverage": "31/38",
+      "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
+      "last_read_at": null
+    },
+    {
+      "id": "banco",
+      "label": "Banco NGV",
+      "state": "UNVERIFIED",
+      "coverage": "0/38",
+      "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
+      "last_read_at": null
+    },
+    {
+      "id": "monitoramento",
+      "label": "Monitoramento",
+      "state": "UNVERIFIED",
+      "coverage": "0/38",
+      "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
+      "last_read_at": null
+    },
+    {
+      "id": "apps",
+      "label": "Apps Ofertas",
+      "state": "UNVERIFIED",
+      "coverage": "0/38",
+      "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
+      "last_read_at": null
+    },
+    {
+      "id": "n8n",
+      "label": "n8n",
+      "state": "OPERANT",
+      "coverage": "2/3",
+      "detail": "Execuções associadas somente por task_id explícito.",
+      "last_read_at": "2026-08-10T12:57:59.216Z"
+    },
+    {
+      "id": "runner",
+      "label": "Runner",
+      "state": "UNVERIFIED",
+      "coverage": "PENDING",
+      "detail": "Snapshot não executa diagnóstico do serviço.",
+      "last_read_at": null
+    }
+  ],
+  "events": [
+    {
+      "event_id": "n8n:47432:86ajubm1t",
+      "offer_id": "ngv:calistenia-21d",
+      "phase": 1,
+      "event_type": "n8n_execution_observed",
+      "occurred_at": "2026-08-10T10:17:28.531Z",
+      "source": "n8n",
+      "state": "success",
+      "blocker_code": null
+    },
+    {
+      "event_id": "clickup:86ajubm1t:2026-08-10T10:17:24.206Z",
+      "offer_id": "ngv:calistenia-21d",
+      "phase": 1,
+      "event_type": "clickup_task_observed",
+      "occurred_at": "2026-08-10T10:17:24.206Z",
+      "source": "clickup",
+      "state": "finalizado",
+      "blocker_code": null
+    },
+    {
+      "event_id": "n8n:47414:86ajxg4hn",
+      "offer_id": "ngv:calistenia-21d",
+      "phase": 1,
+      "event_type": "n8n_execution_observed",
+      "occurred_at": "2026-08-10T10:17:07.973Z",
+      "source": "n8n",
+      "state": "success",
+      "blocker_code": null
+    },
+    {
+      "event_id": "n8n:47425:86ajxg4hn",
+      "offer_id": "ngv:calistenia-21d",
+      "phase": 1,
+      "event_type": "n8n_execution_observed",
+      "occurred_at": "2026-08-10T10:17:07.871Z",
+      "source": "n8n",
+      "state": "success",
+      "blocker_code": null
+    },
+    {
+      "event_id": "n8n:47424:86ajxg4hn",
+      "offer_id": "ngv:calistenia-21d",
+      "phase": 1,
+      "event_type": "n8n_execution_observed",
+      "occurred_at": "2026-08-10T10:17:06.007Z",
+      "source": "n8n",
+      "state": "success",
+      "blocker_code": null
+    },
+    {
+      "event_id": "n8n:47418:86ajxg4hn",
+      "offer_id": "ngv:calistenia-21d",
+      "phase": 1,
+      "event_type": "n8n_execution_observed",
+      "occurred_at": "2026-08-10T10:17:04.443Z",
+      "source": "n8n",
+      "state": "success",
+      "blocker_code": null
+    },
+    {
+      "event_id": "n8n:47416:86ajxg4hn",
+      "offer_id": "ngv:calistenia-21d",
+      "phase": 1,
+      "event_type": "n8n_execution_observed",
+      "occurred_at": "2026-08-10T10:17:01.349Z",
+      "source": "n8n",
+      "state": "success",
+      "blocker_code": null
+    },
+    {
+      "event_id": "n8n:47412:86ajxg4hn",
+      "offer_id": "ngv:calistenia-21d",
+      "phase": 1,
+      "event_type": "n8n_execution_observed",
+      "occurred_at": "2026-08-10T10:16:59.815Z",
+      "source": "n8n",
+      "state": "success",
+      "blocker_code": null
+    },
+    {
+      "event_id": "clickup:86ajxg4hn:2026-08-07T12:15:28.651Z",
+      "offer_id": "ngv:calistenia-21d",
+      "phase": 1,
+      "event_type": "clickup_task_observed",
+      "occurred_at": "2026-08-07T12:15:28.651Z",
+      "source": "clickup",
+      "state": "produção em andamento",
+      "blocker_code": null
+    },
+    {
+      "event_id": "clickup:86ajm207a:2026-07-26T11:16:15.113Z",
+      "offer_id": "ngv:calistenia-21d",
+      "phase": 1,
+      "event_type": "clickup_task_observed",
+      "occurred_at": "2026-07-26T11:16:15.113Z",
+      "source": "clickup",
+      "state": "finalizado",
+      "blocker_code": null
+    },
+    {
+      "event_id": "evt-4a2174fa7c84401afc937369d651e2c8",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 6,
+      "event_type": "slack_command_parsed",
+      "occurred_at": "2026-07-21T23:44:34.614Z",
+      "source": "slack",
+      "state": "read_only",
+      "blocker_code": null
+    },
+    {
+      "event_id": "evt-282533643bf4bb8092f53c867bdf3031",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 5,
+      "event_type": "blocked",
+      "occurred_at": "2026-07-21T23:44:33.596Z",
+      "source": "delivery",
+      "state": "BLOCKED",
+      "blocker_code": "DELIVERY_BLOCKED"
+    },
+    {
+      "event_id": "evt-3f2cc9be40027e3d34ecd18fa6b75dc8",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 4,
+      "event_type": "publication_planned",
+      "occurred_at": "2026-07-21T23:44:32.655Z",
+      "source": "publication",
+      "state": "PLAN_ONLY",
+      "blocker_code": null
+    },
+    {
+      "event_id": "evt-f9f03b82e96146ef14c5e347a7ea0461",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 3,
+      "event_type": "execution_simulated",
+      "occurred_at": "2026-07-21T23:44:31.610Z",
+      "source": "runner",
+      "state": "SIMULATED",
+      "blocker_code": null
+    },
+    {
+      "event_id": "evt-c3a086d9741057bdbbb912cd7607f8ea",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 2,
+      "event_type": "preflight_completed",
+      "occurred_at": "2026-07-21T23:44:30.599Z",
+      "source": "preflight",
+      "state": "ready",
+      "blocker_code": null
+    },
+    {
+      "event_id": "evt-d7d3e0b46bb4007bc88fa467d7e99c1f",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 1,
+      "event_type": "discovered",
+      "occurred_at": "2026-07-21T23:44:29.598Z",
+      "source": "catalog",
+      "state": "PASS",
+      "blocker_code": null
+    },
+    {
+      "event_id": "evt-a0cfec9dceb63e4a10a0079c4e840ed2",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 1,
+      "event_type": "discovered",
+      "occurred_at": "2026-07-21T23:44:28.473Z",
+      "source": "catalog",
+      "state": "PASS",
+      "blocker_code": null
+    }
+  ]
+}
