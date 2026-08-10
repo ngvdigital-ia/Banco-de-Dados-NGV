@@ -1,28 +1,24 @@
 import { OperationErrorState, OperationView } from "@/components/operacao/operation-view";
 import { isOperationCockpitEnabled } from "@/lib/operacao/feature";
-import { isOperationSnapshotStale, loadOperationSnapshot } from "@/lib/operacao/snapshot";
+import { loadOperationSnapshot } from "@/lib/operacao/snapshot";
+import { captureReadOnlySnapshot } from "@/lib/operacao/recent-offers.mjs";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-function readSnapshot() {
-  try {
-    const snapshot = loadOperationSnapshot();
-    return { snapshot, error: null } as const;
-  } catch (error) {
-    return { snapshot: null, error: error instanceof Error ? error.message : "erro desconhecido" } as const;
-  }
+async function readOperationSnapshot() {
+  return captureReadOnlySnapshot(loadOperationSnapshot);
 }
 
-export default function OperacaoPage() {
+export default async function OperacaoPage() {
   if (!isOperationCockpitEnabled) {
     redirect("/dashboard");
   }
 
-  const result = readSnapshot();
+  const result = await readOperationSnapshot();
   if (!result.snapshot) {
-    console.error("Snapshot operacional inválido:", result.error);
-    return <OperationErrorState affectedSources={["Snapshot versionado"]} attemptedAt={new Date().toISOString()} />;
+    console.error("Falha ao consultar a operação no Banco NGV:", result.error);
+    return <OperationErrorState affectedSources={["Banco NGV"]} attemptedAt={new Date().toISOString()} />;
   }
-  return <OperationView snapshot={result.snapshot} stale={isOperationSnapshotStale(result.snapshot)} />;
+  return <OperationView snapshot={result.snapshot} stale={false} />;
 }

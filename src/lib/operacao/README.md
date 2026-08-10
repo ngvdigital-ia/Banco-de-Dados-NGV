@@ -1,6 +1,14 @@
 # Snapshot da operação
 
-`operation.snapshot.json` é a única fonte de dados da rota `/operacao`. Ele é versionado, sanitizado e validado com Zod no runtime. A leitura do snapshot não acessa `/home/pedro_victor/dev/NGV_Digital`, não usa variáveis de ambiente e não chama rede.
+## Lista principal em runtime
+
+`/operacao` consulta `offer_tracking` diretamente pelo Drizzle, em modo somente leitura, e mostra somente ofertas criadas nos últimos 30 dias. A consulta usa os campos operacionais já existentes, não cria endpoint e não executa escrita. A fase é o marco mais avançado comprovado: registro, copy, VTurb, site, produto, campanha ou validação.
+
+Como nem toda linha recente possui `offer_id` cross-sistema reconciliado, a rota exibe o identificador real `banco:<id>` e não inventa um `ngv:*`. Se a consulta falhar, a página identifica o Banco NGV como fonte afetada e não reutiliza dados históricos fora da janela.
+
+## Artefato legado e conectores
+
+`operation.snapshot.json` continua versionado, sanitizado e validado para o piloto de conectores, mas não alimenta mais a lista principal da rota. Sua leitura não acessa `/home/pedro_victor/dev/NGV_Digital`, não usa variáveis de ambiente e não chama rede.
 
 Regeneração local explícita:
 

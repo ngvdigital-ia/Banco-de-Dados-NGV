@@ -97,12 +97,23 @@ function SectionHeading({
   );
 }
 
-function SummaryBand({ offers }: { offers: OperationOffer[] }) {
+function SummaryBand({ snapshot }: { snapshot: OperationSnapshot }) {
+  const { offers } = snapshot;
+  const isRuntimeSource = snapshot.source === "banco-ngv-runtime";
   const values = [
-    { label: "Observadas", value: offers.length, icon: RadioTower },
-    { label: "Em movimento", value: offers.filter((offer) => offer.state === "IN_MOTION").length, icon: Activity },
-    { label: "Aguardando configuração", value: offers.filter((offer) => offer.blockers.some((blocker) => blocker.severity === "PENDING")).length, icon: CircleDashed },
-    { label: "Bloqueadas confirmadas", value: offers.filter((offer) => offer.state === "BLOCKED").length, icon: AlertTriangle },
+    ...(isRuntimeSource
+      ? [
+          { label: "Ofertas recentes", value: offers.length, icon: RadioTower },
+          { label: "Produção · fases 1–4", value: offers.filter((offer) => offer.phase >= 1 && offer.phase <= 4).length, icon: Activity },
+          { label: "Produto · fase 5", value: offers.filter((offer) => offer.phase === 5).length, icon: Database },
+          { label: "Campanha/validação · fases 6–7", value: offers.filter((offer) => offer.phase >= 6 && offer.phase <= 7).length, icon: CheckCircle2 },
+        ]
+      : [
+          { label: "Observadas", value: offers.length, icon: RadioTower },
+          { label: "Em movimento", value: offers.filter((offer) => offer.state === "IN_MOTION").length, icon: Activity },
+          { label: "Aguardando configuração", value: offers.filter((offer) => offer.blockers.some((blocker) => blocker.severity === "PENDING")).length, icon: CircleDashed },
+          { label: "Bloqueadas confirmadas", value: offers.filter((offer) => offer.state === "BLOCKED").length, icon: AlertTriangle },
+        ]),
   ];
 
   return (
@@ -212,7 +223,7 @@ function OfferCards({ offers }: { offers: OperationOffer[] }) {
             <span className="rounded border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{offer.language}</span>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            {offer.blockers[0]?.detail ?? "Sem pendência explícita; estado permanece baseado na evidência local."}
+            {offer.blockers[0]?.detail ?? "Sem bloqueio confirmado; etapa baseada na evidência disponível."}
           </p>
           <time className="mt-3 block font-mono text-[11px] tabular-nums text-muted-foreground" dateTime={offer.last_evidence_at ?? undefined}>
             Evidência: {formatTimestamp(offer.last_evidence_at)}
@@ -246,7 +257,7 @@ function OfferDesk({ offers, mode }: { offers: OperationOffer[]; mode: ViewMode 
                 <th scope="col" className="sticky left-0 z-10 h-9 bg-muted px-4">Oferta</th>
                 <th scope="col" className="h-9 px-3">Fase</th>
                 <th scope="col" className="h-9 px-3">Estado</th>
-                <th scope="col" className="h-9 px-3">Pendência / evidência</th>
+                <th scope="col" className="h-9 px-3">Etapa / evidência</th>
                 <th scope="col" className="h-9 px-3">Última evidência</th>
               </tr>
             </thead>
@@ -262,7 +273,7 @@ function OfferDesk({ offers, mode }: { offers: OperationOffer[]; mode: ViewMode 
                   </td>
                   <td className="px-3 font-mono text-xs tabular-nums">{String(offer.phase).padStart(2, "0")}</td>
                   <td className="px-3"><StateBadge state={offer.state} /></td>
-                  <td className="max-w-sm px-3 text-xs text-muted-foreground">{offer.blockers[0]?.detail ?? "PENDING"}</td>
+                  <td className="max-w-sm px-3 text-xs text-muted-foreground">{offer.blockers[0]?.detail ?? "Sem bloqueio confirmado"}</td>
                   <td className="whitespace-nowrap px-3 font-mono text-[11px] tabular-nums text-muted-foreground">
                     <time dateTime={offer.last_evidence_at ?? undefined}>{formatTimestamp(offer.last_evidence_at)}</time>
                   </td>
@@ -417,6 +428,7 @@ export function OperationView({ snapshot, stale }: { snapshot: OperationSnapshot
   const [stateFilter, setStateFilter] = useState<StateFilter>("ALL");
   const [phaseFilter, setPhaseFilter] = useState<number | "ALL">("ALL");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const isRuntimeSource = snapshot.source === "banco-ngv-runtime";
 
   const filteredOffers = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
@@ -436,13 +448,16 @@ export function OperationView({ snapshot, stale }: { snapshot: OperationSnapshot
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge variant="info" className="gap-1.5"><RadioTower className="size-3" aria-hidden="true" />Somente leitura</StatusBadge>
+              {isRuntimeSource && <StatusBadge variant="neutral">Últimos 30 dias</StatusBadge>}
               {stale && <StatusBadge variant="warning" className="gap-1.5"><Clock3 className="size-3" aria-hidden="true" />Dados antigos</StatusBadge>}
             </div>
             <h1 className="mt-5 max-w-4xl text-[clamp(2.25rem,3.4vw,3.5rem)] font-bold leading-[0.98] tracking-[-0.035em]">
               Torre de controle da operação
             </h1>
             <p className="mt-4 max-w-[68ch] text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Uma linha de voo para localizar ofertas, exceções e a evidência que sustenta cada estado — sem executar ou alterar sistemas.
+              {isRuntimeSource
+                ? "Ofertas criadas nos últimos 30 dias, organizadas pela etapa mais avançada comprovada — sem executar ou alterar sistemas."
+                : "Uma linha de voo para localizar ofertas, exceções e a evidência que sustenta cada estado — sem executar ou alterar sistemas."}
             </p>
           </div>
           <div className="shrink-0 border-l-2 border-primary/40 pl-4">
@@ -453,7 +468,7 @@ export function OperationView({ snapshot, stale }: { snapshot: OperationSnapshot
         </div>
       </header>
 
-      <SummaryBand offers={snapshot.offers} />
+      <SummaryBand snapshot={snapshot} />
 
       <section aria-labelledby="operation-pipeline" className="space-y-6">
         <SectionHeading id="operation-pipeline" eyebrow="Linha 00—07" title="Pipeline operacional" description="Cada estação representa uma fase comprovável. Selecione uma fase para filtrar a mesa sem alterar a fonte." />
@@ -495,7 +510,9 @@ export function OperationView({ snapshot, stale }: { snapshot: OperationSnapshot
 
       <footer className="flex items-center gap-2 border-t pt-6 text-xs text-muted-foreground">
         <Database className="size-4" aria-hidden="true" />
-        Snapshot versionado · projeção sanitizada · nenhuma leitura externa em runtime.
+        {isRuntimeSource
+          ? "Consulta read-only · Banco NGV · janela móvel de 30 dias"
+          : "Snapshot versionado · projeção sanitizada · nenhuma leitura externa em runtime."}
       </footer>
     </div>
   );
@@ -514,7 +531,7 @@ export function OperationErrorState({
         <WifiOff className="size-6 text-danger" aria-hidden="true" />
         <h1 className="mt-4 text-2xl font-semibold">Não foi possível consolidar a operação</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          O snapshot local não passou pela validação. Nenhuma fonte externa foi consultada e nenhum dado foi alterado.
+          A consulta read-only ao Banco NGV não foi concluída. Nenhuma oferta histórica foi exibida como fallback e nenhum dado foi alterado.
         </p>
         <dl className="mt-4 grid gap-2 border-t pt-4 text-sm">
           <div>

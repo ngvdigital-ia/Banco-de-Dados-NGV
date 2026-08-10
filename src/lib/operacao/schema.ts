@@ -23,8 +23,8 @@ const blockerSchema = z.object({
 }).strict();
 
 const offerSchema = z.object({
-  offer_id: z.string().regex(/^ngv:[a-z0-9]+(?:-[a-z0-9]+)*$/),
-  offer_slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  offer_id: z.string().regex(/^(?:ngv:[a-z0-9]+(?:-[a-z0-9]+)*|banco:\d+)$/),
+  offer_slug: z.string().regex(/^(?:[a-z0-9]+(?:-[a-z0-9]+)*|banco-\d+)$/),
   display_name: z.string().min(1).max(100),
   language: z.string().min(1).max(12),
   phase: z.number().int().min(0).max(7),
@@ -35,7 +35,7 @@ const offerSchema = z.object({
 
 const eventSchema = z.object({
   event_id: z.string().min(1).max(160),
-  offer_id: z.string().regex(/^ngv:[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  offer_id: z.string().regex(/^(?:ngv:[a-z0-9]+(?:-[a-z0-9]+)*|banco:\d+)$/),
   phase: z.number().int().min(1).max(7),
   event_type: z.string().min(1).max(80),
   occurred_at: z.string().datetime(),
@@ -47,7 +47,7 @@ const eventSchema = z.object({
 export const operationSnapshotSchema = z.object({
   schema_version: z.literal(1),
   generated_at: z.string().datetime(),
-  source: z.literal("ngv-hub-local-projection"),
+  source: z.enum(["ngv-hub-local-projection", "banco-ngv-runtime"]),
   mode: z.literal("read-only"),
   phases: z.array(z.object({
     phase: z.number().int().min(0).max(7),

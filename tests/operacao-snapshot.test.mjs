@@ -6,6 +6,7 @@ import test from "node:test";
 import { compareBlockerRows } from "../src/lib/operacao/blocker-order.mjs";
 import { expectedSnapshotForCheck, mergeLiveEvidence, normalizeSnapshotForCheck, projectLiveArtifact, projectManifest, writeSnapshotAtomic } from "../src/lib/operacao/generate-snapshot.mjs";
 import { refreshOperation } from "../src/lib/operacao/refresh-operation.mjs";
+import { captureReadOnlySnapshot, phaseForOffer, projectRecentOffers, RECENT_OFFERS_LIMIT, ROLLING_WINDOW_DAYS, stateForPhase } from "../src/lib/operacao/recent-offers.mjs";
 
 const ROOT = process.cwd();
 const SNAPSHOT_PATH = path.join(ROOT, "src", "lib", "operacao", "operation.snapshot.json");
@@ -156,15 +157,68 @@ test("raiz alterna entre operação e dashboard pela flag", async () => {
   );
 });
 
-test("operação retorna ao dashboard com flag desabilitada antes de ler o snapshot", async () => {
+test("operação retorna ao dashboard com flag desabilitada antes de consultar o Banco", async () => {
   const operationPage = await readFile(PAGE_PATH, "utf8");
   const disabledRedirect = operationPage.indexOf('if (!isOperationCockpitEnabled) {\n    redirect("/dashboard");\n  }');
-  const snapshotRead = operationPage.indexOf("const result = readSnapshot()");
+  const snapshotRead = operationPage.indexOf("const result = await readOperationSnapshot()");
 
   assert.match(operationPage, /import \{ isOperationCockpitEnabled \} from ["']@\/lib\/operacao\/feature["'];/);
   assert.ok(disabledRedirect >= 0, "redirect para /dashboard com flag desabilitada ausente");
-  assert.ok(snapshotRead >= 0, "leitura do snapshot ausente");
-  assert.ok(disabledRedirect < snapshotRead, "redirect deve ocorrer antes da leitura do snapshot");
+  assert.ok(snapshotRead >= 0, "consulta read-only do Banco ausente");
+  assert.ok(disabledRedirect < snapshotRead, "redirect deve ocorrer antes da consulta do Banco");
+  assert.match(operationPage, /affectedSources=\{\["Banco NGV"\]\}/);
+  assert.doesNotMatch(operationPage, /operation\.snapshot/);
+});
+
+test("falha da consulta não devolve snapshot histórico", async () => {
+  const failure = new Error("Banco indisponível");
+  const result = await captureReadOnlySnapshot(async () => { throw failure; });
+
+  assert.equal(result.snapshot, null);
+  assert.equal(result.error, failure);
+  assert.equal(Object.hasOwn(result, "fallback"), false);
+});
+
+test("projeção recente usa ID real e o marco mais avançado comprovado", () => {
+  const base = {
+    id: 257,
+    name: "Oferta recente",
+    language: "PT",
+    createdAt: new Date("2026-08-10T10:00:00.000Z"),
+    updatedAt: new Date("2026-08-10T12:00:00.000Z"),
+    copyVslStatus: "NAO",
+    copyCriativosStatus: "SIM",
+    vslInVturb: "NAO",
+    siteCreated: "SIM",
+    productCreated: "SIM",
+    productApproved: "NAO",
+    campaignsActive: "NAO",
+    validation: "EM ANDAMENTO",
+  };
+  const data = projectRecentOffers([base], new Date("2026-08-10T15:00:00.000Z"));
+  const projected = data.offers[0];
+
+  assert.equal(projected.offer_id, "banco:257");
+  assert.equal(projected.offer_slug, "banco-257");
+  assert.equal(projected.phase, 5);
+  assert.equal(projected.state, "IN_MOTION");
+  assert.deepEqual(projected.blockers, []);
+  assert.deepEqual(data.events, []);
+  assert.equal(data.source, "banco-ngv-runtime");
+
+  assert.equal(phaseForOffer({ ...base, campaignsActive: "SIM" }), 6);
+  assert.equal(phaseForOffer({ ...base, validation: "NÃO DEU CERTO" }), 7);
+  assert.equal(stateForPhase(7), "READY_FOR_REVIEW");
+});
+
+test("consulta recente mantém janela móvel e limite defensivo", async () => {
+  const snapshotSource = await readFile(path.join(ROOT, "src", "lib", "operacao", "snapshot.ts"), "utf8");
+
+  assert.equal(ROLLING_WINDOW_DAYS, 30);
+  assert.equal(RECENT_OFFERS_LIMIT, 200);
+  assert.match(snapshotSource, /gte\(offerTracking\.createdAt, recentOffersCutoff\(now\)\)/);
+  assert.match(snapshotSource, /orderBy\(desc\(offerTracking\.createdAt\)\)/);
+  assert.match(snapshotSource, /limit\(RECENT_OFFERS_LIMIT\)/);
 });
 
 test("dashboard preservado continua acessível em rota própria", async () => {
@@ -207,6 +261,9 @@ test("UI de operação preserva reflow mobile, IDs e alvos de 44px", async () =>
   assert.match(sources, /PENDING/);
   assert.match(sources, /Aguardando configuração/);
   assert.match(sources, /blocker\.severity === "BLOCKED"/);
+  assert.match(sources, /Últimos 30 dias/);
+  assert.match(sources, /Produção · fases 1–4/);
+  assert.match(sources, /Consulta read-only · Banco NGV · janela móvel de 30 dias/);
 });
 
 test("gerador valida o snapshot no hub canônico padrão", () => {
