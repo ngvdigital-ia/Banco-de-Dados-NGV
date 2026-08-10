@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import test from "node:test";
 import { compareBlockerRows } from "../src/lib/operacao/blocker-order.mjs";
-import { mergeLiveEvidence, projectLiveArtifact, writeSnapshotAtomic } from "../src/lib/operacao/generate-snapshot.mjs";
+import { expectedSnapshotForCheck, mergeLiveEvidence, normalizeSnapshotForCheck, projectLiveArtifact, writeSnapshotAtomic } from "../src/lib/operacao/generate-snapshot.mjs";
 import { refreshOperation } from "../src/lib/operacao/refresh-operation.mjs";
 
 const ROOT = process.cwd();
@@ -215,6 +215,112 @@ test("projeção live exige leitura para fonte operante e ignora oferta desconhe
   artifact.sources[0].last_read_at = "2026-08-10T12:00:00.000Z";
   artifact.events = [{ event_id: "clickup:x:1", offer_id: "ngv:outra-oferta", phase: 1, event_type: "observed", occurred_at: "2026-08-10T12:00:00.000Z", source: "clickup", state: "ok", blocker_code: null }];
   assert.deepEqual(projectLiveArtifact(artifact, new Set(["ngv:calistenia-21d"])).events, []);
+});
+
+test("check limpo desconta somente o overlay live persistido conhecido", () => {
+  const expected = {
+    schema_version: 1,
+    generated_at: "2026-08-10T13:00:00.000Z",
+    offers: [{ offer_id: "ngv:calistenia-21d" }],
+    sources: [
+      { id: "registry", label: "Registry", state: "OPERANT", coverage: "1/1", detail: "local", last_read_at: "2026-08-10T13:00:00.000Z" },
+      { id: "clickup", label: "ClickUp", state: "UNVERIFIED", coverage: "1/1", detail: "sem rede", last_read_at: null },
+      { id: "n8n", label: "n8n", state: "UNVERIFIED", coverage: "PENDING", detail: "sem rede", last_read_at: null },
+    ],
+    events: [{ event_id: "ledger:1", offer_id: "ngv:calistenia-21d", phase: 1, source: "registry", event_type: "created", occurred_at: "2026-08-10T11:00:00.000Z", state: "ok", blocker_code: null }],
+  };
+  const committed = structuredClone(expected);
+  committed.generated_at = "2026-08-10T12:00:00.000Z";
+  committed.sources[0].last_read_at = committed.generated_at;
+  committed.sources[1] = { ...committed.sources[1], state: "OPERANT", coverage: "1/1", detail: "consulta concluída", last_read_at: committed.generated_at };
+  committed.sources[2] = { ...committed.sources[2], state: "OPERANT", coverage: "7 execuções", detail: "consulta concluída", last_read_at: committed.generated_at };
+  committed.events.push(
+    { event_id: "clickup:1", offer_id: "ngv:calistenia-21d", phase: 1, source: "clickup", event_type: "clickup_task_observed", occurred_at: committed.generated_at, state: "ok", blocker_code: null },
+    { event_id: "n8n:1", offer_id: "ngv:calistenia-21d", phase: 1, source: "n8n", event_type: "n8n_execution_observed", occurred_at: committed.generated_at, state: "ok", blocker_code: null },
+  );
+  committed.events.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
+
+  const normalized = normalizeSnapshotForCheck(committed, expected);
+  const comparableExpected = expectedSnapshotForCheck(committed, expected, { liveInputPresent: false });
+  assert.deepEqual(normalized, comparableExpected);
+});
+
+test("check limpo não oculta mutações fora do overlay live conhecido", () => {
+  const expected = {
+    generated_at: "2026-08-10T13:00:00.000Z",
+    offers: [{ offer_id: "ngv:calistenia-21d" }],
+    sources: [{ id: "clickup", label: "ClickUp", state: "UNVERIFIED", coverage: "1/1", detail: "sem rede", last_read_at: null }],
+    events: [],
+  };
+  const committed = structuredClone(expected);
+  committed.sources[0].label = "Fonte adulterada";
+  committed.events.push({ event_id: "clickup:unknown", source: "clickup", event_type: "evento_desconhecido" });
+
+  assert.throws(
+    () => expectedSnapshotForCheck(committed, expected, { liveInputPresent: false }),
+    /Fonte live persistida clickup inválida/,
+  );
+});
+
+test("check limpo recompõe eventos locais deslocados pelo limite de 100", () => {
+  const eventAt = (index) => ({
+    event_id: `ledger:${index}`,
+    offer_id: "ngv:calistenia-21d",
+    phase: 1,
+    event_type: "local_observed",
+    occurred_at: new Date(Date.UTC(2026, 7, 10, 0, 0, index)).toISOString(),
+    source: "ledger",
+    state: "ok",
+    blocker_code: null,
+  });
+  const expected = {
+    generated_at: "2026-08-10T13:00:00.000Z",
+    offers: [{ offer_id: "ngv:calistenia-21d" }],
+    sources: [],
+    events: Array.from({ length: 100 }, (_, index) => eventAt(index)).sort((a, b) => b.occurred_at.localeCompare(a.occurred_at)),
+  };
+  const liveEvent = {
+    event_id: "clickup:latest",
+    offer_id: "ngv:calistenia-21d",
+    phase: 1,
+    event_type: "clickup_task_observed",
+    occurred_at: "2026-08-10T14:00:00.000Z",
+    source: "clickup",
+    state: "ok",
+    blocker_code: null,
+  };
+  const committed = structuredClone(expected);
+  committed.events = [liveEvent, ...committed.events].slice(0, 100);
+
+  assert.deepEqual(
+    normalizeSnapshotForCheck(committed, expected),
+    expectedSnapshotForCheck(committed, expected, { liveInputPresent: false }),
+  );
+});
+
+test("check com artefato live mantém comparação estrita", () => {
+  const expected = {
+    generated_at: "2026-08-10T13:00:00.000Z",
+    offers: [{ offer_id: "ngv:calistenia-21d" }],
+    sources: [],
+    events: [],
+  };
+  const committed = structuredClone(expected);
+  committed.events.push({
+    event_id: "clickup:unexpected",
+    offer_id: "ngv:calistenia-21d",
+    phase: 1,
+    event_type: "clickup_task_observed",
+    occurred_at: "2026-08-10T14:00:00.000Z",
+    source: "clickup",
+    state: "ok",
+    blocker_code: null,
+  });
+
+  assert.notDeepEqual(
+    normalizeSnapshotForCheck(committed, expected),
+    expectedSnapshotForCheck(committed, expected, { liveInputPresent: true }),
+  );
 });
 
 test("recusa operation.live adulterado e preserva URLs legítimas", () => {

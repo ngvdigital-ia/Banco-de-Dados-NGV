@@ -12,6 +12,11 @@ const OFFER_ID = /^ngv:[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const EVENT_ID = /^[A-Za-z0-9._:-]{1,160}$/;
 const SOURCE_STATES = new Set(["OPERANT", "DEGRADED", "UNAVAILABLE", "UNVERIFIED"]);
+const LIVE_SOURCE_IDS = new Set(["clickup", "n8n"]);
+const LIVE_EVENT_SOURCE_BY_TYPE = new Map([
+  ["clickup_task_observed", "clickup"],
+  ["n8n_execution_observed", "n8n"],
+]);
 const LIVE_STALE_AFTER_MS = 12 * 60 * 60 * 1000;
 const FORBIDDEN_KEYS = /^(?:email|e-mail|token|secret|password|cookie|authorization|api[_-]?key|access[_-]?key|private[_-]?key)$/i;
 const SECRET_VALUE = /(?:xox[baprs]-|ghp_|glpat-|bearer\s+[a-z0-9._~-]|-----BEGIN [A-Z ]+PRIVATE KEY-----)/i;
@@ -248,6 +253,102 @@ export function mergeLiveEvidence(snapshot, liveArtifact, now = Date.now()) {
   return { ...snapshot, sources, events };
 }
 
+export function normalizeSnapshotForCheck(current, expected) {
+  assertPlainObject(current, "snapshot versionado");
+  assertPlainObject(expected, "snapshot projetado");
+  if (!Array.isArray(current.sources) || !Array.isArray(current.events)) {
+    throw new Error("Snapshot versionado exige arrays sources e events.");
+  }
+  if (!Array.isArray(expected.sources) || !Array.isArray(expected.events)) {
+    throw new Error("Snapshot projetado exige arrays sources e events.");
+  }
+  scanSensitive(current, "snapshot");
+
+  const normalized = structuredClone(current);
+  normalized.generated_at = expected.generated_at;
+  for (const source of normalized.sources) {
+    if (!isPlainObject(source)) continue;
+    const projected = expected.sources.find((item) => item.id === source.id);
+    if (projected?.last_read_at === expected.generated_at) source.last_read_at = projected.last_read_at;
+  }
+  return normalized;
+}
+
+function persistedLiveSource(source) {
+  if (!isPlainObject(source) || !LIVE_SOURCE_IDS.has(source.id)) return null;
+  const projected = sourceRecord(
+    source.id,
+    source.id === "clickup" ? "ClickUp" : "n8n",
+    source.state,
+    source.coverage,
+    source.detail,
+    source.last_read_at,
+  );
+  const expectedKeys = Object.keys(projected).sort();
+  const actualKeys = Object.keys(source).sort();
+  if (JSON.stringify(actualKeys) !== JSON.stringify(expectedKeys)) {
+    throw new Error(`Fonte live persistida ${source.id} possui campos fora do contrato.`);
+  }
+  for (const key of expectedKeys) {
+    if (source[key] !== projected[key]) throw new Error(`Fonte live persistida ${source.id} inválida.`);
+  }
+  if (["OPERANT", "DEGRADED"].includes(source.state) && !source.last_read_at) {
+    throw new Error(`Fonte live persistida ${source.id} exige last_read_at.`);
+  }
+  return projected;
+}
+
+function persistedLiveEvent(event, knownOfferIds) {
+  if (!isPlainObject(event) || LIVE_EVENT_SOURCE_BY_TYPE.get(event.event_type) !== event.source) return null;
+  const projected = projectEvent(event);
+  const expectedKeys = Object.keys(projected).sort();
+  const actualKeys = Object.keys(event).sort();
+  if (JSON.stringify(actualKeys) !== JSON.stringify(expectedKeys)) {
+    throw new Error(`Evento live persistido ${event.event_id ?? "PENDING"} possui campos fora do contrato.`);
+  }
+  for (const key of expectedKeys) {
+    if (event[key] !== projected[key]) throw new Error(`Evento live persistido ${event.event_id} inválido.`);
+  }
+  if (projected.phase !== 1 || !knownOfferIds.has(projected.offer_id)) {
+    throw new Error(`Evento live persistido ${projected.event_id} fora do escopo conhecido.`);
+  }
+  return projected;
+}
+
+export function expectedSnapshotForCheck(current, expected, { liveInputPresent = true } = {}) {
+  if (liveInputPresent) return expected;
+  assertPlainObject(current, "snapshot versionado");
+  assertPlainObject(expected, "snapshot projetado");
+  if (!Array.isArray(current.sources) || !Array.isArray(current.events) || !Array.isArray(expected.sources) || !Array.isArray(expected.events) || !Array.isArray(expected.offers)) {
+    throw new Error("Snapshots comparados exigem arrays offers, sources e events.");
+  }
+  scanSensitive(current, "snapshot");
+
+  const overlaySources = new Map();
+  for (const source of current.sources) {
+    const projected = persistedLiveSource(source);
+    if (!projected) continue;
+    if (overlaySources.has(projected.id)) throw new Error(`Fonte live persistida ${projected.id} duplicada.`);
+    overlaySources.set(projected.id, projected);
+  }
+
+  const knownOfferIds = new Set(expected.offers.map((offer) => offer.offer_id));
+  const overlayEvents = [];
+  for (const event of current.events) {
+    const projected = persistedLiveEvent(event, knownOfferIds);
+    if (projected) overlayEvents.push(projected);
+  }
+
+  const projected = structuredClone(expected);
+  projected.sources = projected.sources.map((source) => overlaySources.get(source.id) ?? source);
+  const eventsById = new Map(projected.events.map((event) => [event.event_id, event]));
+  for (const event of overlayEvents) eventsById.set(event.event_id, event);
+  projected.events = [...eventsById.values()]
+    .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at))
+    .slice(0, 100);
+  return projected;
+}
+
 async function readManifests(hub) {
   const offersDir = path.join(hub, "registry", "offers");
   const files = (await readdir(offersDir, { withFileTypes: true }))
@@ -259,7 +360,7 @@ async function readManifests(hub) {
   return manifests;
 }
 
-export async function buildSnapshot(hub, { now = Date.now() } = {}) {
+async function buildSnapshotResult(hub, { now = Date.now() } = {}) {
   const manifests = await readManifests(hub);
   const identityMap = await readJson(path.join(hub, "registry", "offer-id-map.json"), { allowPaths: true });
   const ledger = await readJson(path.join(hub, "state", "operation-ledger.json"));
@@ -321,7 +422,15 @@ export async function buildSnapshot(hub, { now = Date.now() } = {}) {
     sources,
     events: events.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at)).slice(0, 100),
   };
-  return mergeLiveEvidence(snapshot, await readLiveArtifact(new Set(manifests.map((manifest) => manifest.offer_id))), now);
+  const liveArtifact = await readLiveArtifact(new Set(manifests.map((manifest) => manifest.offer_id)));
+  return {
+    snapshot: mergeLiveEvidence(snapshot, liveArtifact, now),
+    liveInputPresent: liveArtifact !== null,
+  };
+}
+
+export async function buildSnapshot(hub, options = {}) {
+  return (await buildSnapshotResult(hub, options)).snapshot;
 }
 
 export async function writeSnapshotAtomic(value, output = OUTPUT) {
@@ -335,20 +444,18 @@ export async function writeSnapshotAtomic(value, output = OUTPUT) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const { hub, output } = await assertAllowedPaths(args.hub, args.output);
-  const snapshot = await buildSnapshot(hub);
+  const { snapshot, liveInputPresent } = await buildSnapshotResult(hub);
   scanSensitive(snapshot, "snapshot");
   const serialized = `${JSON.stringify(snapshot, null, 2)}\n`;
   if (args.check) {
     const current = await readFile(output, "utf8");
-    const normalized = JSON.parse(current);
+    const committed = JSON.parse(current);
     const expected = JSON.parse(serialized);
-    normalized.generated_at = expected.generated_at;
-    for (const source of normalized.sources ?? []) {
-      const projected = expected.sources.find((item) => item.id === source.id);
-      if (projected?.last_read_at === expected.generated_at) source.last_read_at = projected.last_read_at;
-    }
-    if (JSON.stringify(normalized) !== JSON.stringify(expected)) throw new Error("Snapshot versionado diverge da projeção local.");
-    process.stdout.write(`PASS snapshot: ${snapshot.offers.length} ofertas, ${snapshot.events.length} eventos, modo read-only.\n`);
+    const normalized = normalizeSnapshotForCheck(committed, expected);
+    const comparableExpected = expectedSnapshotForCheck(committed, expected, { liveInputPresent });
+    if (JSON.stringify(normalized) !== JSON.stringify(comparableExpected)) throw new Error("Snapshot versionado diverge da projeção local.");
+    const suffix = liveInputPresent ? "" : " Overlay live persistido validado sem artefato mutável.";
+    process.stdout.write(`PASS snapshot: ${committed.offers.length} ofertas, ${committed.events.length} eventos, modo read-only.${suffix}\n`);
     return;
   }
   await writeSnapshotAtomic(snapshot, output);

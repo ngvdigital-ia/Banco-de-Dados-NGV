@@ -23,6 +23,12 @@ O coletor chama somente `GET /api/v2/task/{id}` no ClickUp e `GET /api/v1/execut
 Não há busca por nome: somente os `task_id` explícitos do manifesto, incluindo `task_variants`,
 são aceitos. No `runData` do n8n, apenas os nós allowlisted podem fornecer `task_id`.
 
+O `--check` tem dois modos seguros. Quando `operation.live.json` existe, compara integralmente
+a projeção regenerada, inclusive o overlay live. Em clone limpo, onde o artefato mutável não é
+versionado, desconta somente os campos de fonte e os tipos de evento live conhecidos antes de
+comparar a projeção local determinística. Esse segundo modo valida a integridade do snapshot,
+mas não afirma que a evidência externa persistida continua atual.
+
 O gerador aceita somente o hub real `/home/pedro_victor/dev/NGV_Digital` e o destino canônico deste diretório. Ele recusa outra origem/destino, chaves sensíveis, padrões de token, e-mails, identidades inválidas e eventos fora do contrato projetado. A gravação usa arquivo temporário e rename atômico.
 
 Semântica conservadora:

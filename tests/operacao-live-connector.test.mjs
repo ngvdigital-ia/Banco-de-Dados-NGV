@@ -27,6 +27,15 @@ const liveEnv = {
   N8N_OPERATION_WORKFLOW_ID: "F8GWU4QxWg9hBAVQ",
 };
 
+async function readOptional(file) {
+  try {
+    return await readFile(file, "utf8");
+  } catch (error) {
+    if (error && typeof error === "object" && error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
 function response(value, status = 200, contentLength = null) {
   return {
     ok: status >= 200 && status < 300,
@@ -210,7 +219,7 @@ test("normaliza date_updated ISO e epoch do ClickUp", async () => {
 test("ausência de ambiente falha antes de chamar rede ou escrever o artefato", async () => {
   let calls = 0;
   const output = new URL("../src/lib/operacao/operation.live.json", import.meta.url);
-  const before = await readFile(output, "utf8");
+  const before = await readOptional(output);
   await assert.rejects(refreshLiveStatus([manifest], {
     env: {},
     fetchImpl: async () => { calls += 1; throw new Error("não deveria chamar rede"); },
@@ -218,7 +227,7 @@ test("ausência de ambiente falha antes de chamar rede ou escrever o artefato", 
   }), /Ambiente obrigatório ausente/);
 
   assert.equal(calls, 0);
-  assert.equal(await readFile(output, "utf8"), before);
+  assert.equal(await readOptional(output), before);
 });
 
 test("falha n8n não apaga a evidência ClickUp", async () => {
