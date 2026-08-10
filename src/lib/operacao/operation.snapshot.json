@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-10T12:58:01.138Z",
+  "generated_at": "2026-08-10T15:10:20.502Z",
   "source": "ngv-hub-local-projection",
   "mode": "read-only",
   "phases": [
     {
       "phase": 0,
-      "label": "Identidade"
+      "label": "Sem etapa comprovada"
     },
     {
       "phase": 1,
@@ -44,13 +44,13 @@
       "display_name": "(teste de velocidade)",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -62,13 +62,13 @@
       "display_name": "Allicin Reset Protocol",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -80,13 +80,13 @@
       "display_name": "AlphaFlow",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -98,13 +98,13 @@
       "display_name": "Ancient Water Ritual",
       "language": "de",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -116,13 +116,13 @@
       "display_name": "Automatic Video Factory",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -134,13 +134,13 @@
       "display_name": "Bumbumflix",
       "language": "en/fr",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -152,13 +152,13 @@
       "display_name": "Calistenia 21D",
       "language": "es",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Meta Pixel e UTMify ainda não foram fornecidos; não promover para launch-ready sem esse gate.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": "2026-07-22T13:41:00.000Z"
         }
       ],
@@ -170,13 +170,13 @@
       "display_name": "Celestino",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -188,13 +188,13 @@
       "display_name": "Clean Sweet App",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -206,13 +206,13 @@
       "display_name": "CODIGO DIVINO",
       "language": "es",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -224,13 +224,13 @@
       "display_name": "DaVinci Wave",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -242,13 +242,13 @@
       "display_name": "Défi Pilates Maison 50+",
       "language": "fr",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -260,13 +260,13 @@
       "display_name": "Desafío Reconexión en 7 Días",
       "language": "es",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -278,13 +278,13 @@
       "display_name": "El Protocolo de Juventud Epigenética",
       "language": "es",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -296,13 +296,13 @@
       "display_name": "File X 2.0",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -314,13 +314,13 @@
       "display_name": "Gelatine Bariatrique",
       "language": "fr",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -332,13 +332,13 @@
       "display_name": "God Mode / The Squirting System",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -350,13 +350,13 @@
       "display_name": "Gourmet Round Popcorn - Carmela Vega",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -368,13 +368,13 @@
       "display_name": "Horse Honey",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -386,13 +386,13 @@
       "display_name": "Le Brûle 24h",
       "language": "fr",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -404,13 +404,13 @@
       "display_name": "Le Code de la Femme",
       "language": "fr",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -422,13 +422,13 @@
       "display_name": "Les Secrets de la Reconquête",
       "language": "fr",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -440,13 +440,13 @@
       "display_name": "Mapa de La Reconquista Silenciosa",
       "language": "pt",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -458,13 +458,13 @@
       "display_name": "Meister im Bett",
       "language": "de",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -476,13 +476,13 @@
       "display_name": "Natural Care Protocol",
       "language": "es",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -494,27 +494,27 @@
       "display_name": "Neuro Honey Protocol",
       "language": "pt",
       "phase": 6,
-      "state": "BLOCKED",
+      "state": "IN_MOTION",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identificador do Banco NGV.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": "2026-07-21T16:50:00.000Z"
         },
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar project_slug no Monitoramento NGV.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": "2026-07-21T16:50:00.000Z"
         },
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar se a oferta possui produto no Apps Ofertas.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": "2026-07-21T16:50:00.000Z"
         }
       ],
@@ -526,13 +526,13 @@
       "display_name": "Only Money",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -544,13 +544,13 @@
       "display_name": "Orgasmic Cowgirl / Massages",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -562,13 +562,13 @@
       "display_name": "Pastor Rhema",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -580,13 +580,13 @@
       "display_name": "Penna Naturale",
       "language": "it",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -598,13 +598,13 @@
       "display_name": "Prosperity Prayer",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -616,13 +616,13 @@
       "display_name": "Protocol Restart",
       "language": "en/fr",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -634,13 +634,13 @@
       "display_name": "Protocolo Glúteos Al Tope",
       "language": "es",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -670,13 +670,13 @@
       "display_name": "Reconquest Map",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -688,13 +688,13 @@
       "display_name": "Sciatic Shield",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -706,13 +706,13 @@
       "display_name": "SkyVault",
       "language": "en",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -724,13 +724,13 @@
       "display_name": "Truco Del Bicarbonato",
       "language": "es",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -742,13 +742,13 @@
       "display_name": "Vigor Max",
       "language": "de",
       "phase": 0,
-      "state": "BLOCKED",
+      "state": "PENDING",
       "blockers": [
         {
-          "code": "MANIFEST_BLOCKER",
+          "code": "MANIFEST_PENDING",
           "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
           "source": "registry",
-          "severity": "BLOCKED",
+          "severity": "PENDING",
           "occurred_at": null
         }
       ],
@@ -762,7 +762,7 @@
       "state": "OPERANT",
       "coverage": "38/38",
       "detail": "Manifestos locais lidos e projetados.",
-      "last_read_at": "2026-08-10T12:58:01.138Z"
+      "last_read_at": "2026-08-10T15:10:20.502Z"
     },
     {
       "id": "ledger",
@@ -770,7 +770,7 @@
       "state": "OPERANT",
       "coverage": "7 eventos",
       "detail": "Ledger local sanitizado lido sem rede.",
-      "last_read_at": "2026-08-10T12:58:01.138Z"
+      "last_read_at": "2026-08-10T15:10:20.502Z"
     },
     {
       "id": "clickup",

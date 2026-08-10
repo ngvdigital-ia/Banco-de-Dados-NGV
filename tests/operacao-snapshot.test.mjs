@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import test from "node:test";
 import { compareBlockerRows } from "../src/lib/operacao/blocker-order.mjs";
-import { expectedSnapshotForCheck, mergeLiveEvidence, normalizeSnapshotForCheck, projectLiveArtifact, writeSnapshotAtomic } from "../src/lib/operacao/generate-snapshot.mjs";
+import { expectedSnapshotForCheck, mergeLiveEvidence, normalizeSnapshotForCheck, projectLiveArtifact, projectManifest, writeSnapshotAtomic } from "../src/lib/operacao/generate-snapshot.mjs";
 import { refreshOperation } from "../src/lib/operacao/refresh-operation.mjs";
 
 const ROOT = process.cwd();
@@ -58,6 +58,42 @@ test("ofertas e ambiguidades permanecem conservadoras", async () => {
   const ambiguous = data.offers.filter((offer) => offer.offer_id.startsWith("ngv:ambiguous-"));
   assert.ok(ambiguous.length >= 1);
   assert.ok(ambiguous.every((offer) => offer.state === "BLOCKED" && offer.blockers.some((item) => item.code === "IDENTITY_AMBIGUOUS")));
+});
+
+test("pendências de configuração não são projetadas como bloqueios confirmados", async () => {
+  const data = await snapshot();
+  const manifestPending = data.offers.flatMap((offer) => offer.blockers.map((blocker) => ({ offer, blocker })))
+    .filter(({ blocker }) => blocker.code === "MANIFEST_PENDING");
+
+  assert.ok(manifestPending.length > 0);
+  assert.ok(manifestPending.every(({ blocker }) => blocker.severity === "PENDING"));
+  const pendingOnlyOffers = data.offers.filter((offer) => offer.blockers.length > 0
+    && offer.blockers.every((blocker) => blocker.severity === "PENDING"));
+  assert.ok(pendingOnlyOffers.length > 0);
+  assert.ok(pendingOnlyOffers.every((offer) => offer.state !== "BLOCKED"));
+  assert.equal(data.phases.find((item) => item.phase === 0)?.label, "Sem etapa comprovada");
+});
+
+test("evento bloqueado no ledger prevalece sobre pendências do manifesto", () => {
+  const offer = projectManifest({
+    offer_id: "ngv:oferta-de-teste",
+    offer_slug: "oferta-de-teste",
+    identity: { display_name: "Oferta de teste", language: "pt" },
+    blockers: ["Confirmar configuração antes de ativar."],
+    last_verified: "2026-08-10T10:00:00.000Z",
+  }, {
+    phase: 2,
+    event_type: "blocked",
+    state: "BLOCKED",
+    blocker_code: "TRACKING_MISSING",
+    source: "ledger",
+    occurred_at: "2026-08-10T12:00:00.000Z",
+  });
+
+  assert.equal(offer.state, "BLOCKED");
+  assert.equal(offer.blockers[0].code, "TRACKING_MISSING");
+  assert.equal(offer.blockers[0].severity, "BLOCKED");
+  assert.equal(offer.blockers[1].severity, "PENDING");
 });
 
 test("fontes expõem última leitura real ou PENDING explícito", async () => {
@@ -169,6 +205,8 @@ test("UI de operação preserva reflow mobile, IDs e alvos de 44px", async () =>
   assert.match(sources, /focus-visible:ring-offset-2/);
   assert.match(sources, /Fontes afetadas conhecidas/);
   assert.match(sources, /PENDING/);
+  assert.match(sources, /Aguardando configuração/);
+  assert.match(sources, /blocker\.severity === "BLOCKED"/);
 });
 
 test("gerador valida o snapshot no hub canônico padrão", () => {

@@ -33,7 +33,8 @@ O gerador aceita somente o hub real `/home/pedro_victor/dev/NGV_Digital` e o des
 
 Semântica conservadora:
 
-- identidade ambígua ou bloqueio explícito → `BLOCKED`;
+- pendência declarada no manifesto → blocker `PENDING`, sem reprovar a oferta;
+- identidade ambígua ou evento operacional bloqueado no ledger → `BLOCKED`;
 - ausência de evidência operacional → `PENDING`;
 - evento local em andamento → `IN_MOTION`;
 - `READY_FOR_REVIEW` somente com evidência de fase 7 explicitamente pronta;

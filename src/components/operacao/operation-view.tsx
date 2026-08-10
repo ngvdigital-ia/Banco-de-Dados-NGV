@@ -33,7 +33,7 @@ const STATE_META: Record<OperationOffer["state"], {
   variant: "neutral" | "danger" | "info" | "success";
   icon: typeof CircleDashed;
 }> = {
-  PENDING: { label: "Pendente", variant: "neutral", icon: CircleDashed },
+  PENDING: { label: "Aguardando configuração", variant: "neutral", icon: CircleDashed },
   BLOCKED: { label: "Bloqueada", variant: "danger", icon: AlertTriangle },
   IN_MOTION: { label: "Em movimento", variant: "info", icon: Activity },
   READY_FOR_REVIEW: { label: "Pronta para revisão", variant: "success", icon: CheckCircle2 },
@@ -101,8 +101,8 @@ function SummaryBand({ offers }: { offers: OperationOffer[] }) {
   const values = [
     { label: "Observadas", value: offers.length, icon: RadioTower },
     { label: "Em movimento", value: offers.filter((offer) => offer.state === "IN_MOTION").length, icon: Activity },
-    { label: "Bloqueadas", value: offers.filter((offer) => offer.state === "BLOCKED").length, icon: AlertTriangle },
-    { label: "Para revisão", value: offers.filter((offer) => offer.state === "READY_FOR_REVIEW").length, icon: CheckCircle2 },
+    { label: "Aguardando configuração", value: offers.filter((offer) => offer.blockers.some((blocker) => blocker.severity === "PENDING")).length, icon: CircleDashed },
+    { label: "Bloqueadas confirmadas", value: offers.filter((offer) => offer.state === "BLOCKED").length, icon: AlertTriangle },
   ];
 
   return (
@@ -180,7 +180,7 @@ function FlightPipeline({
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <CircleDashed className="size-3" aria-hidden="true" /> sem exceção
+                    <CircleDashed className="size-3" aria-hidden="true" /> {phase === 0 && phaseOffers.length > 0 ? "aguardando" : "sem exceção"}
                   </span>
                 )}
               </button>
@@ -212,7 +212,7 @@ function OfferCards({ offers }: { offers: OperationOffer[] }) {
             <span className="rounded border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{offer.language}</span>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            {offer.blockers[0]?.detail ?? "Sem bloqueio explícito; estado permanece baseado na evidência local."}
+            {offer.blockers[0]?.detail ?? "Sem pendência explícita; estado permanece baseado na evidência local."}
           </p>
           <time className="mt-3 block font-mono text-[11px] tabular-nums text-muted-foreground" dateTime={offer.last_evidence_at ?? undefined}>
             Evidência: {formatTimestamp(offer.last_evidence_at)}
@@ -246,7 +246,7 @@ function OfferDesk({ offers, mode }: { offers: OperationOffer[]; mode: ViewMode 
                 <th scope="col" className="sticky left-0 z-10 h-9 bg-muted px-4">Oferta</th>
                 <th scope="col" className="h-9 px-3">Fase</th>
                 <th scope="col" className="h-9 px-3">Estado</th>
-                <th scope="col" className="h-9 px-3">Bloqueio / evidência</th>
+                <th scope="col" className="h-9 px-3">Pendência / evidência</th>
                 <th scope="col" className="h-9 px-3">Última evidência</th>
               </tr>
             </thead>
@@ -279,7 +279,9 @@ function OfferDesk({ offers, mode }: { offers: OperationOffer[]; mode: ViewMode 
 
 function BlockersPanel({ offers, generatedAt }: { offers: OperationOffer[]; generatedAt: string }) {
   const blockerRows = offers
-    .flatMap((offer) => offer.blockers.map((blocker) => ({ offer, blocker })))
+    .flatMap((offer) => offer.blockers
+      .filter((blocker) => blocker.severity === "BLOCKED")
+      .map((blocker) => ({ offer, blocker })))
     .sort(compareBlockerRows);
   return (
     <section aria-labelledby="operation-blockers" className="rounded-lg border bg-card p-4 sm:p-6">

@@ -28,7 +28,7 @@ const JWT_VALUE = /\beyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/;
 const OPENAI_KEY_VALUE = /\b(?:sk|pk)_[A-Za-z0-9_-]+\b|\bsk-proj-[A-Za-z0-9_-]+\b|\bpk-[A-Za-z0-9_-]+\b/i;
 
 const PHASES = [
-  "Identidade", "Cockpit", "Preflight", "Execução local",
+  "Sem etapa comprovada", "Cockpit", "Preflight", "Execução local",
   "Publicação", "Entrega", "Comando", "Métricas",
 ];
 
@@ -158,17 +158,17 @@ function projectEvent(event) {
   };
 }
 
-function projectManifest(manifest, latest) {
+export function projectManifest(manifest, latest) {
   assertPlainObject(manifest, "manifest");
   if (!OFFER_ID.test(String(manifest.offer_id ?? "")) || !SLUG.test(String(manifest.offer_slug ?? ""))) {
     throw new Error("Manifesto com identidade inválida.");
   }
   const explicitBlockers = Array.isArray(manifest.blockers)
     ? manifest.blockers.filter((item) => typeof item === "string" && item.trim()).map((item) => ({
-        code: "MANIFEST_BLOCKER",
-        detail: safeText(item, "Bloqueio sem descrição", 240),
+        code: "MANIFEST_PENDING",
+        detail: safeText(item, "Pendência sem descrição", 240),
         source: "registry",
-        severity: "BLOCKED",
+        severity: "PENDING",
         occurred_at: isoOrNull(manifest.last_verified),
       }))
     : [];
@@ -182,7 +182,8 @@ function projectManifest(manifest, latest) {
     occurred_at: latest.occurred_at,
   });
   const phase = latest && Number.isInteger(latest.phase) ? latest.phase : 0;
-  const state = blockers.length > 0
+  const hasConfirmedBlocker = blockers.some((blocker) => blocker.severity === "BLOCKED");
+  const state = hasConfirmedBlocker
     ? "BLOCKED"
     : latest
       ? (phase === 7 && /ready/i.test(String(latest.state ?? "")) ? "READY_FOR_REVIEW" : "IN_MOTION")
