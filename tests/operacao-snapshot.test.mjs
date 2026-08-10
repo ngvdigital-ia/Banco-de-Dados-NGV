@@ -1,0 +1,281 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import test from "node:test";
+import { compareBlockerRows } from "../src/lib/operacao/blocker-order.mjs";
+import { mergeLiveEvidence, projectLiveArtifact, writeSnapshotAtomic } from "../src/lib/operacao/generate-snapshot.mjs";
+import { refreshOperation } from "../src/lib/operacao/refresh-operation.mjs";
+
+const ROOT = process.cwd();
+const SNAPSHOT_PATH = path.join(ROOT, "src", "lib", "operacao", "operation.snapshot.json");
+const GENERATOR_PATH = path.join(ROOT, "src", "lib", "operacao", "generate-snapshot.mjs");
+const PAGE_PATH = path.join(ROOT, "src", "app", "(dashboard)", "operacao", "page.tsx");
+const ROOT_PAGE_PATH = path.join(ROOT, "src", "app", "(dashboard)", "page.tsx");
+const DASHBOARD_PAGE_PATH = path.join(ROOT, "src", "app", "(dashboard)", "dashboard", "page.tsx");
+const FEATURE_PATH = path.join(ROOT, "src", "lib", "operacao", "feature.ts");
+const SIDEBAR_PATH = path.join(ROOT, "src", "components", "app-sidebar.tsx");
+const COMMAND_PALETTE_PATH = path.join(ROOT, "src", "components", "command-palette.tsx");
+const BREADCRUMB_PATH = path.join(ROOT, "src", "components", "breadcrumb-nav.tsx");
+const VIEW_PATH = path.join(ROOT, "src", "components", "operacao", "operation-view.tsx");
+const ERROR_PATH = path.join(ROOT, "src", "app", "(dashboard)", "operacao", "error.tsx");
+const OFFER_ID = /^ngv:[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const FORBIDDEN_KEY = /^(?:email|e-mail|token|secret|password|cookie|authorization|api[_-]?key|access[_-]?key|private[_-]?key)$/i;
+const SENSITIVE_VALUE = /(?:xox[baprs]-|ghp_|glpat-|bearer\s+|@[a-z0-9.-]+\.[a-z]{2,}|\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b|(?:\+55\s?)?(?:\(?\d{2}\)?[\s.-])\d{4,5}[\s.-]\d{4}\b|[A-Za-z]:\\|file:\/\/\/(?:[A-Za-z0-9._-]+\/?)+|(?:^|[\s"'=(])\/(?:[A-Za-z0-9._-]+\/?)+|\beyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b|\b(?:sk|pk)_[A-Za-z0-9_-]+\b|\bsk-proj-[A-Za-z0-9_-]+\b|\bpk-[A-Za-z0-9_-]+\b)/i;
+
+async function snapshot() {
+  return JSON.parse(await readFile(SNAPSHOT_PATH, "utf8"));
+}
+
+function walk(value, visit, trail = "root") {
+  visit(value, trail);
+  if (Array.isArray(value)) value.forEach((child, index) => walk(child, visit, `${trail}[${index}]`));
+  else if (value && typeof value === "object") Object.entries(value).forEach(([key, child]) => walk(child, visit, `${trail}.${key}`));
+}
+
+test("snapshot declara origem e modo read-only", async () => {
+  const data = await snapshot();
+  assert.equal(data.schema_version, 1);
+  assert.equal(data.mode, "read-only");
+  assert.equal(data.source, "ngv-hub-local-projection");
+  assert.ok(!Number.isNaN(Date.parse(data.generated_at)));
+  assert.deepEqual(data.phases.map((item) => item.phase), [0, 1, 2, 3, 4, 5, 6, 7]);
+});
+
+test("ofertas e ambiguidades permanecem conservadoras", async () => {
+  const data = await snapshot();
+  assert.ok(data.offers.length > 0);
+  for (const offer of data.offers) {
+    assert.match(offer.offer_id, OFFER_ID);
+    assert.ok(Number.isInteger(offer.phase) && offer.phase >= 0 && offer.phase <= 7);
+    assert.ok(["PENDING", "BLOCKED", "IN_MOTION", "READY_FOR_REVIEW"].includes(offer.state));
+    assert.ok(Array.isArray(offer.blockers));
+    for (const blocker of offer.blockers) {
+      assert.ok(["BLOCKED", "ATTENTION", "PENDING"].includes(blocker.severity));
+      assert.ok(blocker.occurred_at === null || !Number.isNaN(Date.parse(blocker.occurred_at)));
+    }
+  }
+  const ambiguous = data.offers.filter((offer) => offer.offer_id.startsWith("ngv:ambiguous-"));
+  assert.ok(ambiguous.length >= 1);
+  assert.ok(ambiguous.every((offer) => offer.state === "BLOCKED" && offer.blockers.some((item) => item.code === "IDENTITY_AMBIGUOUS")));
+});
+
+test("fontes expõem última leitura real ou PENDING explícito", async () => {
+  const data = await snapshot();
+  assert.ok(data.sources.length > 0);
+  for (const source of data.sources) {
+    assert.ok(Object.hasOwn(source, "last_read_at"));
+    assert.ok(source.last_read_at === null || !Number.isNaN(Date.parse(source.last_read_at)));
+    if (source.state === "OPERANT") assert.notEqual(source.last_read_at, null);
+  }
+  assert.ok(data.sources.some((source) => source.last_read_at === null));
+});
+
+test("bloqueios são ordenados por severidade, antiguidade e nome", () => {
+  const at = (display_name, severity, occurred_at, code) => ({
+    offer: { display_name },
+    blocker: { severity, occurred_at, code },
+  });
+  const rows = [
+    at("Zulu", "PENDING", "2026-01-01T00:00:00.000Z", "P"),
+    at("Bravo", "BLOCKED", "2026-02-01T00:00:00.000Z", "B2"),
+    at("Alpha", "ATTENTION", "2025-01-01T00:00:00.000Z", "A"),
+    at("Charlie", "BLOCKED", "2026-01-01T00:00:00.000Z", "B1"),
+    at("Alpha", "BLOCKED", null, "BN"),
+  ].sort(compareBlockerRows);
+  assert.deepEqual(rows.map((row) => row.blocker.code), ["B1", "B2", "BN", "A", "P"]);
+});
+
+test("snapshot versionado não contém PII, segredo ou path local", async () => {
+  const data = await snapshot();
+  walk(data, (value, trail) => {
+    const key = trail.split(".").at(-1)?.replace(/\[\d+\]$/, "") ?? "";
+    assert.equal(FORBIDDEN_KEY.test(key), false, `chave sensível em ${trail}`);
+    if (typeof value === "string") assert.equal(SENSITIVE_VALUE.test(value), false, `valor sensível em ${trail}`);
+  });
+});
+
+test("página não usa fetch externo, env ou Server Action", async () => {
+  const sources = `${await readFile(PAGE_PATH, "utf8")}\n${await readFile(VIEW_PATH, "utf8")}`;
+  assert.equal(/\bfetch\s*\(/.test(sources), false);
+  assert.equal(/process\.env/.test(sources), false);
+  assert.equal(/["']use server["']/.test(sources), false);
+  assert.match(sources, /Somente leitura/);
+});
+
+test("cockpit de operação só habilita com a flag literal true", async () => {
+  const feature = await readFile(FEATURE_PATH, "utf8");
+  assert.match(
+    feature,
+    /export const isOperationCockpitEnabled\s*=\s*process\.env\.NEXT_PUBLIC_OPERATION_COCKPIT_ENABLED\s*===\s*["']true["'];/
+  );
+});
+
+test("raiz alterna entre operação e dashboard pela flag", async () => {
+  const rootPage = await readFile(ROOT_PAGE_PATH, "utf8");
+  assert.match(rootPage, /import \{ isOperationCockpitEnabled \} from ["']@\/lib\/operacao\/feature["'];/);
+  assert.match(
+    rootPage,
+    /redirect\(isOperationCockpitEnabled\s*\?\s*["']\/operacao["']\s*:\s*["']\/dashboard["']\)/
+  );
+});
+
+test("operação retorna ao dashboard com flag desabilitada antes de ler o snapshot", async () => {
+  const operationPage = await readFile(PAGE_PATH, "utf8");
+  const disabledRedirect = operationPage.indexOf('if (!isOperationCockpitEnabled) {\n    redirect("/dashboard");\n  }');
+  const snapshotRead = operationPage.indexOf("const result = readSnapshot()");
+
+  assert.match(operationPage, /import \{ isOperationCockpitEnabled \} from ["']@\/lib\/operacao\/feature["'];/);
+  assert.ok(disabledRedirect >= 0, "redirect para /dashboard com flag desabilitada ausente");
+  assert.ok(snapshotRead >= 0, "leitura do snapshot ausente");
+  assert.ok(disabledRedirect < snapshotRead, "redirect deve ocorrer antes da leitura do snapshot");
+});
+
+test("dashboard preservado continua acessível em rota própria", async () => {
+  const dashboardPage = await readFile(DASHBOARD_PAGE_PATH, "utf8");
+
+  assert.match(dashboardPage, /from ["']@\/app\/\(dashboard\)\/dashboard-actions["']/);
+  assert.match(dashboardPage, /export default async function DashboardPage\(\)/);
+  assert.match(dashboardPage, /Visão Geral/);
+  assert.match(dashboardPage, /Performance de Vídeo/);
+  assert.match(dashboardPage, /Projetos &amp; Métricas/);
+  assert.doesNotMatch(dashboardPage, /isOperationCockpitEnabled/);
+});
+
+test("sidebar e command palette preservam Dashboard e condicionam Operação à flag", async () => {
+  const [sidebar, commandPalette, breadcrumb] = await Promise.all([
+    readFile(SIDEBAR_PATH, "utf8"),
+    readFile(COMMAND_PALETTE_PATH, "utf8"),
+    readFile(BREADCRUMB_PATH, "utf8"),
+  ]);
+  assert.match(sidebar, /import \{ isOperationCockpitEnabled \} from ["']@\/lib\/operacao\/feature["'];/);
+  assert.match(sidebar, /\{ title: ["']Dashboard["'], href: ["']\/dashboard["']/);
+  assert.match(sidebar, /\.\.\.\(isOperationCockpitEnabled \? \[\{ title: ["']Operação["'], href: ["']\/operacao["']/);
+  assert.match(commandPalette, /import \{ isOperationCockpitEnabled \} from ["']@\/lib\/operacao\/feature["'];/);
+  assert.match(commandPalette, /\{ label: ["']Dashboard["'], href: ["']\/dashboard["'] \}/);
+  assert.match(commandPalette, /\.\.\.\(isOperationCockpitEnabled \? \[\{ label: ["']Operação["'], href: ["']\/operacao["'] \}/);
+  assert.match(breadcrumb, /operacao: ["']Operação["']/);
+});
+
+test("UI de operação preserva reflow mobile, IDs e alvos de 44px", async () => {
+  const sources = `${await readFile(VIEW_PATH, "utf8")}\n${await readFile(ERROR_PATH, "utf8")}`;
+  assert.match(sources, /aria-label="Saúde das fontes"/);
+  assert.match(sources, /md:hidden/);
+  assert.match(sources, /hidden md:block/);
+  assert.equal(sources.includes("min-w-[520px]"), false);
+  assert.match(sources, /event\.event_id/);
+  assert.match(sources, /select-all/);
+  assert.match(sources, /size-11/);
+  assert.match(sources, /focus-visible:ring-offset-2/);
+  assert.match(sources, /Fontes afetadas conhecidas/);
+  assert.match(sources, /PENDING/);
+});
+
+test("gerador valida o snapshot no hub canônico padrão", () => {
+  const result = spawnSync(process.execPath, [GENERATOR_PATH, "--check"], { cwd: ROOT, encoding: "utf8" });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /PASS snapshot:/);
+});
+
+test("gerador recusa hub fora da allowlist antes de ler dados", () => {
+  const result = spawnSync(process.execPath, [GENERATOR_PATH, "--hub", ROOT, "--check"], { encoding: "utf8" });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /fora da allowlist/);
+});
+
+test("evidência live stale degrada fonte sem alterar lifecycle da oferta", () => {
+  const offer = { offer_id: "ngv:calistenia-21d", phase: 0, state: "BLOCKED" };
+  const snapshotData = {
+    offers: [offer],
+    sources: [{ id: "clickup", label: "ClickUp", state: "UNVERIFIED", coverage: "3/3", detail: "local", last_read_at: null }],
+    events: [],
+  };
+  const merged = mergeLiveEvidence(snapshotData, {
+    generated_at: "2026-08-09T23:59:59.000Z",
+    sources: new Map([["clickup", { id: "clickup", label: "ClickUp", state: "OPERANT", coverage: "3/3", detail: "ok", last_read_at: "2026-08-09T23:59:59.000Z" }]]),
+    events: [{ event_id: "n8n:execution-17:86ajm207a", offer_id: offer.offer_id, phase: 7, event_type: "n8n_execution_observed", occurred_at: "2026-08-10T00:00:00.000Z", source: "n8n", state: "success", blocker_code: null }],
+  }, Date.parse("2026-08-10T12:00:00.000Z"));
+
+  assert.equal(merged.sources[0].state, "DEGRADED");
+  assert.deepEqual(merged.offers, [offer]);
+  assert.equal(merged.events[0].phase, 1);
+});
+
+test("projeção live exige leitura para fonte operante e ignora oferta desconhecida", () => {
+  const artifact = {
+    schema_version: 1,
+    mode: "read-only",
+    generated_at: "2026-08-10T12:00:00.000Z",
+    sources: [{ id: "clickup", state: "OPERANT", coverage: "1/1", detail: "ok", last_read_at: null }],
+    events: [],
+  };
+  assert.throws(() => projectLiveArtifact(artifact, new Set(["ngv:calistenia-21d"])), /exige last_read_at/);
+
+  artifact.sources[0].last_read_at = "2026-08-10T12:00:00.000Z";
+  artifact.events = [{ event_id: "clickup:x:1", offer_id: "ngv:outra-oferta", phase: 1, event_type: "observed", occurred_at: "2026-08-10T12:00:00.000Z", source: "clickup", state: "ok", blocker_code: null }];
+  assert.deepEqual(projectLiveArtifact(artifact, new Set(["ngv:calistenia-21d"])).events, []);
+});
+
+test("recusa operation.live adulterado e preserva URLs legítimas", () => {
+  const artifact = {
+    schema_version: 1,
+    mode: "read-only",
+    generated_at: "2026-08-10T12:00:00.000Z",
+    sources: [{ id: "clickup", state: "UNAVAILABLE", coverage: "0/1", detail: "https://docs.example.test/live", last_read_at: null }],
+    events: [],
+  };
+  assert.doesNotThrow(() => projectLiveArtifact(artifact, new Set(["ngv:calistenia-21d"])));
+
+  const secretLikeValues = [
+    ["sk", "private_value"].join("_"),
+    ["sk", "proj-private_value"].join("-"),
+  ];
+  for (const value of [...secretLikeValues, "pk-live-private_value", "file:///home/operator/private", "(/home/operator/private)"]) {
+    artifact.events = [{ event_id: "clickup:pilot:1", offer_id: "ngv:calistenia-21d", phase: 1, event_type: "observed", occurred_at: "2026-08-10T12:00:00.000Z", source: "clickup", state: value, blocker_code: null }];
+    assert.throws(() => projectLiveArtifact(artifact, new Set(["ngv:calistenia-21d"])), /conteúdo sensível/);
+  }
+});
+
+test("escrita atômica recusa snapshot sensível antes de escrever", async () => {
+  await assert.rejects(writeSnapshotAtomic({ status: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.signature" }), /conteúdo sensível/);
+});
+
+test("runner coleta antes de gerar, persiste o merge e não avança lifecycle", async () => {
+  const order = [];
+  const offer = { offer_id: "ngv:calistenia-21d", phase: 0, state: "BLOCKED" };
+  let liveArtifact;
+  let written;
+  const result = await refreshOperation({
+    loadManifests: async () => { order.push("load"); return [{ offer_id: offer.offer_id }]; },
+    collect: async () => {
+      order.push("collect");
+      liveArtifact = {
+        generated_at: "2026-08-10T12:00:00.000Z",
+        sources: new Map([["clickup", { id: "clickup", label: "ClickUp", state: "OPERANT", coverage: "1/1", detail: "ok", last_read_at: "2026-08-10T12:00:00.000Z" }]]),
+        events: [{ event_id: "clickup:pilot:1", offer_id: offer.offer_id, phase: 1, event_type: "clickup_task_observed", occurred_at: "2026-08-10T12:00:00.000Z", source: "clickup", state: "ok", blocker_code: null }],
+      };
+    },
+    build: async () => {
+      order.push("build");
+      return mergeLiveEvidence({ offers: [offer], sources: [{ id: "clickup", label: "ClickUp", state: "UNVERIFIED", coverage: "1/1", detail: "local", last_read_at: null }], events: [] }, liveArtifact, Date.parse("2026-08-10T12:01:00.000Z"));
+    },
+    write: async (snapshotData) => { order.push("write"); written = snapshotData; },
+  });
+
+  assert.deepEqual(order, ["load", "collect", "build", "write"]);
+  assert.equal(result.events[0].source, "clickup");
+  assert.equal(written.offers[0].phase, 0);
+  assert.equal(written.offers[0].state, "BLOCKED");
+});
+
+test("runner não gera snapshot quando a coleta falha", async () => {
+  const order = [];
+  await assert.rejects(refreshOperation({
+    loadManifests: async () => [],
+    collect: async () => { order.push("collect"); throw new Error("coleta falhou"); },
+    build: async () => { order.push("build"); },
+    write: async () => { order.push("write"); },
+  }), /coleta falhou/);
+  assert.deepEqual(order, ["collect"]);
+});
