@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { collectLiveOperation, extractAllowedN8nTaskIds, refreshLiveStatus } from "../src/lib/operacao/refresh-live-status.mjs";
+import { mergeLiveEvidence, projectLiveArtifact } from "../src/lib/operacao/generate-snapshot.mjs";
 
 const NOW = Date.parse("2026-08-10T12:00:00.000Z");
 const TASKS = ["86ajm207a", "86ajubm1t", "86ajxg4hn"];
@@ -15,6 +16,21 @@ const manifest = {
       task_variants: [
         { task_id: TASKS[1], relation: "locale_variant", locale: "en" },
         { task_id: TASKS[2], relation: "locale_variant", locale: "fr" },
+      ],
+    },
+  },
+};
+
+const bumbumflixManifest = {
+  offer_id: "ngv:bumbumflix",
+  offer_slug: "bumbumflix",
+  identity: { language: "en/fr" },
+  systems: {
+    clickup: {
+      parent_task_id: "86ajtfhvh",
+      operational_tasks: [
+        { task_id: "86ajtfhwv", relation: "create_tracking", phase: 6 },
+        { task_id: "86ajxg9ax", relation: "apply_tracking", phase: 6 },
       ],
     },
   },
@@ -120,6 +136,95 @@ test("restringe referências e chamadas ao manifesto do piloto", async () => {
   assert.ok(artifact.clickup_tasks.every((item) => item.offer_id === "ngv:calistenia-21d"));
   assert.equal(mock.calls.filter((call) => call.hostname === "api.clickup.com").length, 3);
   assert.equal(mock.calls.some((call) => call.pathname.endsWith("outra123")), false);
+});
+
+test("allowlist do piloto lê pai, variante e operational_tasks dos dois pilotos", async () => {
+  const calls = [];
+  const fetchImpl = async (url) => {
+    const parsed = new URL(url);
+    calls.push(parsed);
+    if (parsed.hostname === "api.clickup.com") {
+      const taskId = parsed.pathname.split("/").at(-1);
+      const status = taskId === "86ajtfhvh" ? "finalizado" : taskId === "86ajxg9ax" ? "briefing" : "concluído";
+      return response({
+        id: taskId,
+        status: { status },
+        date_updated: "2026-08-10T11:30:00.000Z",
+        assignees: [{ username: "Diogo", email: "private@example.test" }],
+      });
+    }
+    return response({ data: [] });
+  };
+  const artifact = await collectLiveOperation([manifest, bumbumflixManifest], { env: liveEnv, fetchImpl, now: NOW });
+  const bumbumTasks = artifact.clickup_tasks.filter((item) => item.offer_id === "ngv:bumbumflix");
+
+  assert.deepEqual(bumbumTasks.map((item) => item.clickup_task_id).sort(), ["86ajtfhvh", "86ajtfhwv", "86ajxg9ax"]);
+  assert.equal(bumbumTasks.find((item) => item.clickup_task_id === "86ajxg9ax")?.relation, "apply_tracking");
+  assert.equal(bumbumTasks.find((item) => item.clickup_task_id === "86ajxg9ax")?.phase, 6);
+  assert.ok(bumbumTasks.every((item) => item.owner === "Diogo"));
+  assert.equal(JSON.stringify(artifact).includes("private@example.test"), false);
+  assert.equal(calls.filter((call) => call.hostname === "api.clickup.com").length, 6);
+});
+
+test("pai fechado não conclui oferta com tarefa aberta; aberta é movimento", () => {
+  const generatedAt = "2026-08-10T12:00:00.000Z";
+  const artifact = projectLiveArtifact({
+    schema_version: 1,
+    mode: "read-only",
+    generated_at: generatedAt,
+    sources: [{ id: "clickup", state: "OPERANT", coverage: "3/3", detail: "ok", last_read_at: generatedAt }],
+    clickup_tasks: [
+      { offer_id: "ngv:bumbumflix", clickup_task_id: "86ajtfhvh", relation: "parent_task", phase: 1, locale: "en/fr", owner: "PENDING", status: "finalizado", observed_at: generatedAt, updated_at: generatedAt },
+      { offer_id: "ngv:bumbumflix", clickup_task_id: "86ajxg9ax", relation: "apply_tracking", phase: 6, locale: "PENDING", owner: "Diogo", status: "briefing", observed_at: generatedAt, updated_at: generatedAt },
+    ],
+    events: [],
+  }, new Set(["ngv:bumbumflix"]));
+  const merged = mergeLiveEvidence({
+    offers: [{
+      offer_id: "ngv:bumbumflix",
+      state: "PENDING",
+      aggregated_status: "PENDING",
+      source_status: "PENDING",
+      next_owner: "PENDING",
+      blockers: [],
+      evidence: [{ source: "clickup", external_id: "86ajtfhvh", relation: "parent_task", state: "PENDING", observed_at: null }],
+      last_evidence_at: null,
+    }],
+    sources: [{ id: "clickup", state: "UNVERIFIED", coverage: "0/2", detail: "local", last_read_at: null }],
+    events: [],
+  }, artifact, Date.parse("2026-08-10T13:00:00.000Z"));
+  const offer = merged.offers[0];
+
+  assert.equal(offer.state, "IN_MOTION");
+  assert.equal(offer.aggregated_status, "IN_MOTION");
+  assert.equal(offer.phase, 6);
+  assert.equal(offer.source_status, "finalizado");
+  assert.equal(offer.next_owner, "Diogo");
+  assert.equal(offer.evidence.filter((item) => item.external_id === "86ajtfhvh").length, 1);
+  assert.ok(offer.evidence.some((item) => item.external_id === "86ajxg9ax" && item.state === "briefing"));
+});
+
+test("status aberto da variante FR mantém Calistenia em movimento", () => {
+  const timestamp = "2026-08-10T12:00:00.000Z";
+  const artifact = projectLiveArtifact({
+    schema_version: 1,
+    mode: "read-only",
+    generated_at: timestamp,
+    sources: [{ id: "clickup", state: "OPERANT", coverage: "3/3", detail: "ok", last_read_at: timestamp }],
+    clickup_tasks: [
+      { offer_id: "ngv:calistenia-21d", clickup_task_id: "86ajm207a", relation: "parent_task", status: "finalizado", observed_at: timestamp },
+      { offer_id: "ngv:calistenia-21d", clickup_task_id: "86ajxg4hn", relation: "locale_variant", locale: "fr", status: "briefing", observed_at: timestamp },
+    ],
+    events: [],
+  }, new Set(["ngv:calistenia-21d"]));
+  const merged = mergeLiveEvidence({
+    offers: [{ offer_id: "ngv:calistenia-21d", state: "READY_FOR_REVIEW", aggregated_status: "READY_FOR_REVIEW", source_status: "PENDING", next_owner: "PENDING", blockers: [], evidence: [], last_evidence_at: null }],
+    sources: [{ id: "clickup", state: "UNVERIFIED", coverage: "0/3", detail: "local", last_read_at: null }],
+    events: [],
+  }, artifact);
+
+  assert.equal(merged.offers[0].state, "IN_MOTION");
+  assert.ok(merged.offers[0].evidence.some((item) => item.external_id === "86ajxg4hn"));
 });
 
 test("rejeita URL n8n fora da origem permitida antes da rede", async () => {

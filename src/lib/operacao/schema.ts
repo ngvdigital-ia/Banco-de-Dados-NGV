@@ -4,8 +4,43 @@ export const operationStateSchema = z.enum([
   "PENDING",
   "BLOCKED",
   "IN_MOTION",
+  "ATTENTION",
   "READY_FOR_REVIEW",
 ]);
+
+export const reconciliationStatusSchema = z.enum(["CONFIRMED", "PENDING", "DIVERGENT"]);
+export const metricBindingStatusSchema = z.enum(["CONFIRMED", "PENDING", "DIVERGENT"]);
+
+const externalIdsSchema = z.object({
+  banco_ngv: z.array(z.string().min(1)),
+  clickup: z.array(z.string().min(1)),
+  n8n: z.array(z.string().min(1)),
+  pages: z.array(z.string().min(1)),
+  product: z.array(z.string().min(1)),
+  metrics: z.array(z.string().min(1)),
+}).strict();
+
+const reconciliationSchema = z.object({
+  status: reconciliationStatusSchema,
+  evidence: z.array(z.string().min(1)),
+}).strict();
+
+const evidenceSchema = z.object({
+  source: z.string().min(1),
+  external_id: z.string().min(1),
+  relation: z.string().min(1),
+  state: z.string().min(1),
+  observed_at: z.string().datetime().nullable(),
+}).strict();
+
+const metricBindingSchema = z.object({
+  status: metricBindingStatusSchema,
+  entity_type: z.string().min(1).nullable(),
+  entity_id: z.string().min(1).nullable(),
+  metric_ids: z.array(z.string().min(1)),
+  last_observed_at: z.string().datetime().nullable(),
+  detail: z.string().min(1),
+}).strict();
 
 export const sourceStateSchema = z.enum([
   "OPERANT",
@@ -29,6 +64,14 @@ const offerSchema = z.object({
   language: z.string().min(1).max(12),
   phase: z.number().int().min(0).max(7),
   state: operationStateSchema,
+  source_of_truth: z.string().min(1),
+  external_ids: externalIdsSchema,
+  reconciliation: reconciliationSchema,
+  source_status: z.string().min(1),
+  aggregated_status: operationStateSchema,
+  next_owner: z.string().min(1),
+  evidence: z.array(evidenceSchema),
+  metric_binding: metricBindingSchema,
   blockers: z.array(blockerSchema),
   last_evidence_at: z.string().datetime().nullable(),
 }).strict();

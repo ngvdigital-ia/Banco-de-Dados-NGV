@@ -30,12 +30,13 @@ type StateFilter = "ALL" | OperationOffer["state"];
 
 const STATE_META: Record<OperationOffer["state"], {
   label: string;
-  variant: "neutral" | "danger" | "info" | "success";
+  variant: "neutral" | "danger" | "info" | "warning" | "success";
   icon: typeof CircleDashed;
 }> = {
   PENDING: { label: "Aguardando configuração", variant: "neutral", icon: CircleDashed },
   BLOCKED: { label: "Bloqueada", variant: "danger", icon: AlertTriangle },
   IN_MOTION: { label: "Em movimento", variant: "info", icon: Activity },
+  ATTENTION: { label: "Atenção", variant: "warning", icon: AlertTriangle },
   READY_FOR_REVIEW: { label: "Pronta para revisão", variant: "success", icon: CheckCircle2 },
 };
 
@@ -53,6 +54,7 @@ const SOURCE_META: Record<OperationSource["state"], {
 function formatTimestamp(value: string | null): string {
   if (!value) return "PENDING";
   return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Bahia",
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -68,6 +70,33 @@ function StateBadge({ state }: { state: OperationOffer["state"] }) {
       <Icon className="size-3" aria-hidden="true" />
       {meta.label}
     </StatusBadge>
+  );
+}
+
+function OfferOperationalDetails({ offer }: { offer: OperationOffer }) {
+  return (
+    <dl className="mt-3 grid gap-x-4 gap-y-1 border-t pt-3 text-[11px] leading-relaxed text-muted-foreground sm:grid-cols-2">
+      <div>
+        <dt className="font-medium text-foreground">Fonte</dt>
+        <dd className="truncate" title={offer.source_status}>{offer.source_status}</dd>
+      </div>
+      <div>
+        <dt className="font-medium text-foreground">Agregado</dt>
+        <dd><StateBadge state={offer.aggregated_status} /></dd>
+      </div>
+      <div>
+        <dt className="font-medium text-foreground">Reconciliação</dt>
+        <dd>{offer.reconciliation.status}</dd>
+      </div>
+      <div>
+        <dt className="font-medium text-foreground">Próximo responsável</dt>
+        <dd className="truncate" title={offer.next_owner}>{offer.next_owner}</dd>
+      </div>
+      <div className="sm:col-span-2">
+        <dt className="font-medium text-foreground">Métrica</dt>
+        <dd>{offer.metric_binding.status} · {offer.metric_binding.detail}</dd>
+      </div>
+    </dl>
   );
 }
 
@@ -225,6 +254,7 @@ function OfferCards({ offers }: { offers: OperationOffer[] }) {
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
             {offer.blockers[0]?.detail ?? "Sem bloqueio confirmado; etapa baseada na evidência disponível."}
           </p>
+          <OfferOperationalDetails offer={offer} />
           <time className="mt-3 block font-mono text-[11px] tabular-nums text-muted-foreground" dateTime={offer.last_evidence_at ?? undefined}>
             Evidência: {formatTimestamp(offer.last_evidence_at)}
           </time>
@@ -273,7 +303,12 @@ function OfferDesk({ offers, mode }: { offers: OperationOffer[]; mode: ViewMode 
                   </td>
                   <td className="px-3 font-mono text-xs tabular-nums">{String(offer.phase).padStart(2, "0")}</td>
                   <td className="px-3"><StateBadge state={offer.state} /></td>
-                  <td className="max-w-sm px-3 text-xs text-muted-foreground">{offer.blockers[0]?.detail ?? "Sem bloqueio confirmado"}</td>
+                  <td className="max-w-sm px-3 text-xs text-muted-foreground">
+                    <p>{offer.blockers[0]?.detail ?? "Sem bloqueio confirmado"}</p>
+                    <p className="mt-1">Fonte: {offer.source_status} · Agregado: {STATE_META[offer.aggregated_status].label}</p>
+                    <p className="mt-1">Reconciliação: {offer.reconciliation.status} · Próximo responsável: {offer.next_owner}</p>
+                    <p className="mt-1">Métrica: {offer.metric_binding.status}</p>
+                  </td>
                   <td className="whitespace-nowrap px-3 font-mono text-[11px] tabular-nums text-muted-foreground">
                     <time dateTime={offer.last_evidence_at ?? undefined}>{formatTimestamp(offer.last_evidence_at)}</time>
                   </td>

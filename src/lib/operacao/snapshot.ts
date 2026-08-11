@@ -3,7 +3,8 @@ import { desc, gte } from "drizzle-orm";
 import { db } from "@/db";
 import { offerTracking } from "@/db/schema";
 import { operationSnapshotSchema, type OperationSnapshot } from "./schema";
-import { projectRecentOffers, RECENT_OFFERS_LIMIT, ROLLING_WINDOW_MS } from "./recent-offers.mjs";
+import canonicalSnapshot from "./operation.snapshot.json";
+import { canonicalProjectionByBancoId, projectCanonicalSources, projectRecentOffers, RECENT_OFFERS_LIMIT, ROLLING_WINDOW_MS } from "./recent-offers.mjs";
 
 function recentOffersCutoff(now: Date): Date {
   return new Date(now.getTime() - ROLLING_WINDOW_MS);
@@ -31,5 +32,8 @@ export async function loadOperationSnapshot(now = new Date()): Promise<Operation
     .orderBy(desc(offerTracking.createdAt))
     .limit(RECENT_OFFERS_LIMIT);
 
-  return operationSnapshotSchema.parse(projectRecentOffers(rows, now));
+  const canonicalOffers = canonicalProjectionByBancoId(canonicalSnapshot);
+  const snapshot = projectRecentOffers(rows, now, canonicalOffers);
+  snapshot.sources.push(...projectCanonicalSources(canonicalSnapshot, now));
+  return operationSnapshotSchema.parse(snapshot);
 }

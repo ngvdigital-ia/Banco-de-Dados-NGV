@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-10T15:10:20.502Z",
+  "generated_at": "2026-08-11T13:43:03.185Z",
   "source": "ngv-hub-local-projection",
   "mode": "read-only",
   "phases": [
@@ -45,6 +45,31 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "test",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -63,6 +88,31 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -81,6 +131,31 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -99,6 +174,31 @@
       "language": "de",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -117,6 +217,31 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -133,36 +258,268 @@
       "offer_slug": "bumbumflix",
       "display_name": "Bumbumflix",
       "language": "en/fr",
-      "phase": 0,
-      "state": "PENDING",
+      "phase": 6,
+      "state": "IN_MOTION",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [
+          "253"
+        ],
+        "clickup": [
+          "86ajtfhvh",
+          "86ajtfhwv",
+          "86ajxg9ax"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "CONFIRMED",
+        "evidence": [
+          "offer_tracking:253",
+          "clickup:86ajtfhvh",
+          "clickup:86ajtfhwv",
+          "clickup:86ajxg9ax"
+        ]
+      },
+      "source_status": "finalizado",
+      "aggregated_status": "IN_MOTION",
+      "next_owner": "Pedro Victor Da Silva Oliveira",
+      "evidence": [
+        {
+          "source": "banco-ngv",
+          "external_id": "253",
+          "relation": "offer_tracking",
+          "state": "waiting-video",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajtfhvh",
+          "relation": "parent_task",
+          "state": "finalizado",
+          "observed_at": "2026-08-11T12:51:51.954Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajtfhwv",
+          "relation": "create_tracking",
+          "state": "finalizado",
+          "observed_at": "2026-08-11T12:51:51.954Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajxg9ax",
+          "relation": "apply_tracking",
+          "state": "briefing",
+          "observed_at": "2026-08-11T12:51:51.954Z"
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
-          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "detail": "Vídeo ainda não confirmado na fonte canônica.",
           "source": "registry",
           "severity": "PENDING",
-          "occurred_at": null
+          "occurred_at": "2026-08-11T12:43:43.000Z"
         }
       ],
-      "last_evidence_at": null
+      "last_evidence_at": "2026-08-07T12:22:14.085Z"
     },
     {
       "offer_id": "ngv:calistenia-21d",
       "offer_slug": "calistenia-21d",
       "display_name": "Calistenia 21D",
       "language": "es",
-      "phase": 0,
-      "state": "PENDING",
+      "phase": 1,
+      "state": "IN_MOTION",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [
+          "237"
+        ],
+        "clickup": [
+          "86ajm207a",
+          "86ajubm1t",
+          "86ajxg4hn"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": [
+          "120253109864280728",
+          "120253110020640728",
+          "120253110020650728",
+          "120253110020840728",
+          "120253110020850728",
+          "120253110020860728",
+          "120253110020870728",
+          "120253110020880728",
+          "120253110020890728",
+          "120253110020920728"
+        ]
+      },
+      "reconciliation": {
+        "status": "CONFIRMED",
+        "evidence": [
+          "offer_tracking:237",
+          "clickup:86ajm207a",
+          "clickup:86ajubm1t",
+          "clickup:86ajxg4hn",
+          "metrics:120253109864280728",
+          "metrics:120253110020640728",
+          "metrics:120253110020650728",
+          "metrics:120253110020840728",
+          "metrics:120253110020850728",
+          "metrics:120253110020860728",
+          "metrics:120253110020870728",
+          "metrics:120253110020880728",
+          "metrics:120253110020890728",
+          "metrics:120253110020920728"
+        ]
+      },
+      "source_status": "finalizado",
+      "aggregated_status": "IN_MOTION",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "banco-ngv",
+          "external_id": "237",
+          "relation": "offer_tracking",
+          "state": "faithful-clone-qa-passed-custom-domain-200",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253109864280728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020640728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020650728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020840728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020850728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020860728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020870728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020880728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020890728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020920728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajm207a",
+          "relation": "parent_task",
+          "state": "finalizado",
+          "observed_at": "2026-08-11T12:51:51.954Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajubm1t",
+          "relation": "locale_variant",
+          "state": "finalizado",
+          "observed_at": "2026-08-11T12:51:51.954Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajxg4hn",
+          "relation": "locale_variant",
+          "state": "produção em andamento",
+          "observed_at": "2026-08-11T12:51:51.954Z"
+        }
+      ],
+      "metric_binding": {
+        "status": "CONFIRMED",
+        "entity_type": "offer_tracking",
+        "entity_id": "237",
+        "metric_ids": [
+          "120253109864280728",
+          "120253110020640728",
+          "120253110020650728",
+          "120253110020840728",
+          "120253110020850728",
+          "120253110020860728",
+          "120253110020870728",
+          "120253110020880728",
+          "120253110020890728",
+          "120253110020920728"
+        ],
+        "last_observed_at": "2026-07-23T00:00:00.000Z",
+        "detail": "Vínculo de métrica confirmado por entity_type, entity_id e IDs explícitos; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
           "detail": "Meta Pixel e UTMify ainda não foram fornecidos; não promover para launch-ready sem esse gate.",
           "source": "registry",
           "severity": "PENDING",
-          "occurred_at": "2026-07-22T13:41:00.000Z"
+          "occurred_at": "2026-08-11T12:43:43.000Z"
         }
       ],
-      "last_evidence_at": "2026-07-22T13:41:00.000Z"
+      "last_evidence_at": "2026-08-10T10:17:24.206Z"
     },
     {
       "offer_id": "ngv:celestino",
@@ -171,6 +528,43 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajdnunb"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajdnunb"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajdnunb",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -189,6 +583,43 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajdufuu"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajdufuu"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajdufuu",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -207,6 +638,43 @@
       "language": "es",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajnjkea"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajnjkea"
+        ]
+      },
+      "source_status": "waiting-tracking",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajnjkea",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -225,6 +693,31 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -243,6 +736,43 @@
       "language": "fr",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajwb2nh"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajwb2nh"
+        ]
+      },
+      "source_status": "waiting-tracking",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajwb2nh",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -261,6 +791,43 @@
       "language": "es",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajp2b7a"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajp2b7a"
+        ]
+      },
+      "source_status": "waiting-video",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajp2b7a",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -279,6 +846,31 @@
       "language": "es",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "draft",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -297,6 +889,31 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -315,6 +932,31 @@
       "language": "fr",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -333,6 +975,43 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ah49wru"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ah49wru"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ah49wru",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -351,6 +1030,43 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajdq9gz"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajdq9gz"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajdq9gz",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -369,6 +1085,31 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -387,6 +1128,31 @@
       "language": "fr",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -405,6 +1171,31 @@
       "language": "fr",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -423,6 +1214,43 @@
       "language": "fr",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ah417ke"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ah417ke"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ah417ke",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -441,6 +1269,31 @@
       "language": "pt",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -459,6 +1312,31 @@
       "language": "de",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -477,6 +1355,43 @@
       "language": "es",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajnjucy"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajnjucy"
+        ]
+      },
+      "source_status": "waiting-video",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajnjucy",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -495,6 +1410,50 @@
       "language": "pt",
       "phase": 6,
       "state": "IN_MOTION",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajkmmfr"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajkmmfr"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "IN_MOTION",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajkmmfr",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": "2026-07-21T23:44:34.614Z"
+        },
+        {
+          "source": "slack",
+          "external_id": "evt-4a2174fa7c84401afc937369d651e2c8",
+          "relation": "operation_event",
+          "state": "read_only",
+          "observed_at": "2026-07-21T23:44:34.614Z"
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -527,6 +1486,31 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -545,6 +1529,31 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -563,6 +1572,43 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajmxgzh"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajmxgzh"
+        ]
+      },
+      "source_status": "waiting-tracking",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajmxgzh",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -581,6 +1627,31 @@
       "language": "it",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -599,6 +1670,31 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -617,6 +1713,31 @@
       "language": "en/fr",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "waiting-domain-verification",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -635,6 +1756,43 @@
       "language": "es",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajm1z9p"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajm1z9p"
+        ]
+      },
+      "source_status": "draft",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajm1z9p",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -653,6 +1811,41 @@
       "language": "PENDING",
       "phase": 0,
       "state": "BLOCKED",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "DIVERGENT",
+        "evidence": [
+          "projects.json identifies Quiz Titan Pulse but the canonical offer_id is unresolved"
+        ]
+      },
+      "source_status": "IDENTITY_AMBIGUOUS",
+      "aggregated_status": "BLOCKED",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "offer-id-map",
+          "external_id": "quiz_man",
+          "relation": "identity",
+          "state": "AMBIGUOUS",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "IDENTITY_AMBIGUOUS",
@@ -671,6 +1864,43 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajd6zut"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajd6zut"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajd6zut",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -689,6 +1919,31 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -707,6 +1962,31 @@
       "language": "en",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -725,6 +2005,43 @@
       "language": "es",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajp1a90"
+        ],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajp1a90"
+        ]
+      },
+      "source_status": "waiting-video",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajp1a90",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -743,6 +2060,31 @@
       "language": "de",
       "phase": 0,
       "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": []
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
@@ -762,7 +2104,7 @@
       "state": "OPERANT",
       "coverage": "38/38",
       "detail": "Manifestos locais lidos e projetados.",
-      "last_read_at": "2026-08-10T15:10:20.502Z"
+      "last_read_at": "2026-08-11T13:43:03.185Z"
     },
     {
       "id": "ledger",
@@ -770,15 +2112,15 @@
       "state": "OPERANT",
       "coverage": "7 eventos",
       "detail": "Ledger local sanitizado lido sem rede.",
-      "last_read_at": "2026-08-10T15:10:20.502Z"
+      "last_read_at": "2026-08-11T13:43:03.185Z"
     },
     {
       "id": "clickup",
       "label": "ClickUp",
       "state": "OPERANT",
-      "coverage": "3/3",
+      "coverage": "6/6",
       "detail": "Tarefas explícitas observadas via leitura read-only.",
-      "last_read_at": "2026-08-10T12:57:59.216Z"
+      "last_read_at": "2026-08-11T12:51:51.954Z"
     },
     {
       "id": "drive",
@@ -824,9 +2166,9 @@
       "id": "n8n",
       "label": "n8n",
       "state": "OPERANT",
-      "coverage": "2/3",
+      "coverage": "0/6",
       "detail": "Execuções associadas somente por task_id explícito.",
-      "last_read_at": "2026-08-10T12:57:59.216Z"
+      "last_read_at": "2026-08-11T12:51:51.954Z"
     },
     {
       "id": "runner",
@@ -839,16 +2181,6 @@
   ],
   "events": [
     {
-      "event_id": "n8n:47432:86ajubm1t",
-      "offer_id": "ngv:calistenia-21d",
-      "phase": 1,
-      "event_type": "n8n_execution_observed",
-      "occurred_at": "2026-08-10T10:17:28.531Z",
-      "source": "n8n",
-      "state": "success",
-      "blocker_code": null
-    },
-    {
       "event_id": "clickup:86ajubm1t:2026-08-10T10:17:24.206Z",
       "offer_id": "ngv:calistenia-21d",
       "phase": 1,
@@ -859,63 +2191,33 @@
       "blocker_code": null
     },
     {
-      "event_id": "n8n:47414:86ajxg4hn",
-      "offer_id": "ngv:calistenia-21d",
+      "event_id": "clickup:86ajxg9ax:2026-08-07T12:22:14.085Z",
+      "offer_id": "ngv:bumbumflix",
       "phase": 1,
-      "event_type": "n8n_execution_observed",
-      "occurred_at": "2026-08-10T10:17:07.973Z",
-      "source": "n8n",
-      "state": "success",
+      "event_type": "clickup_task_observed",
+      "occurred_at": "2026-08-07T12:22:14.085Z",
+      "source": "clickup",
+      "state": "briefing",
       "blocker_code": null
     },
     {
-      "event_id": "n8n:47425:86ajxg4hn",
-      "offer_id": "ngv:calistenia-21d",
+      "event_id": "clickup:86ajtfhvh:2026-08-07T12:22:06.876Z",
+      "offer_id": "ngv:bumbumflix",
       "phase": 1,
-      "event_type": "n8n_execution_observed",
-      "occurred_at": "2026-08-10T10:17:07.871Z",
-      "source": "n8n",
-      "state": "success",
+      "event_type": "clickup_task_observed",
+      "occurred_at": "2026-08-07T12:22:06.876Z",
+      "source": "clickup",
+      "state": "finalizado",
       "blocker_code": null
     },
     {
-      "event_id": "n8n:47424:86ajxg4hn",
-      "offer_id": "ngv:calistenia-21d",
+      "event_id": "clickup:86ajtfhwv:2026-08-07T12:22:02.105Z",
+      "offer_id": "ngv:bumbumflix",
       "phase": 1,
-      "event_type": "n8n_execution_observed",
-      "occurred_at": "2026-08-10T10:17:06.007Z",
-      "source": "n8n",
-      "state": "success",
-      "blocker_code": null
-    },
-    {
-      "event_id": "n8n:47418:86ajxg4hn",
-      "offer_id": "ngv:calistenia-21d",
-      "phase": 1,
-      "event_type": "n8n_execution_observed",
-      "occurred_at": "2026-08-10T10:17:04.443Z",
-      "source": "n8n",
-      "state": "success",
-      "blocker_code": null
-    },
-    {
-      "event_id": "n8n:47416:86ajxg4hn",
-      "offer_id": "ngv:calistenia-21d",
-      "phase": 1,
-      "event_type": "n8n_execution_observed",
-      "occurred_at": "2026-08-10T10:17:01.349Z",
-      "source": "n8n",
-      "state": "success",
-      "blocker_code": null
-    },
-    {
-      "event_id": "n8n:47412:86ajxg4hn",
-      "offer_id": "ngv:calistenia-21d",
-      "phase": 1,
-      "event_type": "n8n_execution_observed",
-      "occurred_at": "2026-08-10T10:16:59.815Z",
-      "source": "n8n",
-      "state": "success",
+      "event_type": "clickup_task_observed",
+      "occurred_at": "2026-08-07T12:22:02.105Z",
+      "source": "clickup",
+      "state": "finalizado",
       "blocker_code": null
     },
     {

@@ -103,7 +103,14 @@ function parseArgs(argv) {
       args.check = true;
       continue;
     }
+    if (token === "--local-only" || token === "--offline") {
+      args.localOnly = true;
+      continue;
+    }
     throw new Error(`Argumento não permitido: ${token}`);
+  }
+  if (args.localOnly && !args.check) {
+    throw new Error("--local-only/--offline exige --check; nenhuma escrita foi autorizada.");
   }
   return args;
 }
@@ -158,6 +165,110 @@ function projectEvent(event) {
   };
 }
 
+function externalId(value) {
+  if (value === null || value === undefined || value === "PENDING") return null;
+  const normalized = String(value).trim();
+  return normalized || null;
+}
+
+function projectMetricBinding(manifest) {
+  const metrics = manifest.systems?.metrics;
+  if (metrics === undefined) return { ...metricBinding(), metric_ids: [] };
+
+  const rawMetricIds = Array.isArray(metrics?.metric_ids) ? metrics.metric_ids.map(externalId) : [];
+  const metricIds = [...new Set(rawMetricIds.filter(Boolean))];
+  const entityType = typeof metrics?.entity_type === "string" && metrics.entity_type.trim()
+    ? metrics.entity_type.trim()
+    : null;
+  const entityId = externalId(metrics?.entity_id);
+  const bancoId = externalId(manifest.systems?.banco_ngv?.offer_tracking_id);
+  const lastObservedAt = isoOrNull(metrics?.last_observed_at);
+  const idsAreNonEmptyAndUnique = rawMetricIds.length > 0
+    && rawMetricIds.every(Boolean)
+    && metricIds.length === rawMetricIds.length;
+  const confirmed = entityType === "offer_tracking"
+    && entityId !== null
+    && bancoId !== null
+    && entityId === bancoId
+    && idsAreNonEmptyAndUnique
+    && lastObservedAt !== null;
+  const detail = confirmed
+    ? "Vínculo de métrica confirmado por entity_type, entity_id e IDs explícitos; nenhuma atribuição por nome foi feita."
+    : "Vínculo de métrica divergente: exige entity_type=offer_tracking, entity_id exato do offer_tracking, IDs não vazios/únicos e data válida; nenhuma atribuição por nome foi feita.";
+
+  return {
+    status: confirmed ? "CONFIRMED" : "DIVERGENT",
+    entity_type: entityType,
+    entity_id: entityId,
+    metric_ids: metricIds,
+    last_observed_at: lastObservedAt,
+    detail,
+  };
+}
+
+function operationExternalIds(manifest) {
+  const clickup = [];
+  const parent = externalId(manifest.systems?.clickup?.parent_task_id);
+  if (parent) clickup.push(parent);
+  for (const task of [
+    ...(Array.isArray(manifest.systems?.clickup?.task_variants) ? manifest.systems.clickup.task_variants : []),
+    ...(Array.isArray(manifest.systems?.clickup?.operational_tasks) ? manifest.systems.clickup.operational_tasks : []),
+  ]) {
+    const taskId = externalId(task?.task_id);
+    if (taskId && !clickup.includes(taskId)) clickup.push(taskId);
+  }
+  const banco = externalId(manifest.systems?.banco_ngv?.offer_tracking_id);
+  const metricBinding = projectMetricBinding(manifest);
+  return {
+    banco_ngv: banco ? [banco] : [],
+    clickup,
+    n8n: [],
+    pages: [],
+    product: [],
+    metrics: metricBinding.metric_ids,
+  };
+}
+
+function metricBinding() {
+  return {
+    status: "PENDING",
+    entity_type: null,
+    entity_id: null,
+    metric_ids: [],
+    last_observed_at: null,
+    detail: "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita.",
+  };
+}
+
+function operationEvidence(manifest, externalIds, observedAt, metricsBinding) {
+  const evidence = [];
+  if (externalIds.banco_ngv[0]) evidence.push({
+    source: "banco-ngv",
+    external_id: externalIds.banco_ngv[0],
+    relation: "offer_tracking",
+    state: safeText(manifest.technical?.source_status, manifest.status, 180),
+    observed_at: observedAt,
+  });
+  if (externalIds.clickup[0]) evidence.push({
+    source: "clickup",
+    external_id: externalIds.clickup[0],
+    relation: "parent_task",
+    state: "PENDING",
+    observed_at: observedAt,
+  });
+  const metrics = manifest.systems?.metrics;
+  if (metricsBinding.metric_ids.length > 0) {
+    for (const metricId of metricsBinding.metric_ids) evidence.push({
+      source: safeText(metrics?.platform, "metrics", 40),
+      external_id: metricId,
+      relation: safeText(metrics?.evidence_ref, "metric_id", 180),
+      state: metricsBinding.status,
+      observed_at: metricsBinding.last_observed_at,
+    });
+  }
+  return evidence;
+}
+
 export function projectManifest(manifest, latest) {
   assertPlainObject(manifest, "manifest");
   if (!OFFER_ID.test(String(manifest.offer_id ?? "")) || !SLUG.test(String(manifest.offer_slug ?? ""))) {
@@ -188,6 +299,28 @@ export function projectManifest(manifest, latest) {
     : latest
       ? (phase === 7 && /ready/i.test(String(latest.state ?? "")) ? "READY_FOR_REVIEW" : "IN_MOTION")
       : "PENDING";
+  const externalIds = operationExternalIds(manifest);
+  const metricsBinding = projectMetricBinding(manifest);
+  const observedAt = latest?.occurred_at ?? isoOrNull(manifest.last_verified);
+  const identityReconciliationStatus = externalIds.banco_ngv.length > 0 && externalIds.clickup.length > 0
+    ? "CONFIRMED"
+    : "PENDING";
+  const reconciliationStatus = metricsBinding.status === "DIVERGENT"
+    ? "DIVERGENT"
+    : identityReconciliationStatus;
+  const reconciliationEvidence = [...new Set([
+    ...externalIds.banco_ngv.map((id) => `offer_tracking:${id}`),
+    ...externalIds.clickup.map((id) => `clickup:${id}`),
+    ...externalIds.metrics.map((id) => `metrics:${id}`),
+  ])];
+  const evidence = operationEvidence(manifest, externalIds, observedAt, metricsBinding);
+  if (latest) evidence.push({
+    source: safeText(latest.source, "ledger", 40),
+    external_id: safeText(latest.event_id, "PENDING", 160),
+    relation: "operation_event",
+    state: safeText(latest.state, "PENDING", 80),
+    observed_at: observedAt,
+  });
   return {
     offer_id: manifest.offer_id,
     offer_slug: manifest.offer_slug,
@@ -195,6 +328,17 @@ export function projectManifest(manifest, latest) {
     language: safeText(manifest.identity?.language, "PENDING", 12),
     phase,
     state,
+    source_of_truth: "banco-ngv",
+    external_ids: externalIds,
+    reconciliation: {
+      status: reconciliationStatus,
+      evidence: reconciliationEvidence,
+    },
+    source_status: safeText(manifest.technical?.source_status, manifest.status, 180),
+    aggregated_status: state,
+    next_owner: safeText(manifest.next_owner, "PENDING", 100),
+    evidence,
+    metric_binding: metricsBinding,
     blockers,
     last_evidence_at: latest?.occurred_at ?? isoOrNull(manifest.last_verified),
   };
@@ -220,10 +364,49 @@ export function projectLiveArtifact(value, knownOfferIds) {
     if (source.state === "OPERANT" && !lastReadAt) throw new Error(`Fonte live ${source.id} OPERANT exige last_read_at.`);
     sourceById.set(source.id, sourceRecord(source.id, source.id === "clickup" ? "ClickUp" : "n8n", source.state, source.coverage, source.detail, lastReadAt));
   }
+  const clickupTasks = Array.isArray(value.clickup_tasks)
+    ? value.clickup_tasks
+      .map((task) => projectClickupTask(task, knownOfferIds, value.generated_at))
+      .filter(Boolean)
+    : [];
   const events = Array.isArray(value.events)
     ? value.events.map(projectEvent).filter((event) => (event.source === "clickup" || event.source === "n8n") && knownOfferIds.has(event.offer_id)).map((event) => ({ ...event, phase: 1 }))
     : [];
-  return { generated_at: isoOrNull(value.generated_at), sources: sourceById, events };
+  return { generated_at: isoOrNull(value.generated_at), sources: sourceById, clickup_tasks: clickupTasks, events };
+}
+
+function normalizedClickupStatus(value) {
+  return typeof value === "string"
+    ? value.trim().normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase()
+    : "";
+}
+
+function isClosedClickupStatus(value) {
+  return new Set(["finalizado", "finalizada", "concluido", "concluida", "complete", "completed", "closed"])
+    .has(normalizedClickupStatus(value));
+}
+
+function isConfirmedClickupBlocker(value) {
+  return ["blocked", "bloqueado", "bloqueada"].includes(normalizedClickupStatus(value));
+}
+
+function projectClickupTask(task, knownOfferIds, fallbackObservedAt) {
+  if (!isPlainObject(task) || !knownOfferIds.has(task.offer_id)) return null;
+  const taskId = String(task.clickup_task_id ?? "");
+  if (!/^[A-Za-z0-9]{1,80}$/.test(taskId)) throw new Error("clickup_task_id inválido no artefato live.");
+  const observedAt = isoOrNull(task.observed_at) ?? isoOrNull(fallbackObservedAt);
+  const updatedAt = isoOrNull(task.updated_at) ?? observedAt;
+  return {
+    offer_id: task.offer_id,
+    clickup_task_id: taskId,
+    relation: safeText(task.relation, "operational_task", 80),
+    locale: safeText(task.locale, "PENDING", 12),
+    phase: Number.isInteger(task.phase) && task.phase >= 0 && task.phase <= 7 ? task.phase : 1,
+    owner: safeText(task.owner, "PENDING", 100),
+    status: safeText(task.status, "OBSERVED", 80),
+    observed_at: observedAt,
+    updated_at: updatedAt,
+  };
 }
 
 async function readLiveArtifact(knownOfferIds) {
@@ -235,8 +418,13 @@ async function readLiveArtifact(knownOfferIds) {
   }
 }
 
+export function isLiveArtifactStale(generatedAt, now = Date.now()) {
+  const generatedAtMs = new Date(generatedAt).getTime();
+  return Number.isNaN(generatedAtMs) || now - generatedAtMs > LIVE_STALE_AFTER_MS;
+}
+
 function sourceWithFreshness(source, generatedAt, now) {
-  const stale = now - new Date(generatedAt).getTime() > LIVE_STALE_AFTER_MS;
+  const stale = isLiveArtifactStale(generatedAt, now);
   if (!stale || source.state === "UNAVAILABLE" || source.state === "UNVERIFIED") return source;
   return sourceRecord(source.id, source.label, "DEGRADED", source.coverage, "Evidência live com mais de 12 horas.", source.last_read_at);
 }
@@ -251,7 +439,65 @@ export function mergeLiveEvidence(snapshot, liveArtifact, now = Date.now()) {
   for (const event of snapshot.events) eventsById.set(event.event_id, event);
   for (const event of liveArtifact.events) eventsById.set(event.event_id, { ...event, phase: 1 });
   const events = [...eventsById.values()].sort((a, b) => b.occurred_at.localeCompare(a.occurred_at)).slice(0, 100);
-  return { ...snapshot, sources, events };
+  const clickupTasks = Array.isArray(liveArtifact.clickup_tasks) ? liveArtifact.clickup_tasks : [];
+  const tasksByOffer = new Map();
+  for (const task of clickupTasks) {
+    const tasks = tasksByOffer.get(task.offer_id) ?? [];
+    tasks.push(task);
+    tasksByOffer.set(task.offer_id, tasks);
+  }
+  const offers = snapshot.offers.map((offer) => {
+    const tasks = tasksByOffer.get(offer.offer_id) ?? [];
+    if (tasks.length === 0) return offer;
+    const openTasks = tasks.filter((task) => !isClosedClickupStatus(task.status));
+    const blockedTask = tasks.find((task) => isConfirmedClickupBlocker(task.status));
+    const hasConfirmedBlocker = offer.blockers.some((blocker) => blocker.severity === "BLOCKED") || Boolean(blockedTask);
+    const parentTask = tasks.find((task) => task.relation === "parent_task");
+    const taskEvidence = tasks.map((task) => ({
+      source: "clickup",
+      external_id: task.clickup_task_id,
+      relation: task.relation,
+      state: task.status,
+      observed_at: task.observed_at ?? task.updated_at,
+    }));
+    const observedTaskKeys = new Set(taskEvidence.map((item) => `${item.source}:${item.external_id}:${item.relation}`));
+    const baseEvidence = offer.evidence.filter((item) => !observedTaskKeys.has(`${item.source}:${item.external_id}:${item.relation}`));
+    const blockers = blockedTask && !offer.blockers.some((blocker) => blocker.code === "CLICKUP_BLOCKED")
+      ? [{
+          code: "CLICKUP_BLOCKED",
+          detail: "Bloqueio explicitamente observado no status da tarefa ClickUp.",
+          source: "clickup",
+          severity: "BLOCKED",
+          occurred_at: blockedTask.updated_at ?? blockedTask.observed_at,
+        }, ...offer.blockers]
+      : offer.blockers;
+    const aggregatedStatus = hasConfirmedBlocker
+      ? "BLOCKED"
+      : openTasks.length > 0
+        ? "IN_MOTION"
+        : offer.aggregated_status;
+    const lastTaskAt = tasks
+      .map((task) => task.updated_at ?? task.observed_at)
+      .filter(Boolean)
+      .sort()
+      .at(-1) ?? offer.last_evidence_at;
+    const phase = Math.max(
+      Number.isInteger(offer.phase) ? offer.phase : 0,
+      ...openTasks.map((task) => Number.isInteger(task.phase) ? task.phase : 0),
+    );
+    return {
+      ...offer,
+      phase,
+      source_status: parentTask?.status ?? offer.source_status,
+      aggregated_status: aggregatedStatus,
+      state: aggregatedStatus,
+      next_owner: openTasks.find((task) => task.owner !== "PENDING")?.owner ?? offer.next_owner,
+      evidence: [...baseEvidence, ...taskEvidence],
+      blockers,
+      last_evidence_at: lastTaskAt,
+    };
+  });
+  return { ...snapshot, offers, sources, events };
 }
 
 export function normalizeSnapshotForCheck(current, expected) {
@@ -361,7 +607,7 @@ async function readManifests(hub) {
   return manifests;
 }
 
-async function buildSnapshotResult(hub, { now = Date.now() } = {}) {
+async function buildSnapshotResult(hub, { now = Date.now(), localOnly = false } = {}) {
   const manifests = await readManifests(hub);
   const identityMap = await readJson(path.join(hub, "registry", "offer-id-map.json"), { allowPaths: true });
   const ledger = await readJson(path.join(hub, "state", "operation-ledger.json"));
@@ -383,6 +629,20 @@ async function buildSnapshotResult(hub, { now = Date.now() } = {}) {
       language: "PENDING",
       phase: 0,
       state: "BLOCKED",
+      source_of_truth: "banco-ngv",
+      external_ids: { banco_ngv: [], clickup: [], n8n: [], pages: [], product: [], metrics: [] },
+      reconciliation: { status: "DIVERGENT", evidence: [safeText(entry.evidence, "Identidade canônica não resolvida.", 240)] },
+      source_status: "IDENTITY_AMBIGUOUS",
+      aggregated_status: "BLOCKED",
+      next_owner: "PENDING",
+      evidence: [{
+        source: "offer-id-map",
+        external_id: safeText(entry.source_slug, "ambiguous", 80),
+        relation: "identity",
+        state: "AMBIGUOUS",
+        observed_at: null,
+      }],
+      metric_binding: metricBinding(),
       blockers: [{ code: "IDENTITY_AMBIGUOUS", detail: safeText(entry.evidence, "Identidade canônica não resolvida.", 240), source: "offer-id-map", severity: "BLOCKED", occurred_at: null }],
       last_evidence_at: null,
     });
@@ -424,9 +684,13 @@ async function buildSnapshotResult(hub, { now = Date.now() } = {}) {
     events: events.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at)).slice(0, 100),
   };
   const liveArtifact = await readLiveArtifact(new Set(manifests.map((manifest) => manifest.offer_id)));
+  const mergeNow = localOnly && liveArtifact
+    ? new Date(liveArtifact.generated_at).getTime()
+    : now;
   return {
-    snapshot: mergeLiveEvidence(snapshot, liveArtifact, now),
+    snapshot: mergeLiveEvidence(snapshot, liveArtifact, mergeNow),
     liveInputPresent: liveArtifact !== null,
+    liveArtifact,
   };
 }
 
@@ -445,17 +709,25 @@ export async function writeSnapshotAtomic(value, output = OUTPUT) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const { hub, output } = await assertAllowedPaths(args.hub, args.output);
-  const { snapshot, liveInputPresent } = await buildSnapshotResult(hub);
+  const { snapshot, liveInputPresent, liveArtifact } = await buildSnapshotResult(hub, { localOnly: args.localOnly });
   scanSensitive(snapshot, "snapshot");
   const serialized = `${JSON.stringify(snapshot, null, 2)}\n`;
   if (args.check) {
     const current = await readFile(output, "utf8");
     const committed = JSON.parse(current);
     const expected = JSON.parse(serialized);
+    if (liveInputPresent && !args.localOnly && liveArtifact
+      && isLiveArtifactStale(liveArtifact.generated_at)) {
+      throw new Error("operation.live excede 12 horas; use --check --local-only somente para validação local determinística.");
+    }
     const normalized = normalizeSnapshotForCheck(committed, expected);
     const comparableExpected = expectedSnapshotForCheck(committed, expected, { liveInputPresent });
     if (JSON.stringify(normalized) !== JSON.stringify(comparableExpected)) throw new Error("Snapshot versionado diverge da projeção local.");
-    const suffix = liveInputPresent ? "" : " Overlay live persistido validado sem artefato mutável.";
+    const suffix = args.localOnly
+      ? " Modo local-only: artefato live local validado sem rede e sem gate de idade."
+      : liveInputPresent
+        ? ""
+        : " Overlay live persistido validado sem artefato mutável.";
     process.stdout.write(`PASS snapshot: ${committed.offers.length} ofertas, ${committed.events.length} eventos, modo read-only.${suffix}\n`);
     return;
   }

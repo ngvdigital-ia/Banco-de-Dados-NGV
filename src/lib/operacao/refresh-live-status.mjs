@@ -7,7 +7,7 @@ const DEFAULT_HUB = path.resolve(HERE, "../../../../..");
 const LIVE_OUTPUT = path.join(HERE, "operation.live.json");
 const REQUEST_TIMEOUT_MS = 10_000;
 const MAX_RESPONSE_BYTES = 25 * 1024 * 1024;
-const PILOT_OFFER_ID = "ngv:calistenia-21d";
+const PILOT_OFFER_IDS = new Set(["ngv:calistenia-21d", "ngv:bumbumflix"]);
 const N8N_ORIGIN = "https://n8n-production-d5ef.up.railway.app";
 const OFFER_ID = /^ngv:[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const CLICKUP_TASK_ID = /^[A-Za-z0-9]{1,80}$/;
@@ -128,8 +128,8 @@ export function clickupTaskReferences(manifests) {
   for (const manifest of manifests) {
     const offerId = isObject(manifest) && typeof manifest.offer_id === "string" ? manifest.offer_id.trim() : "";
     if (!OFFER_ID.test(offerId)) throw new Error("offer_id inválido no manifesto.");
-    if (offerId !== PILOT_OFFER_ID) continue;
-    const add = (taskId, relation, locale) => {
+    if (!PILOT_OFFER_IDS.has(offerId)) continue;
+    const add = (taskId, relation, locale, phase = 1) => {
       if (typeof taskId !== "string" || !CLICKUP_TASK_ID.test(taskId)) throw new Error("task_id ClickUp inválido no manifesto.");
       if (references.has(taskId)) throw new Error(`task_id ClickUp duplicado no manifesto: ${taskId}.`);
       references.set(taskId, {
@@ -137,13 +137,18 @@ export function clickupTaskReferences(manifests) {
         clickup_task_id: taskId,
         relation: safeText(relation, "parent_task", 40),
         locale: safeText(locale, "PENDING", 12),
+        phase: Number.isInteger(phase) && phase >= 0 && phase <= 7 ? phase : 1,
       });
     };
 
-    add(manifest.systems?.clickup?.parent_task_id, "parent_task", manifest.identity?.language);
+    add(manifest.systems?.clickup?.parent_task_id, "parent_task", manifest.identity?.language, 1);
     for (const variant of Array.isArray(manifest.systems?.clickup?.task_variants) ? manifest.systems.clickup.task_variants : []) {
       if (!isObject(variant)) throw new Error("task_variant ClickUp inválido no manifesto.");
-      add(variant.task_id, variant.relation, variant.locale);
+      add(variant.task_id, variant.relation, variant.locale, variant.phase ?? 1);
+    }
+    for (const task of Array.isArray(manifest.systems?.clickup?.operational_tasks) ? manifest.systems.clickup.operational_tasks : []) {
+      if (!isObject(task)) throw new Error("operational_task ClickUp inválida no manifesto.");
+      add(task.task_id, task.relation, task.locale, task.phase);
     }
   }
   return [...references.values()];
@@ -233,7 +238,15 @@ async function collectClickup(references, config, fetchImpl, nowIso) {
     if (!task) continue;
     const updatedAt = isoOrNull(task.date_updated) ?? nowIso;
     const status = safeText(task.status?.status, "OBSERVED", 80);
-    tasks.push({ ...reference, observed_at: nowIso, updated_at: updatedAt, status });
+    const owner = safeText(
+      task.assignees?.[0]?.username
+        ?? task.assignees?.[0]?.initials
+        ?? task.assignee?.username
+        ?? task.assignee?.initials,
+      "PENDING",
+      100,
+    );
+    tasks.push({ ...reference, owner, observed_at: nowIso, updated_at: updatedAt, status });
     events.push({
       event_id: `clickup:${reference.clickup_task_id}:${updatedAt}`,
       offer_id: reference.offer_id,
