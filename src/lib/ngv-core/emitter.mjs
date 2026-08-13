@@ -1,7 +1,7 @@
 // Emissor agregado diário para o NGV Core (Supabase Edge Function
 // POST /functions/v1/banco-global-daily-ingest, produção).
 // Payload SEM PII: apenas contagens e timestamps. Nunca registra
-// apikey, URL ou payload — e nenhum dado sai do banco além dos agregados.
+// credencial, URL ou payload — e nenhum dado sai do banco além dos agregados.
 //
 // Config (server-side, ver .env.example):
 //   NGV_CORE_URL            https://<project>.supabase.co/functions/v1/banco-global-daily-ingest
@@ -153,7 +153,7 @@ async function readLimited(response, limit = NGV_CORE_MAX_RESPONSE_BYTES) {
  * Envia o agregado diário para o NGV Core.
  * - Fail-closed: WRITER_KEY ausente falha ANTES de banco/rede.
  * - POST com timeout de 10s, redirect manual, só 2xx = sucesso.
- * - Nunca registra apikey nem payload.
+ * - Nunca registra credencial nem payload.
  */
 export async function emitDailyIngest(aggregate, options = {}) {
   const config = resolveNgvCoreConfig(options.config);
