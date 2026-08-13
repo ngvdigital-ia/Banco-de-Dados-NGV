@@ -117,8 +117,8 @@ function NgvCoreSystemsSkeleton() {
         <Shimmer className="h-4 w-32" />
         <Shimmer className="h-7 w-24" />
       </div>
-      <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-        {[0, 1, 2, 3].map((index) => <div key={index} className="space-y-2 p-4"><Shimmer className="h-3 w-24" /><Shimmer className="h-6 w-20" /><Shimmer className="h-3 w-32" /></div>)}
+      <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-3">
+        {[0, 1, 2, 3, 4, 5].map((index) => <div key={index} className="space-y-2 p-4"><Shimmer className="h-3 w-24" /><Shimmer className="h-6 w-20" /><Shimmer className="h-3 w-32" /></div>)}
       </div>
     </section>
   );
@@ -154,11 +154,13 @@ async function NgvCoreSystemsSection() {
         </div>
       </div>
       {isReady ? (
-        <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+        <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-3">
           <CoreSystemMetric label="Spy Analytics" value={sources.spy?.offers_observed ?? "—"} detail={`${sources.spy?.readings_observed ?? "—"} leituras em 30 dias`} />
           <CoreSystemMetric label="Nexfy" value={sources.nexfy?.active_projects ?? "—"} detail={`${sources.nexfy?.active_products ?? "—"} produtos ativos`} />
           <CoreSystemMetric label="Banco NGV" value={sources.banco_ngv?.offer_tracking_count ?? "—"} detail={`${sources.banco_ngv?.metrics_snapshot_count ?? "—"} snapshots de métricas`} />
           <CoreSystemMetric label="Quiz Analytics" value={sources.quiz_analytics?.project_count ?? "—"} detail={`${sources.quiz_analytics?.receiving_events_count ?? "—"} projeto(s) recebendo eventos`} />
+          <CoreSystemMetric label="Apps Ofertas" value={sources.apps_ofertas?.offers_configured ?? "—"} detail={`${sources.apps_ofertas?.access_active ?? "—"} acessos ativos`} />
+          <CoreSystemMetric label="Plataforma de Cursos" value={sources.plataforma_cursos?.courses_total ?? "—"} detail={`${sources.plataforma_cursos?.entitlements_active ?? "—"} acessos ativos`} />
         </div>
       ) : (
         <p className="px-4 py-5 text-sm text-muted-foreground">A consolidação central não está disponível nesta leitura. Os sistemas e as áreas do Dashboard continuam acessíveis separadamente.</p>

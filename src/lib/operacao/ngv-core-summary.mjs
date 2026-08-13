@@ -67,13 +67,15 @@ export function normalizeNgvCoreOperationalSummary(body) {
   const summary = body.summary;
   if (Object.keys(summary).length !== 3 || summary.schema_version !== 1 || !isIso(summary.generated_at) || !isObject(summary.sources)) fail("RESPONSE_SCHEMA_INVALID");
   const sources = summary.sources;
-  const sourceKeys = ["spy", "nexfy", "banco_ngv", "quiz_analytics"];
+  const sourceKeys = ["spy", "nexfy", "banco_ngv", "quiz_analytics", "apps_ofertas", "plataforma_cursos"];
   if (Object.keys(sources).length !== sourceKeys.length || !sourceKeys.every((key) => Object.hasOwn(sources, key))) fail("RESPONSE_SCHEMA_INVALID");
 
   const spy = source(sources.spy, ["schema_version", "source", "status", "generated_at", "window_days", "offers_observed", "readings_observed", "distinct_reading_days", "ready_to_model"], "spy-analytics");
   const nexfy = source(sources.nexfy, ["schema_version", "source", "status", "generated_at", "active_projects", "inactive_projects", "active_products", "inactive_products", "project_product_links"], "nexfy");
   const bancoNgv = source(sources.banco_ngv, ["schema_version", "source", "status", "generated_at", "offer_tracking_count", "metrics_snapshot_count", "latest_metric_at", "latest_offer_at"], "banco-ngv");
   const quizAnalytics = source(sources.quiz_analytics, ["schema_version", "source", "status", "generated_at", "project_count", "awaiting_deploy_count", "installed_count", "receiving_events_count", "projects_with_offer_id_count"], "quiz-analytics");
+  const appsOfertas = source(sources.apps_ofertas, ["schema_version", "source", "status", "generated_at", "offers_configured", "modules_configured", "lessons_configured", "purchases_total", "access_active", "access_revoked", "access_refunded", "access_chargeback", "product_grants_active", "latest_purchase_at"], "apps-ofertas");
+  const plataformaCursos = source(sources.plataforma_cursos, ["schema_version", "source", "status", "generated_at", "courses_total", "entitlements_total", "entitlements_active", "entitlements_refunded", "entitlements_cancelled", "progress_total", "progress_completed", "latest_entitlement_at", "latest_progress_at"], "plataforma-cursos");
 
   const invalidSpy = spy && (spy.window_days !== 30 || !isCount(spy.offers_observed) || !isCount(spy.readings_observed) || !isCount(spy.distinct_reading_days) || !isCount(spy.ready_to_model));
   const invalidNexfy = nexfy && ![nexfy.active_projects, nexfy.inactive_projects, nexfy.active_products, nexfy.inactive_products, nexfy.project_product_links].every(isCount);
@@ -81,17 +83,22 @@ export function normalizeNgvCoreOperationalSummary(body) {
     || !(bancoNgv.latest_metric_at === null || isIso(bancoNgv.latest_metric_at))
     || !(bancoNgv.latest_offer_at === null || isIso(bancoNgv.latest_offer_at)));
   const invalidQuiz = quizAnalytics && ![quizAnalytics.project_count, quizAnalytics.awaiting_deploy_count, quizAnalytics.installed_count, quizAnalytics.receiving_events_count, quizAnalytics.projects_with_offer_id_count].every(isCount);
-  if (invalidSpy || invalidNexfy || invalidBanco || invalidQuiz) fail("RESPONSE_SCHEMA_INVALID");
+  const invalidAppsOfertas = appsOfertas && (![appsOfertas.offers_configured, appsOfertas.modules_configured, appsOfertas.lessons_configured, appsOfertas.purchases_total, appsOfertas.access_active, appsOfertas.access_revoked, appsOfertas.access_refunded, appsOfertas.access_chargeback, appsOfertas.product_grants_active].every(isCount)
+    || !(appsOfertas.latest_purchase_at === null || isIso(appsOfertas.latest_purchase_at)));
+  const invalidPlataformaCursos = plataformaCursos && (![plataformaCursos.courses_total, plataformaCursos.entitlements_total, plataformaCursos.entitlements_active, plataformaCursos.entitlements_refunded, plataformaCursos.entitlements_cancelled, plataformaCursos.progress_total, plataformaCursos.progress_completed].every(isCount)
+    || !(plataformaCursos.latest_entitlement_at === null || isIso(plataformaCursos.latest_entitlement_at))
+    || !(plataformaCursos.latest_progress_at === null || isIso(plataformaCursos.latest_progress_at)));
+  if (invalidSpy || invalidNexfy || invalidBanco || invalidQuiz || invalidAppsOfertas || invalidPlataformaCursos) fail("RESPONSE_SCHEMA_INVALID");
 
-  return { kind: "success", generated_at: summary.generated_at, sources: { spy, nexfy, banco_ngv: bancoNgv, quiz_analytics: quizAnalytics } };
+  return { kind: "success", generated_at: summary.generated_at, sources: { spy, nexfy, banco_ngv: bancoNgv, quiz_analytics: quizAnalytics, apps_ofertas: appsOfertas, plataforma_cursos: plataformaCursos } };
 }
 
 function unavailable(code = "SUMMARY_UNAVAILABLE") {
-  return { kind: "unavailable", code, generated_at: null, sources: { spy: null, nexfy: null, banco_ngv: null, quiz_analytics: null } };
+  return { kind: "unavailable", code, generated_at: null, sources: { spy: null, nexfy: null, banco_ngv: null, quiz_analytics: null, apps_ofertas: null, plataforma_cursos: null } };
 }
 
 export function emptyNgvCoreOperationalSummary() {
-  return { kind: "disabled", code: "SUMMARY_DISABLED", generated_at: null, sources: { spy: null, nexfy: null, banco_ngv: null, quiz_analytics: null } };
+  return { kind: "disabled", code: "SUMMARY_DISABLED", generated_at: null, sources: { spy: null, nexfy: null, banco_ngv: null, quiz_analytics: null, apps_ofertas: null, plataforma_cursos: null } };
 }
 
 export async function fetchNgvCoreOperationalSummary(options = {}) {
