@@ -8,12 +8,15 @@ import {
   Settings,
   Video,
   ListChecks,
-  RefreshCw,
   Globe,
+  ExternalLink,
+  ScanSearch,
+  BarChart3,
 } from "lucide-react";
 import { SyncButton } from "./sync-button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PageHeader } from "@/components/ui/page-header";
+import { getSafeExternalUrl } from "@/lib/external-dashboard-url";
 
 async function getLastSync(source: string) {
   const result = await db
@@ -76,10 +79,59 @@ function IntegrationCard({ icon: Icon, iconColor, title, connected, children }: 
   );
 }
 
+interface ExternalToolCardProps {
+  icon: React.ElementType;
+  title: string;
+  url: string | null;
+}
+
+function ExternalToolCard({ icon: Icon, title, url }: ExternalToolCardProps) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 shadow-sm ring-1 ring-foreground/5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center justify-center rounded-lg bg-primary/10 p-2.5">
+            <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold">{title}</h3>
+            <p className="mt-1 text-xs text-muted-foreground">Ferramenta externa</p>
+          </div>
+        </div>
+        <StatusBadge variant={url ? "success" : "neutral"}>
+          {url ? "Disponível para abrir" : "Não configurado"}
+        </StatusBadge>
+      </div>
+      <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+        <p>
+          Acesso externo independente do dashboard. Esta opção não sincroniza dados com o NGV.
+        </p>
+        {url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border px-3 font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            Abrir ferramenta
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+          </a>
+        ) : (
+          <p className="text-xs leading-relaxed">
+            A URL segura ainda não foi configurada nas variáveis públicas do ambiente.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default async function SettingsPage() {
   const utmifyConnected = !!process.env.UTMIFY_API_KEY;
   const clickupConnected = !!process.env.CLICKUP_API_KEY;
   const vturbConnected = !!process.env.VTURB_API_KEY;
+  const spyAnalyticsUrl = getSafeExternalUrl(process.env.NEXT_PUBLIC_SPY_ANALYTICS_URL);
+  const quizAnalyticsUrl = getSafeExternalUrl(process.env.NEXT_PUBLIC_QUIZ_ANALYTICS_URL);
 
   const lastUtmifySync = await getLastSync("utmify");
 
@@ -188,6 +240,21 @@ export default async function SettingsPage() {
           </p>
         </div>
       </div>
+
+      <section aria-labelledby="external-tools-heading" className="space-y-4">
+        <div>
+          <h2 id="external-tools-heading" className="text-lg font-semibold tracking-tight">
+            Ferramentas operacionais
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Atalhos para ferramentas externas aprovadas. O acesso abre em outra aba e não representa uma integração conectada.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <ExternalToolCard icon={ScanSearch} title="Spy Analytics" url={spyAnalyticsUrl} />
+          <ExternalToolCard icon={BarChart3} title="Quiz Analytics" url={quizAnalyticsUrl} />
+        </div>
+      </section>
     </div>
   );
 }

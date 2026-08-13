@@ -1,0 +1,3691 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-12T01:22:39.541Z",
+  "source": "ngv-hub-local-projection",
+  "mode": "read-only",
+  "phases": [
+    {
+      "phase": 0,
+      "label": "Sem etapa comprovada"
+    },
+    {
+      "phase": 1,
+      "label": "Cockpit"
+    },
+    {
+      "phase": 2,
+      "label": "Preflight"
+    },
+    {
+      "phase": 3,
+      "label": "Execução local"
+    },
+    {
+      "phase": 4,
+      "label": "Publicação"
+    },
+    {
+      "phase": 5,
+      "label": "Entrega"
+    },
+    {
+      "phase": 6,
+      "label": "Comando"
+    },
+    {
+      "phase": 7,
+      "label": "Métricas"
+    }
+  ],
+  "offers": [
+    {
+      "offer_id": "ngv:benchmark-page",
+      "offer_slug": "benchmark-page",
+      "display_name": "(teste de velocidade)",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:benchmark-page",
+          "github:pedrovictor26/teste_velocidade"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:benchmark-page",
+          "pages:github:pedrovictor26/teste_velocidade"
+        ]
+      },
+      "source_status": "test",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:benchmark-page",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:pedrovictor26/teste_velocidade",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:allicin-reset-protocol",
+      "offer_slug": "allicin-reset-protocol",
+      "display_name": "Allicin Reset Protocol",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:allicin-reset-protocol",
+          "github:ngvdigital-ia/allicin-protocol",
+          "vercel:allicin-protocol",
+          "domain:allicin-protocol-one.vercel.app"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:allicin-reset-protocol",
+          "pages:github:ngvdigital-ia/allicin-protocol",
+          "pages:vercel:allicin-protocol",
+          "pages:domain:allicin-protocol-one.vercel.app"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:allicin-reset-protocol",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/allicin-protocol",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:allicin-protocol",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:allicin-protocol-one.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:alpha-flow",
+      "offer_slug": "alpha-flow",
+      "display_name": "AlphaFlow",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "github:ngvdigital-ia/alphaflow",
+          "vercel:alphaflow",
+          "domain:incomecycle.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:github:ngvdigital-ia/alphaflow",
+          "pages:vercel:alphaflow",
+          "pages:domain:incomecycle.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/alphaflow",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:alphaflow",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:incomecycle.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:afrikanisches-ritual",
+      "offer_slug": "afrikanisches-ritual",
+      "display_name": "Ancient Water Ritual",
+      "language": "de",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:afrikanisches-ritual",
+          "github:ngvdigital-ia/afrikanischen-wasserritual",
+          "vercel:afrikanischen-wasserritual",
+          "domain:afrikanischenwasserritual.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:afrikanisches-ritual",
+          "pages:github:ngvdigital-ia/afrikanischen-wasserritual",
+          "pages:vercel:afrikanischen-wasserritual",
+          "pages:domain:afrikanischenwasserritual.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:afrikanisches-ritual",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/afrikanischen-wasserritual",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:afrikanischen-wasserritual",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:afrikanischenwasserritual.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:automatic-video-factory",
+      "offer_slug": "automatic-video-factory",
+      "display_name": "Automatic Video Factory",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:automatic-video-factory",
+          "github:ngvdigital-ia/automatic-video-factory",
+          "vercel:automatic-video-factory",
+          "domain:automaticvideofactory.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:automatic-video-factory",
+          "pages:github:ngvdigital-ia/automatic-video-factory",
+          "pages:vercel:automatic-video-factory",
+          "pages:domain:automaticvideofactory.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:automatic-video-factory",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/automatic-video-factory",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:automatic-video-factory",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:automaticvideofactory.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:bumbumflix",
+      "offer_slug": "bumbumflix",
+      "display_name": "Bumbumflix",
+      "language": "en/fr",
+      "phase": 6,
+      "state": "IN_MOTION",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [
+          "253"
+        ],
+        "clickup": [
+          "86ajtfhvh",
+          "86ajtfhwv",
+          "86ajxg9ax"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:bumbumflix",
+          "github:ngvdigital-ia/bumbumflix",
+          "vercel:bumbumflix",
+          "domain:bumbumflix-one.vercel.app"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "CONFIRMED",
+        "evidence": [
+          "offer_tracking:253",
+          "clickup:86ajtfhvh",
+          "clickup:86ajtfhwv",
+          "clickup:86ajxg9ax",
+          "pages:registry:bumbumflix",
+          "pages:github:ngvdigital-ia/bumbumflix",
+          "pages:vercel:bumbumflix",
+          "pages:domain:bumbumflix-one.vercel.app"
+        ]
+      },
+      "source_status": "finalizado",
+      "aggregated_status": "IN_MOTION",
+      "next_owner": "Pedro Victor Da Silva Oliveira",
+      "evidence": [
+        {
+          "source": "banco-ngv",
+          "external_id": "253",
+          "relation": "offer_tracking",
+          "state": "waiting-video",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:bumbumflix",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/bumbumflix",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:bumbumflix",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:bumbumflix-one.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajtfhvh",
+          "relation": "parent_task",
+          "state": "finalizado",
+          "observed_at": "2026-08-11T12:51:51.954Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajtfhwv",
+          "relation": "create_tracking",
+          "state": "finalizado",
+          "observed_at": "2026-08-11T12:51:51.954Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajxg9ax",
+          "relation": "apply_tracking",
+          "state": "briefing",
+          "observed_at": "2026-08-11T12:51:51.954Z"
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Vídeo ainda não confirmado na fonte canônica.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": "2026-08-11T12:43:43.000Z"
+        }
+      ],
+      "last_evidence_at": "2026-08-07T12:22:14.085Z"
+    },
+    {
+      "offer_id": "ngv:calistenia-21d",
+      "offer_slug": "calistenia-21d",
+      "display_name": "Calistenia 21D",
+      "language": "es",
+      "phase": 1,
+      "state": "IN_MOTION",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [
+          "237"
+        ],
+        "clickup": [
+          "86ajm207a",
+          "86ajubm1t",
+          "86ajxg4hn"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:calistenia-21d",
+          "github:ngvdigital-ia/calistenia-21d",
+          "vercel:calistenia-21d",
+          "domain:calistenia-21d-zeta.vercel.app",
+          "domain:calistenia21dias.online"
+        ],
+        "product": [],
+        "metrics": [
+          "120253109864280728",
+          "120253110020640728",
+          "120253110020650728",
+          "120253110020840728",
+          "120253110020850728",
+          "120253110020860728",
+          "120253110020870728",
+          "120253110020880728",
+          "120253110020890728",
+          "120253110020920728"
+        ]
+      },
+      "reconciliation": {
+        "status": "CONFIRMED",
+        "evidence": [
+          "offer_tracking:237",
+          "clickup:86ajm207a",
+          "clickup:86ajubm1t",
+          "clickup:86ajxg4hn",
+          "metrics:120253109864280728",
+          "metrics:120253110020640728",
+          "metrics:120253110020650728",
+          "metrics:120253110020840728",
+          "metrics:120253110020850728",
+          "metrics:120253110020860728",
+          "metrics:120253110020870728",
+          "metrics:120253110020880728",
+          "metrics:120253110020890728",
+          "metrics:120253110020920728",
+          "pages:registry:calistenia-21d",
+          "pages:github:ngvdigital-ia/calistenia-21d",
+          "pages:vercel:calistenia-21d",
+          "pages:domain:calistenia-21d-zeta.vercel.app",
+          "pages:domain:calistenia21dias.online"
+        ]
+      },
+      "source_status": "finalizado",
+      "aggregated_status": "IN_MOTION",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "banco-ngv",
+          "external_id": "237",
+          "relation": "offer_tracking",
+          "state": "faithful-clone-qa-passed-custom-domain-200",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253109864280728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020640728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020650728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020840728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020850728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020860728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020870728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020880728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020890728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "utmify",
+          "external_id": "120253110020920728",
+          "relation": "metrics_snapshots.extra_data.campaignId",
+          "state": "CONFIRMED",
+          "observed_at": "2026-07-23T00:00:00.000Z"
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:calistenia-21d",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/calistenia-21d",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:calistenia-21d",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:calistenia-21d-zeta.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:calistenia21dias.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajm207a",
+          "relation": "parent_task",
+          "state": "finalizado",
+          "observed_at": "2026-08-11T12:51:51.954Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajubm1t",
+          "relation": "locale_variant",
+          "state": "finalizado",
+          "observed_at": "2026-08-11T12:51:51.954Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajxg4hn",
+          "relation": "locale_variant",
+          "state": "produção em andamento",
+          "observed_at": "2026-08-11T12:51:51.954Z"
+        }
+      ],
+      "metric_binding": {
+        "status": "CONFIRMED",
+        "entity_type": "offer_tracking",
+        "entity_id": "237",
+        "metric_ids": [
+          "120253109864280728",
+          "120253110020640728",
+          "120253110020650728",
+          "120253110020840728",
+          "120253110020850728",
+          "120253110020860728",
+          "120253110020870728",
+          "120253110020880728",
+          "120253110020890728",
+          "120253110020920728"
+        ],
+        "last_observed_at": "2026-07-23T00:00:00.000Z",
+        "detail": "Vínculo de métrica confirmado por entity_type, entity_id e IDs explícitos; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Meta Pixel e UTMify ainda não foram fornecidos; não promover para launch-ready sem esse gate.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": "2026-08-11T12:43:43.000Z"
+        }
+      ],
+      "last_evidence_at": "2026-08-10T10:17:24.206Z"
+    },
+    {
+      "offer_id": "ngv:celestino",
+      "offer_slug": "celestino",
+      "display_name": "Celestino",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajdnunb"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:celestino",
+          "github:ngvdigital-ia/celestino",
+          "vercel:celestino",
+          "domain:thecelestino.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajdnunb",
+          "pages:registry:celestino",
+          "pages:github:ngvdigital-ia/celestino",
+          "pages:vercel:celestino",
+          "pages:domain:thecelestino.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajdnunb",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:celestino",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/celestino",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:celestino",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:thecelestino.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:clean-sweet-app",
+      "offer_slug": "clean-sweet-app",
+      "display_name": "Clean Sweet App",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajdufuu"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:clean-sweet-app",
+          "github:ngvdigital-ia/clean-sweet-app",
+          "vercel:clean-sweet-app",
+          "domain:cleansweetapp.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajdufuu",
+          "pages:registry:clean-sweet-app",
+          "pages:github:ngvdigital-ia/clean-sweet-app",
+          "pages:vercel:clean-sweet-app",
+          "pages:domain:cleansweetapp.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajdufuu",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:clean-sweet-app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/clean-sweet-app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:clean-sweet-app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:cleansweetapp.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:codigo-divino",
+      "offer_slug": "codigo-divino",
+      "display_name": "CODIGO DIVINO",
+      "language": "es",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [
+          "240"
+        ],
+        "clickup": [
+          "86ajnjkea"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:codigo-divino",
+          "github:ngvdigital-ia/codigo-divino",
+          "vercel:codigo-divino",
+          "domain:codigo-divino-weld.vercel.app"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "CONFIRMED",
+        "evidence": [
+          "offer_tracking:240",
+          "clickup:86ajnjkea",
+          "pages:registry:codigo-divino",
+          "pages:github:ngvdigital-ia/codigo-divino",
+          "pages:vercel:codigo-divino",
+          "pages:domain:codigo-divino-weld.vercel.app"
+        ]
+      },
+      "source_status": "waiting-tracking",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "banco-ngv",
+          "external_id": "240",
+          "relation": "offer_tracking",
+          "state": "waiting-tracking",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajnjkea",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:codigo-divino",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/codigo-divino",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:codigo-divino",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:codigo-divino-weld.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [],
+      "last_evidence_at": "2026-08-12T01:06:38.000Z"
+    },
+    {
+      "offer_id": "ngv:davinci-wave",
+      "offer_slug": "davinci-wave",
+      "display_name": "DaVinci Wave",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:davinci-wave",
+          "github:ngvdigital-ia/davinci-wave",
+          "vercel:da-v-inci-wave",
+          "domain:davinciwave.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:davinci-wave",
+          "pages:github:ngvdigital-ia/davinci-wave",
+          "pages:vercel:da-v-inci-wave",
+          "pages:domain:davinciwave.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:davinci-wave",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/davinci-wave",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:da-v-inci-wave",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:davinciwave.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:defi-pilates-maison-50",
+      "offer_slug": "defi-pilates-maison-50",
+      "display_name": "Défi Pilates Maison 50+",
+      "language": "fr",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajwb2nh"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:defi-pilates-maison-50",
+          "github:ngvdigital-ia/defi-pilates-maison-50",
+          "vercel:defi-pilates-maison-50",
+          "domain:defipilatesmaison50.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajwb2nh",
+          "pages:registry:defi-pilates-maison-50",
+          "pages:github:ngvdigital-ia/defi-pilates-maison-50",
+          "pages:vercel:defi-pilates-maison-50",
+          "pages:domain:defipilatesmaison50.online"
+        ]
+      },
+      "source_status": "waiting-tracking",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajwb2nh",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:defi-pilates-maison-50",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/defi-pilates-maison-50",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:defi-pilates-maison-50",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:defipilatesmaison50.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:desafio-reconexion-7-dias",
+      "offer_slug": "desafio-reconexion-7-dias",
+      "display_name": "Desafío Reconexión en 7 Días",
+      "language": "es",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajp2b7a"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:desafio-reconexion-7-dias",
+          "github:ngvdigital-ia/desafio-reconexion-7-dias",
+          "vercel:desafio-reconexion-7-dias",
+          "domain:desafioreconexion7dias.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajp2b7a",
+          "pages:registry:desafio-reconexion-7-dias",
+          "pages:github:ngvdigital-ia/desafio-reconexion-7-dias",
+          "pages:vercel:desafio-reconexion-7-dias",
+          "pages:domain:desafioreconexion7dias.online"
+        ]
+      },
+      "source_status": "waiting-video",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajp2b7a",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:desafio-reconexion-7-dias",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/desafio-reconexion-7-dias",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:desafio-reconexion-7-dias",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:desafioreconexion7dias.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:el-protocolo-juventud-epigenetica",
+      "offer_slug": "el-protocolo-juventud-epigenetica",
+      "display_name": "El Protocolo de Juventud Epigenética",
+      "language": "es",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:el-protocolo-juventud-epigenetica",
+          "github:ngvdigital-ia/el-protocolo-juventud-epigenetica"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:el-protocolo-juventud-epigenetica",
+          "pages:github:ngvdigital-ia/el-protocolo-juventud-epigenetica"
+        ]
+      },
+      "source_status": "draft",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:el-protocolo-juventud-epigenetica",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/el-protocolo-juventud-epigenetica",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:filex2",
+      "offer_slug": "filex2",
+      "display_name": "File X 2.0",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:filex2",
+          "github:ngvdigital-ia/filex2",
+          "vercel:filex2",
+          "domain:filex2.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:filex2",
+          "pages:github:ngvdigital-ia/filex2",
+          "pages:vercel:filex2",
+          "pages:domain:filex2.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:filex2",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/filex2",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:filex2",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:filex2.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:app-gelatine-bariatrique",
+      "offer_slug": "app-gelatine-bariatrique",
+      "display_name": "Gelatine Bariatrique",
+      "language": "fr",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:app-gelatine-bariatrique",
+          "github:ngvdigital-ia/app-gelatine-bariatrique",
+          "vercel:app-gelatine-bariatrique"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:app-gelatine-bariatrique",
+          "pages:github:ngvdigital-ia/app-gelatine-bariatrique",
+          "pages:vercel:app-gelatine-bariatrique"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:app-gelatine-bariatrique",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/app-gelatine-bariatrique",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:app-gelatine-bariatrique",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:v-spot",
+      "offer_slug": "v-spot",
+      "display_name": "God Mode / The Squirting System",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ah49wru"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:v-spot",
+          "github:ngvdigital-ia/v-spot",
+          "vercel:v-spot"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ah49wru",
+          "pages:registry:v-spot",
+          "pages:github:ngvdigital-ia/v-spot",
+          "pages:vercel:v-spot"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ah49wru",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:v-spot",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/v-spot",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:v-spot",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:gourmet-round-popcorn",
+      "offer_slug": "gourmet-round-popcorn",
+      "display_name": "Gourmet Round Popcorn - Carmela Vega",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajdq9gz"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:gourmet-round-popcorn",
+          "github:ngvdigital-ia/gourmet-round-popcorn",
+          "vercel:gourmet-round-popcorn",
+          "domain:roundpopcorn.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajdq9gz",
+          "pages:registry:gourmet-round-popcorn",
+          "pages:github:ngvdigital-ia/gourmet-round-popcorn",
+          "pages:vercel:gourmet-round-popcorn",
+          "pages:domain:roundpopcorn.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajdq9gz",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:gourmet-round-popcorn",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/gourmet-round-popcorn",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:gourmet-round-popcorn",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:roundpopcorn.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:horse-honey",
+      "offer_slug": "horse-honey",
+      "display_name": "Horse Honey",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:hh",
+          "github:ngvdigital-ia/horse-honey",
+          "vercel:horse-honey",
+          "domain:horsehoney.site"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:hh",
+          "pages:github:ngvdigital-ia/horse-honey",
+          "pages:vercel:horse-honey",
+          "pages:domain:horsehoney.site"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:hh",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/horse-honey",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:horse-honey",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:horsehoney.site",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:le-brule-24h",
+      "offer_slug": "le-brule-24h",
+      "display_name": "Le Brûle 24h",
+      "language": "fr",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:le-brule-24h",
+          "github:ngvdigital-ia/lebrule24h",
+          "vercel:lebrule24h",
+          "domain:lebrule24h.vercel.app"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:le-brule-24h",
+          "pages:github:ngvdigital-ia/lebrule24h",
+          "pages:vercel:lebrule24h",
+          "pages:domain:lebrule24h.vercel.app"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:le-brule-24h",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/lebrule24h",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:lebrule24h",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:lebrule24h.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:lecodedelafemme",
+      "offer_slug": "lecodedelafemme",
+      "display_name": "Le Code de la Femme",
+      "language": "fr",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:lecodedelafemme",
+          "github:ngvdigital-ia/lecodedelafemme",
+          "vercel:lecodedelafemme",
+          "domain:lecodedelafemme.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:lecodedelafemme",
+          "pages:github:ngvdigital-ia/lecodedelafemme",
+          "pages:vercel:lecodedelafemme",
+          "pages:domain:lecodedelafemme.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:lecodedelafemme",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/lecodedelafemme",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:lecodedelafemme",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:lecodedelafemme.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:les-secrets-masculins",
+      "offer_slug": "les-secrets-masculins",
+      "display_name": "Les Secrets de la Reconquête",
+      "language": "fr",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ah417ke"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:les-secrets-masculins",
+          "github:ngvdigital-ia/les-secrets-masculins",
+          "vercel:les-secrets-masculins"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ah417ke",
+          "pages:registry:les-secrets-masculins",
+          "pages:github:ngvdigital-ia/les-secrets-masculins",
+          "pages:vercel:les-secrets-masculins"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ah417ke",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:les-secrets-masculins",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/les-secrets-masculins",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:les-secrets-masculins",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:reconquista-silenciosa",
+      "offer_slug": "reconquista-silenciosa",
+      "display_name": "Mapa de La Reconquista Silenciosa",
+      "language": "pt",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:reconquista-silenciosa",
+          "github:ngvdigital-ia/reconquista-silenciosa",
+          "vercel:reconquista-silenciosa",
+          "domain:hazquevuelva.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:reconquista-silenciosa",
+          "pages:github:ngvdigital-ia/reconquista-silenciosa",
+          "pages:vercel:reconquista-silenciosa",
+          "pages:domain:hazquevuelva.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:reconquista-silenciosa",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/reconquista-silenciosa",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:reconquista-silenciosa",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:hazquevuelva.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:meister-im-bett",
+      "offer_slug": "meister-im-bett",
+      "display_name": "Meister im Bett",
+      "language": "de",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:meister-im-bett",
+          "github:ngvdigital-ia/meister-im-bett",
+          "vercel:meister-im-bett",
+          "domain:meisterimbett.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:meister-im-bett",
+          "pages:github:ngvdigital-ia/meister-im-bett",
+          "pages:vercel:meister-im-bett",
+          "pages:domain:meisterimbett.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:meister-im-bett",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/meister-im-bett",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:meister-im-bett",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:meisterimbett.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:natural-care-protocol",
+      "offer_slug": "natural-care-protocol",
+      "display_name": "Natural Care Protocol",
+      "language": "es",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [
+          "241"
+        ],
+        "clickup": [
+          "86ajnjucy"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:natural-care-protocol",
+          "github:ngvdigital-ia/natural-care-protocol",
+          "vercel:natural-care-protocol",
+          "domain:natural-care-protocol.vercel.app",
+          "domain:naturalcareprotocol.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "CONFIRMED",
+        "evidence": [
+          "offer_tracking:241",
+          "clickup:86ajnjucy",
+          "pages:registry:natural-care-protocol",
+          "pages:github:ngvdigital-ia/natural-care-protocol",
+          "pages:vercel:natural-care-protocol",
+          "pages:domain:natural-care-protocol.vercel.app",
+          "pages:domain:naturalcareprotocol.online"
+        ]
+      },
+      "source_status": "waiting-video",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "banco-ngv",
+          "external_id": "241",
+          "relation": "offer_tracking",
+          "state": "waiting-video",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajnjucy",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:natural-care-protocol",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/natural-care-protocol",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:natural-care-protocol",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:natural-care-protocol.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:naturalcareprotocol.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [],
+      "last_evidence_at": "2026-08-12T01:06:38.000Z"
+    },
+    {
+      "offer_id": "ngv:neuro-honey",
+      "offer_slug": "neuro-honey",
+      "display_name": "Neuro Honey Protocol",
+      "language": "pt",
+      "phase": 6,
+      "state": "IN_MOTION",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajkmmfr"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:neuro-honey",
+          "github:ngvdigital-ia/neuro-honey",
+          "vercel:neuro-honey",
+          "domain:neurohoneyprotocol.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajkmmfr",
+          "pages:registry:neuro-honey",
+          "pages:github:ngvdigital-ia/neuro-honey",
+          "pages:vercel:neuro-honey",
+          "pages:domain:neurohoneyprotocol.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "IN_MOTION",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajkmmfr",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": "2026-07-21T23:44:34.614Z"
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:neuro-honey",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-07-21T23:44:34.614Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/neuro-honey",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-07-21T23:44:34.614Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:neuro-honey",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-07-21T23:44:34.614Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:neurohoneyprotocol.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-07-21T23:44:34.614Z"
+        },
+        {
+          "source": "slack",
+          "external_id": "evt-4a2174fa7c84401afc937369d651e2c8",
+          "relation": "operation_event",
+          "state": "read_only",
+          "observed_at": "2026-07-21T23:44:34.614Z"
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identificador do Banco NGV.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": "2026-07-21T16:50:00.000Z"
+        },
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar project_slug no Monitoramento NGV.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": "2026-07-21T16:50:00.000Z"
+        },
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar se a oferta possui produto no Apps Ofertas.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": "2026-07-21T16:50:00.000Z"
+        }
+      ],
+      "last_evidence_at": "2026-07-21T23:44:34.614Z"
+    },
+    {
+      "offer_id": "ngv:onlymoney",
+      "offer_slug": "onlymoney",
+      "display_name": "Only Money",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:onlymoney",
+          "github:ngvdigital-ia/only-money-vsl",
+          "vercel:only-money-vsl",
+          "domain:ghostgirls.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:onlymoney",
+          "pages:github:ngvdigital-ia/only-money-vsl",
+          "pages:vercel:only-money-vsl",
+          "pages:domain:ghostgirls.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:onlymoney",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/only-money-vsl",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:only-money-vsl",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:ghostgirls.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:mos",
+      "offer_slug": "mos",
+      "display_name": "Orgasmic Cowgirl / Massages",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:mos",
+          "github:ngvdigital-ia/mos",
+          "vercel:mos",
+          "domain:mos-taupe.vercel.app"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:mos",
+          "pages:github:ngvdigital-ia/mos",
+          "pages:vercel:mos",
+          "pages:domain:mos-taupe.vercel.app"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:mos",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/mos",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:mos",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:mos-taupe.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:pastor-rhema",
+      "offer_slug": "pastor-rhema",
+      "display_name": "Pastor Rhema",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [
+          "239"
+        ],
+        "clickup": [
+          "86ajmxgzh"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:pastor-rhema",
+          "github:ngvdigital-ia/pastor-rhema",
+          "vercel:pastor-rhema",
+          "domain:pastorrhema.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "CONFIRMED",
+        "evidence": [
+          "offer_tracking:239",
+          "clickup:86ajmxgzh",
+          "pages:registry:pastor-rhema",
+          "pages:github:ngvdigital-ia/pastor-rhema",
+          "pages:vercel:pastor-rhema",
+          "pages:domain:pastorrhema.online"
+        ]
+      },
+      "source_status": "waiting-tracking",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "banco-ngv",
+          "external_id": "239",
+          "relation": "offer_tracking",
+          "state": "waiting-tracking",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajmxgzh",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:pastor-rhema",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/pastor-rhema",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:pastor-rhema",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:pastorrhema.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [],
+      "last_evidence_at": "2026-08-12T01:06:38.000Z"
+    },
+    {
+      "offer_id": "ngv:penna-naturale",
+      "offer_slug": "penna-naturale",
+      "display_name": "Penna Naturale",
+      "language": "it",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:penna-naturale",
+          "github:ngvdigital-ia/penna-naturale",
+          "vercel:penna-naturale"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:penna-naturale",
+          "pages:github:ngvdigital-ia/penna-naturale",
+          "pages:vercel:penna-naturale"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:penna-naturale",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/penna-naturale",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:penna-naturale",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:prosperityprayer",
+      "offer_slug": "prosperityprayer",
+      "display_name": "Prosperity Prayer",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:prosperityprayer",
+          "github:ngvdigital-ia/prosperityprayer",
+          "vercel:prosperityprayer",
+          "domain:prosperityprayer.vercel.app"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:prosperityprayer",
+          "pages:github:ngvdigital-ia/prosperityprayer",
+          "pages:vercel:prosperityprayer",
+          "pages:domain:prosperityprayer.vercel.app"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:prosperityprayer",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/prosperityprayer",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:prosperityprayer",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:prosperityprayer.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:protocolo-restart",
+      "offer_slug": "protocolo-restart",
+      "display_name": "Protocol Restart",
+      "language": "en/fr",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:protocolo-restart",
+          "github:ngvdigital-ia/protocolo-restart",
+          "vercel:protocolo-restart",
+          "domain:protocolo-restart.vercel.app"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:protocolo-restart",
+          "pages:github:ngvdigital-ia/protocolo-restart",
+          "pages:vercel:protocolo-restart",
+          "pages:domain:protocolo-restart.vercel.app"
+        ]
+      },
+      "source_status": "waiting-domain-verification",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:protocolo-restart",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/protocolo-restart",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:protocolo-restart",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:protocolo-restart.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:el-truco-de-la-secuencia",
+      "offer_slug": "el-truco-de-la-secuencia",
+      "display_name": "Protocolo Glúteos Al Tope",
+      "language": "es",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [
+          "238"
+        ],
+        "clickup": [
+          "86ajm1z9p"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:el-truco-de-la-secuencia",
+          "github:ngvdigital-ia/el-truco-de-la-secuencia",
+          "vercel:el-truco-de-la-secuencia"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "CONFIRMED",
+        "evidence": [
+          "offer_tracking:238",
+          "clickup:86ajm1z9p",
+          "pages:registry:el-truco-de-la-secuencia",
+          "pages:github:ngvdigital-ia/el-truco-de-la-secuencia",
+          "pages:vercel:el-truco-de-la-secuencia"
+        ]
+      },
+      "source_status": "draft",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "banco-ngv",
+          "external_id": "238",
+          "relation": "offer_tracking",
+          "state": "draft",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajm1z9p",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:el-truco-de-la-secuencia",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/el-truco-de-la-secuencia",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:el-truco-de-la-secuencia",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [],
+      "last_evidence_at": "2026-08-12T01:06:38.000Z"
+    },
+    {
+      "offer_id": "ngv:ambiguous-quiz-man",
+      "offer_slug": "quiz-man",
+      "display_name": "quiz_man",
+      "language": "PENDING",
+      "phase": 0,
+      "state": "BLOCKED",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "DIVERGENT",
+        "evidence": [
+          "projects.json identifies Quiz Titan Pulse but the canonical offer_id is unresolved"
+        ]
+      },
+      "source_status": "IDENTITY_AMBIGUOUS",
+      "aggregated_status": "BLOCKED",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "offer-id-map",
+          "external_id": "quiz_man",
+          "relation": "identity",
+          "state": "AMBIGUOUS",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "IDENTITY_AMBIGUOUS",
+          "detail": "projects.json identifies Quiz Titan Pulse but the canonical offer_id is unresolved",
+          "source": "offer-id-map",
+          "severity": "BLOCKED",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:reconquest-map",
+      "offer_slug": "reconquest-map",
+      "display_name": "Reconquest Map",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajd6zut"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:reconquest-map",
+          "github:ngvdigital-ia/reconquest-map",
+          "vercel:reconquest-map",
+          "domain:reconquestmap.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajd6zut",
+          "pages:registry:reconquest-map",
+          "pages:github:ngvdigital-ia/reconquest-map",
+          "pages:vercel:reconquest-map",
+          "pages:domain:reconquestmap.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajd6zut",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:reconquest-map",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/reconquest-map",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:reconquest-map",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:reconquestmap.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:sciatic-shield",
+      "offer_slug": "sciatic-shield",
+      "display_name": "Sciatic Shield",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:ss",
+          "github:ngvdigital-ia/sciaticshieldvercel",
+          "vercel:sciaticshield-vercel",
+          "domain:sciaticshield.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:ss",
+          "pages:github:ngvdigital-ia/sciaticshieldvercel",
+          "pages:vercel:sciaticshield-vercel",
+          "pages:domain:sciaticshield.online"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:ss",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/sciaticshieldvercel",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:sciaticshield-vercel",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:sciaticshield.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:skyvault",
+      "offer_slug": "skyvault",
+      "display_name": "SkyVault",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:skyvault",
+          "github:ngvdigital-ia/skyvault",
+          "vercel:skyvault",
+          "domain:skyvault-cyan.vercel.app"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:skyvault",
+          "pages:github:ngvdigital-ia/skyvault",
+          "pages:vercel:skyvault",
+          "pages:domain:skyvault-cyan.vercel.app"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:skyvault",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/skyvault",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:skyvault",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:skyvault-cyan.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:truco-del-bicarbonato",
+      "offer_slug": "truco-del-bicarbonato",
+      "display_name": "Truco Del Bicarbonato",
+      "language": "es",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ajp1a90"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:truco-del-bicarbonato",
+          "github:ngvdigital-ia/truco-del-bicarbonato",
+          "vercel:truco-del-bicarbonato",
+          "domain:trucobicarbonato.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ajp1a90",
+          "pages:registry:truco-del-bicarbonato",
+          "pages:github:ngvdigital-ia/truco-del-bicarbonato",
+          "pages:vercel:truco-del-bicarbonato",
+          "pages:domain:trucobicarbonato.online"
+        ]
+      },
+      "source_status": "waiting-video",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ajp1a90",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:truco-del-bicarbonato",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/truco-del-bicarbonato",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:truco-del-bicarbonato",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:trucobicarbonato.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:vigor-max",
+      "offer_slug": "vigor-max",
+      "display_name": "Vigor Max",
+      "language": "de",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "github:ngvdigital-ia/vigor-max",
+          "vercel:vigor-max",
+          "domain:vigor-max.vercel.app"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:github:ngvdigital-ia/vigor-max",
+          "pages:vercel:vigor-max",
+          "pages:domain:vigor-max.vercel.app"
+        ]
+      },
+      "source_status": "active",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/vigor-max",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:vigor-max",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:vigor-max.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    }
+  ],
+  "sources": [
+    {
+      "id": "registry",
+      "label": "Registry",
+      "state": "OPERANT",
+      "coverage": "38/38",
+      "detail": "Manifestos locais lidos e projetados.",
+      "last_read_at": "2026-08-12T01:22:39.541Z"
+    },
+    {
+      "id": "ledger",
+      "label": "Ledger",
+      "state": "OPERANT",
+      "coverage": "7 eventos",
+      "detail": "Ledger local sanitizado lido sem rede.",
+      "last_read_at": "2026-08-12T01:22:39.541Z"
+    },
+    {
+      "id": "clickup",
+      "label": "ClickUp",
+      "state": "DEGRADED",
+      "coverage": "6/6",
+      "detail": "Evidência live com mais de 12 horas.",
+      "last_read_at": "2026-08-11T12:51:51.954Z"
+    },
+    {
+      "id": "drive",
+      "label": "Drive",
+      "state": "UNVERIFIED",
+      "coverage": "2/38",
+      "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
+      "last_read_at": null
+    },
+    {
+      "id": "vercel",
+      "label": "Publicação",
+      "state": "UNVERIFIED",
+      "coverage": "31/38",
+      "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
+      "last_read_at": null
+    },
+    {
+      "id": "banco",
+      "label": "Banco NGV",
+      "state": "UNVERIFIED",
+      "coverage": "0/38",
+      "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
+      "last_read_at": null
+    },
+    {
+      "id": "monitoramento",
+      "label": "Monitoramento",
+      "state": "UNVERIFIED",
+      "coverage": "0/38",
+      "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
+      "last_read_at": null
+    },
+    {
+      "id": "apps",
+      "label": "Apps Ofertas",
+      "state": "UNVERIFIED",
+      "coverage": "0/38",
+      "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
+      "last_read_at": null
+    },
+    {
+      "id": "n8n",
+      "label": "n8n",
+      "state": "DEGRADED",
+      "coverage": "0/6",
+      "detail": "Evidência live com mais de 12 horas.",
+      "last_read_at": "2026-08-11T12:51:51.954Z"
+    },
+    {
+      "id": "runner",
+      "label": "Runner",
+      "state": "UNVERIFIED",
+      "coverage": "PENDING",
+      "detail": "Snapshot não executa diagnóstico do serviço.",
+      "last_read_at": null
+    }
+  ],
+  "events": [
+    {
+      "event_id": "clickup:86ajubm1t:2026-08-10T10:17:24.206Z",
+      "offer_id": "ngv:calistenia-21d",
+      "phase": 1,
+      "event_type": "clickup_task_observed",
+      "occurred_at": "2026-08-10T10:17:24.206Z",
+      "source": "clickup",
+      "state": "finalizado",
+      "blocker_code": null
+    },
+    {
+      "event_id": "clickup:86ajxg9ax:2026-08-07T12:22:14.085Z",
+      "offer_id": "ngv:bumbumflix",
+      "phase": 1,
+      "event_type": "clickup_task_observed",
+      "occurred_at": "2026-08-07T12:22:14.085Z",
+      "source": "clickup",
+      "state": "briefing",
+      "blocker_code": null
+    },
+    {
+      "event_id": "clickup:86ajtfhvh:2026-08-07T12:22:06.876Z",
+      "offer_id": "ngv:bumbumflix",
+      "phase": 1,
+      "event_type": "clickup_task_observed",
+      "occurred_at": "2026-08-07T12:22:06.876Z",
+      "source": "clickup",
+      "state": "finalizado",
+      "blocker_code": null
+    },
+    {
+      "event_id": "clickup:86ajtfhwv:2026-08-07T12:22:02.105Z",
+      "offer_id": "ngv:bumbumflix",
+      "phase": 1,
+      "event_type": "clickup_task_observed",
+      "occurred_at": "2026-08-07T12:22:02.105Z",
+      "source": "clickup",
+      "state": "finalizado",
+      "blocker_code": null
+    },
+    {
+      "event_id": "clickup:86ajxg4hn:2026-08-07T12:15:28.651Z",
+      "offer_id": "ngv:calistenia-21d",
+      "phase": 1,
+      "event_type": "clickup_task_observed",
+      "occurred_at": "2026-08-07T12:15:28.651Z",
+      "source": "clickup",
+      "state": "produção em andamento",
+      "blocker_code": null
+    },
+    {
+      "event_id": "clickup:86ajm207a:2026-07-26T11:16:15.113Z",
+      "offer_id": "ngv:calistenia-21d",
+      "phase": 1,
+      "event_type": "clickup_task_observed",
+      "occurred_at": "2026-07-26T11:16:15.113Z",
+      "source": "clickup",
+      "state": "finalizado",
+      "blocker_code": null
+    },
+    {
+      "event_id": "evt-4a2174fa7c84401afc937369d651e2c8",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 6,
+      "event_type": "slack_command_parsed",
+      "occurred_at": "2026-07-21T23:44:34.614Z",
+      "source": "slack",
+      "state": "read_only",
+      "blocker_code": null
+    },
+    {
+      "event_id": "evt-282533643bf4bb8092f53c867bdf3031",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 5,
+      "event_type": "blocked",
+      "occurred_at": "2026-07-21T23:44:33.596Z",
+      "source": "delivery",
+      "state": "BLOCKED",
+      "blocker_code": "DELIVERY_BLOCKED"
+    },
+    {
+      "event_id": "evt-3f2cc9be40027e3d34ecd18fa6b75dc8",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 4,
+      "event_type": "publication_planned",
+      "occurred_at": "2026-07-21T23:44:32.655Z",
+      "source": "publication",
+      "state": "PLAN_ONLY",
+      "blocker_code": null
+    },
+    {
+      "event_id": "evt-f9f03b82e96146ef14c5e347a7ea0461",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 3,
+      "event_type": "execution_simulated",
+      "occurred_at": "2026-07-21T23:44:31.610Z",
+      "source": "runner",
+      "state": "SIMULATED",
+      "blocker_code": null
+    },
+    {
+      "event_id": "evt-c3a086d9741057bdbbb912cd7607f8ea",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 2,
+      "event_type": "preflight_completed",
+      "occurred_at": "2026-07-21T23:44:30.599Z",
+      "source": "preflight",
+      "state": "ready",
+      "blocker_code": null
+    },
+    {
+      "event_id": "evt-d7d3e0b46bb4007bc88fa467d7e99c1f",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 1,
+      "event_type": "discovered",
+      "occurred_at": "2026-07-21T23:44:29.598Z",
+      "source": "catalog",
+      "state": "PASS",
+      "blocker_code": null
+    },
+    {
+      "event_id": "evt-a0cfec9dceb63e4a10a0079c4e840ed2",
+      "offer_id": "ngv:neuro-honey",
+      "phase": 1,
+      "event_type": "discovered",
+      "occurred_at": "2026-07-21T23:44:28.473Z",
+      "source": "catalog",
+      "state": "PASS",
+      "blocker_code": null
+    }
+  ]
+}
