@@ -26,7 +26,7 @@
     },
     {
       "path": "/api/cron/sync-ngv-core",
-      "schedule": "0 5 * * *"
+      "schedule": "25 15 * * *"
     }
   ]
 }
