@@ -163,7 +163,7 @@ test("emitDailyIngest valida URL antes da rede", async () => {
   assert.equal(calls, 0);
 });
 
-test("emitDailyIngest faz POST com apikey, redirect manual e só 2xx vira sucesso", async () => {
+test("emitDailyIngest faz POST com cabeçalho privado, redirect manual e só 2xx vira sucesso", async () => {
   const captured = [];
   const fetchImpl = async (url, options) => {
     captured.push({ url, options });
@@ -180,7 +180,7 @@ test("emitDailyIngest faz POST com apikey, redirect manual e só 2xx vira sucess
   assert.equal(String(url), CORE_URL);
   assert.equal(options.method, "POST");
   assert.equal(options.redirect, "manual");
-  assert.equal(options.headers.apikey, WRITER_KEY);
+  assert.equal(options.headers["x-ngv-core-key"], WRITER_KEY);
   assert.equal(options.headers["content-type"], "application/json");
   assert.deepEqual(JSON.parse(options.body), {
     schema_version: 1,

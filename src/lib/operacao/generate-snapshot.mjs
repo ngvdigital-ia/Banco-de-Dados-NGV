@@ -171,6 +171,63 @@ function externalId(value) {
   return normalized || null;
 }
 
+function explicitSlug(value) {
+  const normalized = externalId(value);
+  return normalized && SLUG.test(normalized) ? normalized : null;
+}
+
+function githubRepository(value) {
+  const normalized = externalId(value);
+  if (!normalized) return null;
+  let repository = normalized;
+  if (/^[a-z][a-z\d+.-]*:\/\//i.test(normalized)) {
+    try {
+      const url = new URL(normalized);
+      if (!['http:', 'https:'].includes(url.protocol) || !['github.com', 'www.github.com'].includes(url.hostname.toLowerCase())) return null;
+      if (url.search || url.hash) return null;
+      repository = url.pathname.replace(/^\/+|\/+$/g, '');
+    } catch {
+      return null;
+    }
+  }
+  const match = repository.match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)(?:\.git)?$/);
+  return match ? `${match[1].toLowerCase()}/${match[2].toLowerCase()}` : null;
+}
+
+function productionHostname(value) {
+  const normalized = externalId(value);
+  if (!normalized) return null;
+  try {
+    const url = new URL(normalized);
+    if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) return null;
+    return url.hostname.toLowerCase().replace(/\.$/, '');
+  } catch {
+    return null;
+  }
+}
+
+function addUnique(target, value) {
+  if (value && !target.includes(value)) target.push(value);
+}
+
+function projectPageIds(manifest) {
+  const pages = [];
+  const filesystemSlug = explicitSlug(manifest.systems?.filesystem?.registry_slug);
+  if (filesystemSlug) addUnique(pages, `registry:${filesystemSlug}`);
+  const github = githubRepository(manifest.systems?.git?.repository);
+  if (github) addUnique(pages, `github:${github}`);
+  const vercel = externalId(manifest.systems?.vercel?.project_name);
+  if (vercel) addUnique(pages, `vercel:${vercel}`);
+  const productionUrls = Array.isArray(manifest.systems?.vercel?.production_urls)
+    ? manifest.systems.vercel.production_urls
+    : [];
+  for (const productionUrl of productionUrls) {
+    const hostname = productionHostname(productionUrl);
+    if (hostname) addUnique(pages, `domain:${hostname}`);
+  }
+  return pages;
+}
+
 function projectMetricBinding(manifest) {
   const metrics = manifest.systems?.metrics;
   if (metrics === undefined) return { ...metricBinding(), metric_ids: [] };
@@ -219,12 +276,14 @@ function operationExternalIds(manifest) {
   }
   const banco = externalId(manifest.systems?.banco_ngv?.offer_tracking_id);
   const metricBinding = projectMetricBinding(manifest);
+  const pages = projectPageIds(manifest);
+  const productSlug = explicitSlug(manifest.systems?.apps_ofertas?.offer_slug);
   return {
     banco_ngv: banco ? [banco] : [],
     clickup,
     n8n: [],
-    pages: [],
-    product: [],
+    pages,
+    product: productSlug ? [`apps-ofertas:${productSlug}`] : [],
     metrics: metricBinding.metric_ids,
   };
 }
@@ -266,6 +325,23 @@ function operationEvidence(manifest, externalIds, observedAt, metricsBinding) {
       observed_at: metricsBinding.last_observed_at,
     });
   }
+  for (const pageId of externalIds.pages) {
+    const [source] = pageId.split(":", 1);
+    evidence.push({
+      source,
+      external_id: pageId,
+      relation: "page_identity",
+      state: "PENDING",
+      observed_at: observedAt,
+    });
+  }
+  for (const productId of externalIds.product) evidence.push({
+    source: "apps-ofertas",
+    external_id: productId,
+    relation: "product_identity",
+    state: "PENDING",
+    observed_at: observedAt,
+  });
   return evidence;
 }
 
@@ -312,6 +388,8 @@ export function projectManifest(manifest, latest) {
     ...externalIds.banco_ngv.map((id) => `offer_tracking:${id}`),
     ...externalIds.clickup.map((id) => `clickup:${id}`),
     ...externalIds.metrics.map((id) => `metrics:${id}`),
+    ...externalIds.pages.map((id) => `pages:${id}`),
+    ...externalIds.product.map((id) => `product:${id}`),
   ])];
   const evidence = operationEvidence(manifest, externalIds, observedAt, metricsBinding);
   if (latest) evidence.push({
@@ -607,7 +685,7 @@ async function readManifests(hub) {
   return manifests;
 }
 
-async function buildSnapshotResult(hub, { now = Date.now(), localOnly = false } = {}) {
+async function buildSnapshotResult(hub, { now = Date.now() } = {}) {
   const manifests = await readManifests(hub);
   const identityMap = await readJson(path.join(hub, "registry", "offer-id-map.json"), { allowPaths: true });
   const ledger = await readJson(path.join(hub, "state", "operation-ledger.json"));
@@ -684,11 +762,9 @@ async function buildSnapshotResult(hub, { now = Date.now(), localOnly = false } 
     events: events.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at)).slice(0, 100),
   };
   const liveArtifact = await readLiveArtifact(new Set(manifests.map((manifest) => manifest.offer_id)));
-  const mergeNow = localOnly && liveArtifact
-    ? new Date(liveArtifact.generated_at).getTime()
-    : now;
   return {
-    snapshot: mergeLiveEvidence(snapshot, liveArtifact, mergeNow),
+    // --local-only bypasses only the age gate; stale live evidence must remain DEGRADED.
+    snapshot: mergeLiveEvidence(snapshot, liveArtifact, now),
     liveInputPresent: liveArtifact !== null,
     liveArtifact,
   };

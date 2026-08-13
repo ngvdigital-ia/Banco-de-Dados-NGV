@@ -5,7 +5,7 @@
 //
 // Config (server-side, ver .env.example):
 //   NGV_CORE_URL            https://<project>.supabase.co/functions/v1/banco-global-daily-ingest
-//   NGV_CORE_WRITER_KEY     apikey do NGV Core (header `apikey`)
+//   NGV_CORE_WRITER_KEY     credencial de escrita do NGV Core (header privado)
 //   NGV_CORE_HOST_ALLOWLIST allowlist de hostnames (fail-closed)
 //
 // Testável via node:test com fetchImpl injetado (padrão da squad operacao).
@@ -172,7 +172,7 @@ export async function emitDailyIngest(aggregate, options = {}) {
       signal: controller.signal,
       headers: {
         "content-type": "application/json",
-        apikey: config.writerKey,
+        "x-ngv-core-key": config.writerKey,
       },
       body,
     });

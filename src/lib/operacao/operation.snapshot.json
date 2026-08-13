@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-11T13:43:03.185Z",
+  "generated_at": "2026-08-12T01:22:39.541Z",
   "source": "ngv-hub-local-projection",
   "mode": "read-only",
   "phases": [
@@ -50,18 +50,39 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:benchmark-page",
+          "github:pedrovictor26/teste_velocidade"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:benchmark-page",
+          "pages:github:pedrovictor26/teste_velocidade"
+        ]
       },
       "source_status": "test",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:benchmark-page",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:pedrovictor26/teste_velocidade",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -93,18 +114,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:allicin-reset-protocol",
+          "github:ngvdigital-ia/allicin-protocol",
+          "vercel:allicin-protocol",
+          "domain:allicin-protocol-one.vercel.app"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:allicin-reset-protocol",
+          "pages:github:ngvdigital-ia/allicin-protocol",
+          "pages:vercel:allicin-protocol",
+          "pages:domain:allicin-protocol-one.vercel.app"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:allicin-reset-protocol",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/allicin-protocol",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:allicin-protocol",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:allicin-protocol-one.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -136,18 +196,48 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "github:ngvdigital-ia/alphaflow",
+          "vercel:alphaflow",
+          "domain:incomecycle.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:github:ngvdigital-ia/alphaflow",
+          "pages:vercel:alphaflow",
+          "pages:domain:incomecycle.online"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/alphaflow",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:alphaflow",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:incomecycle.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -179,18 +269,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:afrikanisches-ritual",
+          "github:ngvdigital-ia/afrikanischen-wasserritual",
+          "vercel:afrikanischen-wasserritual",
+          "domain:afrikanischenwasserritual.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:afrikanisches-ritual",
+          "pages:github:ngvdigital-ia/afrikanischen-wasserritual",
+          "pages:vercel:afrikanischen-wasserritual",
+          "pages:domain:afrikanischenwasserritual.online"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:afrikanisches-ritual",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/afrikanischen-wasserritual",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:afrikanischen-wasserritual",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:afrikanischenwasserritual.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -222,18 +351,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:automatic-video-factory",
+          "github:ngvdigital-ia/automatic-video-factory",
+          "vercel:automatic-video-factory",
+          "domain:automaticvideofactory.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:automatic-video-factory",
+          "pages:github:ngvdigital-ia/automatic-video-factory",
+          "pages:vercel:automatic-video-factory",
+          "pages:domain:automaticvideofactory.online"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:automatic-video-factory",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/automatic-video-factory",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:automatic-video-factory",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:automaticvideofactory.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -271,7 +439,12 @@
           "86ajxg9ax"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:bumbumflix",
+          "github:ngvdigital-ia/bumbumflix",
+          "vercel:bumbumflix",
+          "domain:bumbumflix-one.vercel.app"
+        ],
         "product": [],
         "metrics": []
       },
@@ -281,7 +454,11 @@
           "offer_tracking:253",
           "clickup:86ajtfhvh",
           "clickup:86ajtfhwv",
-          "clickup:86ajxg9ax"
+          "clickup:86ajxg9ax",
+          "pages:registry:bumbumflix",
+          "pages:github:ngvdigital-ia/bumbumflix",
+          "pages:vercel:bumbumflix",
+          "pages:domain:bumbumflix-one.vercel.app"
         ]
       },
       "source_status": "finalizado",
@@ -293,6 +470,34 @@
           "external_id": "253",
           "relation": "offer_tracking",
           "state": "waiting-video",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:bumbumflix",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/bumbumflix",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:bumbumflix",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:bumbumflix-one.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
           "observed_at": "2026-08-11T12:43:43.000Z"
         },
         {
@@ -354,7 +559,13 @@
           "86ajxg4hn"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:calistenia-21d",
+          "github:ngvdigital-ia/calistenia-21d",
+          "vercel:calistenia-21d",
+          "domain:calistenia-21d-zeta.vercel.app",
+          "domain:calistenia21dias.online"
+        ],
         "product": [],
         "metrics": [
           "120253109864280728",
@@ -385,7 +596,12 @@
           "metrics:120253110020870728",
           "metrics:120253110020880728",
           "metrics:120253110020890728",
-          "metrics:120253110020920728"
+          "metrics:120253110020920728",
+          "pages:registry:calistenia-21d",
+          "pages:github:ngvdigital-ia/calistenia-21d",
+          "pages:vercel:calistenia-21d",
+          "pages:domain:calistenia-21d-zeta.vercel.app",
+          "pages:domain:calistenia21dias.online"
         ]
       },
       "source_status": "finalizado",
@@ -470,6 +686,41 @@
           "observed_at": "2026-07-23T00:00:00.000Z"
         },
         {
+          "source": "registry",
+          "external_id": "registry:calistenia-21d",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/calistenia-21d",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:calistenia-21d",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:calistenia-21d-zeta.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:calistenia21dias.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-11T12:43:43.000Z"
+        },
+        {
           "source": "clickup",
           "external_id": "86ajm207a",
           "relation": "parent_task",
@@ -535,14 +786,23 @@
           "86ajdnunb"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:celestino",
+          "github:ngvdigital-ia/celestino",
+          "vercel:celestino",
+          "domain:thecelestino.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
         "evidence": [
-          "clickup:86ajdnunb"
+          "clickup:86ajdnunb",
+          "pages:registry:celestino",
+          "pages:github:ngvdigital-ia/celestino",
+          "pages:vercel:celestino",
+          "pages:domain:thecelestino.online"
         ]
       },
       "source_status": "active",
@@ -553,6 +813,34 @@
           "source": "clickup",
           "external_id": "86ajdnunb",
           "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:celestino",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/celestino",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:celestino",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:thecelestino.online",
+          "relation": "page_identity",
           "state": "PENDING",
           "observed_at": null
         }
@@ -590,14 +878,23 @@
           "86ajdufuu"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:clean-sweet-app",
+          "github:ngvdigital-ia/clean-sweet-app",
+          "vercel:clean-sweet-app",
+          "domain:cleansweetapp.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
         "evidence": [
-          "clickup:86ajdufuu"
+          "clickup:86ajdufuu",
+          "pages:registry:clean-sweet-app",
+          "pages:github:ngvdigital-ia/clean-sweet-app",
+          "pages:vercel:clean-sweet-app",
+          "pages:domain:cleansweetapp.online"
         ]
       },
       "source_status": "active",
@@ -608,6 +905,34 @@
           "source": "clickup",
           "external_id": "86ajdufuu",
           "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:clean-sweet-app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/clean-sweet-app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:clean-sweet-app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:cleansweetapp.online",
+          "relation": "page_identity",
           "state": "PENDING",
           "observed_at": null
         }
@@ -640,19 +965,31 @@
       "state": "PENDING",
       "source_of_truth": "banco-ngv",
       "external_ids": {
-        "banco_ngv": [],
+        "banco_ngv": [
+          "240"
+        ],
         "clickup": [
           "86ajnjkea"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:codigo-divino",
+          "github:ngvdigital-ia/codigo-divino",
+          "vercel:codigo-divino",
+          "domain:codigo-divino-weld.vercel.app"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
-        "status": "PENDING",
+        "status": "CONFIRMED",
         "evidence": [
-          "clickup:86ajnjkea"
+          "offer_tracking:240",
+          "clickup:86ajnjkea",
+          "pages:registry:codigo-divino",
+          "pages:github:ngvdigital-ia/codigo-divino",
+          "pages:vercel:codigo-divino",
+          "pages:domain:codigo-divino-weld.vercel.app"
         ]
       },
       "source_status": "waiting-tracking",
@@ -660,11 +997,46 @@
       "next_owner": "PENDING",
       "evidence": [
         {
+          "source": "banco-ngv",
+          "external_id": "240",
+          "relation": "offer_tracking",
+          "state": "waiting-tracking",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
           "source": "clickup",
           "external_id": "86ajnjkea",
           "relation": "parent_task",
           "state": "PENDING",
-          "observed_at": null
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:codigo-divino",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/codigo-divino",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:codigo-divino",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:codigo-divino-weld.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
         }
       ],
       "metric_binding": {
@@ -675,16 +1047,8 @@
         "last_observed_at": null,
         "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
       },
-      "blockers": [
-        {
-          "code": "MANIFEST_PENDING",
-          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
-          "source": "registry",
-          "severity": "PENDING",
-          "occurred_at": null
-        }
-      ],
-      "last_evidence_at": null
+      "blockers": [],
+      "last_evidence_at": "2026-08-12T01:06:38.000Z"
     },
     {
       "offer_id": "ngv:davinci-wave",
@@ -698,18 +1062,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:davinci-wave",
+          "github:ngvdigital-ia/davinci-wave",
+          "vercel:da-v-inci-wave",
+          "domain:davinciwave.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:davinci-wave",
+          "pages:github:ngvdigital-ia/davinci-wave",
+          "pages:vercel:da-v-inci-wave",
+          "pages:domain:davinciwave.online"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:davinci-wave",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/davinci-wave",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:da-v-inci-wave",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:davinciwave.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -743,14 +1146,23 @@
           "86ajwb2nh"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:defi-pilates-maison-50",
+          "github:ngvdigital-ia/defi-pilates-maison-50",
+          "vercel:defi-pilates-maison-50",
+          "domain:defipilatesmaison50.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
         "evidence": [
-          "clickup:86ajwb2nh"
+          "clickup:86ajwb2nh",
+          "pages:registry:defi-pilates-maison-50",
+          "pages:github:ngvdigital-ia/defi-pilates-maison-50",
+          "pages:vercel:defi-pilates-maison-50",
+          "pages:domain:defipilatesmaison50.online"
         ]
       },
       "source_status": "waiting-tracking",
@@ -761,6 +1173,34 @@
           "source": "clickup",
           "external_id": "86ajwb2nh",
           "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:defi-pilates-maison-50",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/defi-pilates-maison-50",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:defi-pilates-maison-50",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:defipilatesmaison50.online",
+          "relation": "page_identity",
           "state": "PENDING",
           "observed_at": null
         }
@@ -798,14 +1238,23 @@
           "86ajp2b7a"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:desafio-reconexion-7-dias",
+          "github:ngvdigital-ia/desafio-reconexion-7-dias",
+          "vercel:desafio-reconexion-7-dias",
+          "domain:desafioreconexion7dias.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
         "evidence": [
-          "clickup:86ajp2b7a"
+          "clickup:86ajp2b7a",
+          "pages:registry:desafio-reconexion-7-dias",
+          "pages:github:ngvdigital-ia/desafio-reconexion-7-dias",
+          "pages:vercel:desafio-reconexion-7-dias",
+          "pages:domain:desafioreconexion7dias.online"
         ]
       },
       "source_status": "waiting-video",
@@ -816,6 +1265,34 @@
           "source": "clickup",
           "external_id": "86ajp2b7a",
           "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:desafio-reconexion-7-dias",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/desafio-reconexion-7-dias",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:desafio-reconexion-7-dias",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:desafioreconexion7dias.online",
+          "relation": "page_identity",
           "state": "PENDING",
           "observed_at": null
         }
@@ -851,18 +1328,39 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:el-protocolo-juventud-epigenetica",
+          "github:ngvdigital-ia/el-protocolo-juventud-epigenetica"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:el-protocolo-juventud-epigenetica",
+          "pages:github:ngvdigital-ia/el-protocolo-juventud-epigenetica"
+        ]
       },
       "source_status": "draft",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:el-protocolo-juventud-epigenetica",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/el-protocolo-juventud-epigenetica",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -894,18 +1392,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:filex2",
+          "github:ngvdigital-ia/filex2",
+          "vercel:filex2",
+          "domain:filex2.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:filex2",
+          "pages:github:ngvdigital-ia/filex2",
+          "pages:vercel:filex2",
+          "pages:domain:filex2.online"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:filex2",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/filex2",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:filex2",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:filex2.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -937,18 +1474,48 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:app-gelatine-bariatrique",
+          "github:ngvdigital-ia/app-gelatine-bariatrique",
+          "vercel:app-gelatine-bariatrique"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:app-gelatine-bariatrique",
+          "pages:github:ngvdigital-ia/app-gelatine-bariatrique",
+          "pages:vercel:app-gelatine-bariatrique"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:app-gelatine-bariatrique",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/app-gelatine-bariatrique",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:app-gelatine-bariatrique",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -982,14 +1549,21 @@
           "86ah49wru"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:v-spot",
+          "github:ngvdigital-ia/v-spot",
+          "vercel:v-spot"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
         "evidence": [
-          "clickup:86ah49wru"
+          "clickup:86ah49wru",
+          "pages:registry:v-spot",
+          "pages:github:ngvdigital-ia/v-spot",
+          "pages:vercel:v-spot"
         ]
       },
       "source_status": "active",
@@ -1000,6 +1574,27 @@
           "source": "clickup",
           "external_id": "86ah49wru",
           "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:v-spot",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/v-spot",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:v-spot",
+          "relation": "page_identity",
           "state": "PENDING",
           "observed_at": null
         }
@@ -1037,14 +1632,23 @@
           "86ajdq9gz"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:gourmet-round-popcorn",
+          "github:ngvdigital-ia/gourmet-round-popcorn",
+          "vercel:gourmet-round-popcorn",
+          "domain:roundpopcorn.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
         "evidence": [
-          "clickup:86ajdq9gz"
+          "clickup:86ajdq9gz",
+          "pages:registry:gourmet-round-popcorn",
+          "pages:github:ngvdigital-ia/gourmet-round-popcorn",
+          "pages:vercel:gourmet-round-popcorn",
+          "pages:domain:roundpopcorn.online"
         ]
       },
       "source_status": "active",
@@ -1055,6 +1659,34 @@
           "source": "clickup",
           "external_id": "86ajdq9gz",
           "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:gourmet-round-popcorn",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/gourmet-round-popcorn",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:gourmet-round-popcorn",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:roundpopcorn.online",
+          "relation": "page_identity",
           "state": "PENDING",
           "observed_at": null
         }
@@ -1090,18 +1722,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:hh",
+          "github:ngvdigital-ia/horse-honey",
+          "vercel:horse-honey",
+          "domain:horsehoney.site"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:hh",
+          "pages:github:ngvdigital-ia/horse-honey",
+          "pages:vercel:horse-honey",
+          "pages:domain:horsehoney.site"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:hh",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/horse-honey",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:horse-honey",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:horsehoney.site",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -1133,18 +1804,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:le-brule-24h",
+          "github:ngvdigital-ia/lebrule24h",
+          "vercel:lebrule24h",
+          "domain:lebrule24h.vercel.app"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:le-brule-24h",
+          "pages:github:ngvdigital-ia/lebrule24h",
+          "pages:vercel:lebrule24h",
+          "pages:domain:lebrule24h.vercel.app"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:le-brule-24h",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/lebrule24h",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:lebrule24h",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:lebrule24h.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -1176,18 +1886,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:lecodedelafemme",
+          "github:ngvdigital-ia/lecodedelafemme",
+          "vercel:lecodedelafemme",
+          "domain:lecodedelafemme.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:lecodedelafemme",
+          "pages:github:ngvdigital-ia/lecodedelafemme",
+          "pages:vercel:lecodedelafemme",
+          "pages:domain:lecodedelafemme.online"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:lecodedelafemme",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/lecodedelafemme",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:lecodedelafemme",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:lecodedelafemme.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -1221,14 +1970,21 @@
           "86ah417ke"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:les-secrets-masculins",
+          "github:ngvdigital-ia/les-secrets-masculins",
+          "vercel:les-secrets-masculins"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
         "evidence": [
-          "clickup:86ah417ke"
+          "clickup:86ah417ke",
+          "pages:registry:les-secrets-masculins",
+          "pages:github:ngvdigital-ia/les-secrets-masculins",
+          "pages:vercel:les-secrets-masculins"
         ]
       },
       "source_status": "active",
@@ -1239,6 +1995,27 @@
           "source": "clickup",
           "external_id": "86ah417ke",
           "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:les-secrets-masculins",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/les-secrets-masculins",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:les-secrets-masculins",
+          "relation": "page_identity",
           "state": "PENDING",
           "observed_at": null
         }
@@ -1274,18 +2051,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:reconquista-silenciosa",
+          "github:ngvdigital-ia/reconquista-silenciosa",
+          "vercel:reconquista-silenciosa",
+          "domain:hazquevuelva.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:reconquista-silenciosa",
+          "pages:github:ngvdigital-ia/reconquista-silenciosa",
+          "pages:vercel:reconquista-silenciosa",
+          "pages:domain:hazquevuelva.online"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:reconquista-silenciosa",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/reconquista-silenciosa",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:reconquista-silenciosa",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:hazquevuelva.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -1317,18 +2133,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:meister-im-bett",
+          "github:ngvdigital-ia/meister-im-bett",
+          "vercel:meister-im-bett",
+          "domain:meisterimbett.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:meister-im-bett",
+          "pages:github:ngvdigital-ia/meister-im-bett",
+          "pages:vercel:meister-im-bett",
+          "pages:domain:meisterimbett.online"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:meister-im-bett",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/meister-im-bett",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:meister-im-bett",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:meisterimbett.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -1357,19 +2212,33 @@
       "state": "PENDING",
       "source_of_truth": "banco-ngv",
       "external_ids": {
-        "banco_ngv": [],
+        "banco_ngv": [
+          "241"
+        ],
         "clickup": [
           "86ajnjucy"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:natural-care-protocol",
+          "github:ngvdigital-ia/natural-care-protocol",
+          "vercel:natural-care-protocol",
+          "domain:natural-care-protocol.vercel.app",
+          "domain:naturalcareprotocol.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
-        "status": "PENDING",
+        "status": "CONFIRMED",
         "evidence": [
-          "clickup:86ajnjucy"
+          "offer_tracking:241",
+          "clickup:86ajnjucy",
+          "pages:registry:natural-care-protocol",
+          "pages:github:ngvdigital-ia/natural-care-protocol",
+          "pages:vercel:natural-care-protocol",
+          "pages:domain:natural-care-protocol.vercel.app",
+          "pages:domain:naturalcareprotocol.online"
         ]
       },
       "source_status": "waiting-video",
@@ -1377,11 +2246,53 @@
       "next_owner": "PENDING",
       "evidence": [
         {
+          "source": "banco-ngv",
+          "external_id": "241",
+          "relation": "offer_tracking",
+          "state": "waiting-video",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
           "source": "clickup",
           "external_id": "86ajnjucy",
           "relation": "parent_task",
           "state": "PENDING",
-          "observed_at": null
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:natural-care-protocol",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/natural-care-protocol",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:natural-care-protocol",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:natural-care-protocol.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:naturalcareprotocol.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
         }
       ],
       "metric_binding": {
@@ -1392,16 +2303,8 @@
         "last_observed_at": null,
         "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
       },
-      "blockers": [
-        {
-          "code": "MANIFEST_PENDING",
-          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
-          "source": "registry",
-          "severity": "PENDING",
-          "occurred_at": null
-        }
-      ],
-      "last_evidence_at": null
+      "blockers": [],
+      "last_evidence_at": "2026-08-12T01:06:38.000Z"
     },
     {
       "offer_id": "ngv:neuro-honey",
@@ -1417,14 +2320,23 @@
           "86ajkmmfr"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:neuro-honey",
+          "github:ngvdigital-ia/neuro-honey",
+          "vercel:neuro-honey",
+          "domain:neurohoneyprotocol.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
         "evidence": [
-          "clickup:86ajkmmfr"
+          "clickup:86ajkmmfr",
+          "pages:registry:neuro-honey",
+          "pages:github:ngvdigital-ia/neuro-honey",
+          "pages:vercel:neuro-honey",
+          "pages:domain:neurohoneyprotocol.online"
         ]
       },
       "source_status": "active",
@@ -1435,6 +2347,34 @@
           "source": "clickup",
           "external_id": "86ajkmmfr",
           "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": "2026-07-21T23:44:34.614Z"
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:neuro-honey",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-07-21T23:44:34.614Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/neuro-honey",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-07-21T23:44:34.614Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:neuro-honey",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-07-21T23:44:34.614Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:neurohoneyprotocol.online",
+          "relation": "page_identity",
           "state": "PENDING",
           "observed_at": "2026-07-21T23:44:34.614Z"
         },
@@ -1491,18 +2431,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:onlymoney",
+          "github:ngvdigital-ia/only-money-vsl",
+          "vercel:only-money-vsl",
+          "domain:ghostgirls.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:onlymoney",
+          "pages:github:ngvdigital-ia/only-money-vsl",
+          "pages:vercel:only-money-vsl",
+          "pages:domain:ghostgirls.online"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:onlymoney",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/only-money-vsl",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:only-money-vsl",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:ghostgirls.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -1534,18 +2513,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:mos",
+          "github:ngvdigital-ia/mos",
+          "vercel:mos",
+          "domain:mos-taupe.vercel.app"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:mos",
+          "pages:github:ngvdigital-ia/mos",
+          "pages:vercel:mos",
+          "pages:domain:mos-taupe.vercel.app"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:mos",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/mos",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:mos",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:mos-taupe.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -1574,19 +2592,31 @@
       "state": "PENDING",
       "source_of_truth": "banco-ngv",
       "external_ids": {
-        "banco_ngv": [],
+        "banco_ngv": [
+          "239"
+        ],
         "clickup": [
           "86ajmxgzh"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:pastor-rhema",
+          "github:ngvdigital-ia/pastor-rhema",
+          "vercel:pastor-rhema",
+          "domain:pastorrhema.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
-        "status": "PENDING",
+        "status": "CONFIRMED",
         "evidence": [
-          "clickup:86ajmxgzh"
+          "offer_tracking:239",
+          "clickup:86ajmxgzh",
+          "pages:registry:pastor-rhema",
+          "pages:github:ngvdigital-ia/pastor-rhema",
+          "pages:vercel:pastor-rhema",
+          "pages:domain:pastorrhema.online"
         ]
       },
       "source_status": "waiting-tracking",
@@ -1594,11 +2624,46 @@
       "next_owner": "PENDING",
       "evidence": [
         {
+          "source": "banco-ngv",
+          "external_id": "239",
+          "relation": "offer_tracking",
+          "state": "waiting-tracking",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
           "source": "clickup",
           "external_id": "86ajmxgzh",
           "relation": "parent_task",
           "state": "PENDING",
-          "observed_at": null
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:pastor-rhema",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/pastor-rhema",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:pastor-rhema",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:pastorrhema.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
         }
       ],
       "metric_binding": {
@@ -1609,16 +2674,8 @@
         "last_observed_at": null,
         "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
       },
-      "blockers": [
-        {
-          "code": "MANIFEST_PENDING",
-          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
-          "source": "registry",
-          "severity": "PENDING",
-          "occurred_at": null
-        }
-      ],
-      "last_evidence_at": null
+      "blockers": [],
+      "last_evidence_at": "2026-08-12T01:06:38.000Z"
     },
     {
       "offer_id": "ngv:penna-naturale",
@@ -1632,18 +2689,48 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:penna-naturale",
+          "github:ngvdigital-ia/penna-naturale",
+          "vercel:penna-naturale"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:penna-naturale",
+          "pages:github:ngvdigital-ia/penna-naturale",
+          "pages:vercel:penna-naturale"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:penna-naturale",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/penna-naturale",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:penna-naturale",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -1675,18 +2762,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:prosperityprayer",
+          "github:ngvdigital-ia/prosperityprayer",
+          "vercel:prosperityprayer",
+          "domain:prosperityprayer.vercel.app"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:prosperityprayer",
+          "pages:github:ngvdigital-ia/prosperityprayer",
+          "pages:vercel:prosperityprayer",
+          "pages:domain:prosperityprayer.vercel.app"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:prosperityprayer",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/prosperityprayer",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:prosperityprayer",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:prosperityprayer.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -1718,18 +2844,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:protocolo-restart",
+          "github:ngvdigital-ia/protocolo-restart",
+          "vercel:protocolo-restart",
+          "domain:protocolo-restart.vercel.app"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:protocolo-restart",
+          "pages:github:ngvdigital-ia/protocolo-restart",
+          "pages:vercel:protocolo-restart",
+          "pages:domain:protocolo-restart.vercel.app"
+        ]
       },
       "source_status": "waiting-domain-verification",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:protocolo-restart",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/protocolo-restart",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:protocolo-restart",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:protocolo-restart.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -1758,19 +2923,29 @@
       "state": "PENDING",
       "source_of_truth": "banco-ngv",
       "external_ids": {
-        "banco_ngv": [],
+        "banco_ngv": [
+          "238"
+        ],
         "clickup": [
           "86ajm1z9p"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:el-truco-de-la-secuencia",
+          "github:ngvdigital-ia/el-truco-de-la-secuencia",
+          "vercel:el-truco-de-la-secuencia"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
-        "status": "PENDING",
+        "status": "CONFIRMED",
         "evidence": [
-          "clickup:86ajm1z9p"
+          "offer_tracking:238",
+          "clickup:86ajm1z9p",
+          "pages:registry:el-truco-de-la-secuencia",
+          "pages:github:ngvdigital-ia/el-truco-de-la-secuencia",
+          "pages:vercel:el-truco-de-la-secuencia"
         ]
       },
       "source_status": "draft",
@@ -1778,11 +2953,39 @@
       "next_owner": "PENDING",
       "evidence": [
         {
+          "source": "banco-ngv",
+          "external_id": "238",
+          "relation": "offer_tracking",
+          "state": "draft",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
           "source": "clickup",
           "external_id": "86ajm1z9p",
           "relation": "parent_task",
           "state": "PENDING",
-          "observed_at": null
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:el-truco-de-la-secuencia",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/el-truco-de-la-secuencia",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:el-truco-de-la-secuencia",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-12T01:06:38.000Z"
         }
       ],
       "metric_binding": {
@@ -1793,16 +2996,8 @@
         "last_observed_at": null,
         "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
       },
-      "blockers": [
-        {
-          "code": "MANIFEST_PENDING",
-          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
-          "source": "registry",
-          "severity": "PENDING",
-          "occurred_at": null
-        }
-      ],
-      "last_evidence_at": null
+      "blockers": [],
+      "last_evidence_at": "2026-08-12T01:06:38.000Z"
     },
     {
       "offer_id": "ngv:ambiguous-quiz-man",
@@ -1871,14 +3066,23 @@
           "86ajd6zut"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:reconquest-map",
+          "github:ngvdigital-ia/reconquest-map",
+          "vercel:reconquest-map",
+          "domain:reconquestmap.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
         "evidence": [
-          "clickup:86ajd6zut"
+          "clickup:86ajd6zut",
+          "pages:registry:reconquest-map",
+          "pages:github:ngvdigital-ia/reconquest-map",
+          "pages:vercel:reconquest-map",
+          "pages:domain:reconquestmap.online"
         ]
       },
       "source_status": "active",
@@ -1889,6 +3093,34 @@
           "source": "clickup",
           "external_id": "86ajd6zut",
           "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:reconquest-map",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/reconquest-map",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:reconquest-map",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:reconquestmap.online",
+          "relation": "page_identity",
           "state": "PENDING",
           "observed_at": null
         }
@@ -1924,18 +3156,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:ss",
+          "github:ngvdigital-ia/sciaticshieldvercel",
+          "vercel:sciaticshield-vercel",
+          "domain:sciaticshield.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:ss",
+          "pages:github:ngvdigital-ia/sciaticshieldvercel",
+          "pages:vercel:sciaticshield-vercel",
+          "pages:domain:sciaticshield.online"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:ss",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/sciaticshieldvercel",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:sciaticshield-vercel",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:sciaticshield.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -1967,18 +3238,57 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:skyvault",
+          "github:ngvdigital-ia/skyvault",
+          "vercel:skyvault",
+          "domain:skyvault-cyan.vercel.app"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:registry:skyvault",
+          "pages:github:ngvdigital-ia/skyvault",
+          "pages:vercel:skyvault",
+          "pages:domain:skyvault-cyan.vercel.app"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:skyvault",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/skyvault",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:skyvault",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:skyvault-cyan.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -2012,14 +3322,23 @@
           "86ajp1a90"
         ],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "registry:truco-del-bicarbonato",
+          "github:ngvdigital-ia/truco-del-bicarbonato",
+          "vercel:truco-del-bicarbonato",
+          "domain:trucobicarbonato.online"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
         "evidence": [
-          "clickup:86ajp1a90"
+          "clickup:86ajp1a90",
+          "pages:registry:truco-del-bicarbonato",
+          "pages:github:ngvdigital-ia/truco-del-bicarbonato",
+          "pages:vercel:truco-del-bicarbonato",
+          "pages:domain:trucobicarbonato.online"
         ]
       },
       "source_status": "waiting-video",
@@ -2030,6 +3349,34 @@
           "source": "clickup",
           "external_id": "86ajp1a90",
           "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:truco-del-bicarbonato",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/truco-del-bicarbonato",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:truco-del-bicarbonato",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:trucobicarbonato.online",
+          "relation": "page_identity",
           "state": "PENDING",
           "observed_at": null
         }
@@ -2065,18 +3412,48 @@
         "banco_ngv": [],
         "clickup": [],
         "n8n": [],
-        "pages": [],
+        "pages": [
+          "github:ngvdigital-ia/vigor-max",
+          "vercel:vigor-max",
+          "domain:vigor-max.vercel.app"
+        ],
         "product": [],
         "metrics": []
       },
       "reconciliation": {
         "status": "PENDING",
-        "evidence": []
+        "evidence": [
+          "pages:github:ngvdigital-ia/vigor-max",
+          "pages:vercel:vigor-max",
+          "pages:domain:vigor-max.vercel.app"
+        ]
       },
       "source_status": "active",
       "aggregated_status": "PENDING",
       "next_owner": "PENDING",
-      "evidence": [],
+      "evidence": [
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/vigor-max",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:vigor-max",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:vigor-max.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
       "metric_binding": {
         "status": "PENDING",
         "entity_type": null,
@@ -2104,7 +3481,7 @@
       "state": "OPERANT",
       "coverage": "38/38",
       "detail": "Manifestos locais lidos e projetados.",
-      "last_read_at": "2026-08-11T13:43:03.185Z"
+      "last_read_at": "2026-08-12T01:22:39.541Z"
     },
     {
       "id": "ledger",
@@ -2112,14 +3489,14 @@
       "state": "OPERANT",
       "coverage": "7 eventos",
       "detail": "Ledger local sanitizado lido sem rede.",
-      "last_read_at": "2026-08-11T13:43:03.185Z"
+      "last_read_at": "2026-08-12T01:22:39.541Z"
     },
     {
       "id": "clickup",
       "label": "ClickUp",
-      "state": "OPERANT",
+      "state": "DEGRADED",
       "coverage": "6/6",
-      "detail": "Tarefas explícitas observadas via leitura read-only.",
+      "detail": "Evidência live com mais de 12 horas.",
       "last_read_at": "2026-08-11T12:51:51.954Z"
     },
     {
@@ -2165,9 +3542,9 @@
     {
       "id": "n8n",
       "label": "n8n",
-      "state": "OPERANT",
+      "state": "DEGRADED",
       "coverage": "0/6",
-      "detail": "Execuções associadas somente por task_id explícito.",
+      "detail": "Evidência live com mais de 12 horas.",
       "last_read_at": "2026-08-11T12:51:51.954Z"
     },
     {

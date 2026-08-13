@@ -17,6 +17,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { OperationCommandPreview } from "@/components/operacao/operation-command-preview";
 import { compareBlockerRows } from "@/lib/operacao/blocker-order.mjs";
 import { cn } from "@/lib/utils";
 import type {
@@ -24,6 +25,13 @@ import type {
   OperationSnapshot,
   OperationSource,
 } from "@/lib/operacao/schema";
+import type { fetchQuizAnalyticsSummary } from "@/lib/operacao/quiz-analytics-summary.mjs";
+import type { fetchSpyAnalyticsSummary } from "@/lib/operacao/spy-analytics-summary.mjs";
+import type { fetchNgvCoreOperationalSummary } from "@/lib/operacao/ngv-core-summary.mjs";
+
+type QuizAnalyticsSummary = Awaited<ReturnType<typeof fetchQuizAnalyticsSummary>>;
+type SpyAnalyticsSummary = Awaited<ReturnType<typeof fetchSpyAnalyticsSummary>>;
+type NgvCoreOperationalSummary = Awaited<ReturnType<typeof fetchNgvCoreOperationalSummary>>;
 
 type ViewMode = "table" | "flow";
 type StateFilter = "ALL" | OperationOffer["state"];
@@ -168,6 +176,49 @@ function SummaryBand({ snapshot }: { snapshot: OperationSnapshot }) {
       </div>
     </section>
   );
+}
+
+function QuizAnalyticsCard({ summary }: { summary: QuizAnalyticsSummary }) {
+  const unavailable = summary.source === "UNAVAILABLE";
+  const values = [["Aguardando deploy", summary.counts.awaiting_deploy], ["Instalados", summary.counts.installed], ["Recebendo eventos", summary.counts.receiving_events]] as const;
+  return <section aria-labelledby="quiz-analytics-summary" className="rounded-lg border bg-card p-4 sm:p-6">
+    <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-mono text-[11px] uppercase tracking-[0.1em] text-primary">Quiz Analytics</p><h2 id="quiz-analytics-summary" className="mt-1 text-lg font-semibold">Resumo externo, somente leitura</h2><p className="mt-1 text-sm leading-relaxed text-muted-foreground">Fonte externa factual; não altera fases, lifecycle ou ofertas do Banco NGV.</p></div><StatusBadge variant={unavailable ? "warning" : summary.source === "UNVERIFIED" ? "neutral" : "success"}>{unavailable ? "Fonte indisponível" : summary.source === "UNVERIFIED" ? "Fonte não verificada" : "Fonte externa"}</StatusBadge></div>
+    <div className="mt-5 grid grid-cols-3 divide-x border-y py-4 text-center">{values.map(([label, value]) => <div key={label} className="px-2"><p className="font-mono text-2xl font-semibold tabular-nums">{value}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></div>)}</div>
+    <p className="mt-4 text-xs text-muted-foreground">Vínculos sem ID positivo único conhecido no snapshot, projetos de teste e duplicidades permanecem PENDING; isso não é bloqueio operacional.</p>
+  </section>;
+}
+
+function SpyAnalyticsCard({ summary }: { summary: SpyAnalyticsSummary }) {
+  const unavailable = summary.source === "UNAVAILABLE";
+  const unverified = summary.source === "UNVERIFIED";
+  const value = (item: number | null) => item === null ? "—" : item;
+  const values = [
+    ["Ofertas observadas", value(summary.offers_observed)],
+    ["Leituras observadas", value(summary.readings_observed)],
+    ["Dias com leitura", value(summary.distinct_reading_days)],
+    ["Pronta para modelar", value(summary.ready_to_model)],
+  ] as const;
+  return <section aria-labelledby="spy-analytics-summary" className="rounded-lg border bg-card p-4 sm:p-6">
+    <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-mono text-[11px] uppercase tracking-[0.1em] text-primary">Spy Analytics</p><h2 id="spy-analytics-summary" className="mt-1 text-lg font-semibold">Resumo agregado, somente leitura</h2><p className="mt-1 text-sm leading-relaxed text-muted-foreground">Janela fixa de 30 dias; não altera snapshot, lifecycle ou reconciliação do Banco NGV.</p></div><StatusBadge variant={unavailable ? "warning" : unverified ? "neutral" : "success"}>{unavailable ? "Fonte indisponível" : unverified ? "Fonte não verificada" : summary.ready_to_model > 0 ? "Pronta para modelar" : "Ainda não pronta"}</StatusBadge></div>
+    <div className="mt-5 grid grid-cols-2 divide-x divide-y border-y py-4 text-center lg:grid-cols-4 lg:divide-y-0">{values.map(([label, item]) => <div key={label} className="px-2 py-2 lg:py-0"><p className="font-mono text-2xl font-semibold tabular-nums">{item}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></div>)}</div>
+    <p className="mt-4 text-xs text-muted-foreground">A fonte é consultada somente no servidor. Ausência, contrato inválido, timeout ou erro de rede não são tratados como dados observados.</p>
+  </section>;
+}
+
+function NgvCoreSummaryCard({ summary }: { summary: NgvCoreOperationalSummary }) {
+  const unavailable = summary.kind === "unavailable";
+  const unverified = summary.kind === "disabled";
+  const value = (item: number | null | undefined) => item ?? "—";
+  const sources = [
+    { label: "Spy", observedAt: summary.sources.spy?.generated_at, values: [["ofertas", value(summary.sources.spy?.offers_observed)], ["leituras", value(summary.sources.spy?.readings_observed)]] },
+    { label: "Nexfy", observedAt: summary.sources.nexfy?.generated_at, values: [["projetos ativos", value(summary.sources.nexfy?.active_projects)], ["produtos ativos", value(summary.sources.nexfy?.active_products)]] },
+    { label: "Banco NGV", observedAt: summary.sources.banco_ngv?.generated_at, values: [["ofertas rastreadas", value(summary.sources.banco_ngv?.offer_tracking_count)], ["métricas", value(summary.sources.banco_ngv?.metrics_snapshot_count)]] },
+    { label: "Quiz", observedAt: summary.sources.quiz_analytics?.generated_at, values: [["projetos", value(summary.sources.quiz_analytics?.project_count)], ["com eventos", value(summary.sources.quiz_analytics?.receiving_events_count)]] },
+  ];
+  return <section aria-labelledby="ngv-core-summary" className="overflow-hidden rounded-lg border bg-card">
+    <div className="flex flex-wrap items-start justify-between gap-4 border-b px-4 py-4 sm:px-6"><div><p className="font-mono text-[11px] uppercase tracking-[0.1em] text-primary">NGV Core</p><h2 id="ngv-core-summary" className="mt-1 text-lg font-semibold">Fontes sincronizadas, somente leitura</h2><p className="mt-1 max-w-[68ch] text-sm leading-relaxed text-muted-foreground">Última projeção agregada de cada sistema; ausência de uma fonte permanece explícita e não altera a operação local.</p></div><StatusBadge variant={unavailable ? "warning" : unverified ? "neutral" : "success"}>{unavailable ? "Core indisponível" : unverified ? "Core não verificado" : "Core sincronizado"}</StatusBadge></div>
+    <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">{sources.map((source, index) => <article key={source.label} className={cn("min-h-32 p-4", index >= 2 && "sm:border-t xl:border-t-0")}><div className="flex items-baseline justify-between gap-3"><h3 className="text-sm font-semibold">{source.label}</h3><time className="font-mono text-[10px] tabular-nums text-muted-foreground" dateTime={source.observedAt ?? undefined}>{formatTimestamp(source.observedAt ?? null)}</time></div><dl className="mt-4 grid grid-cols-2 gap-3">{source.values.map(([label, metric]) => <div key={label}><dd className="font-mono text-xl font-semibold tabular-nums">{metric}</dd><dt className="mt-1 text-[11px] leading-tight text-muted-foreground">{label}</dt></div>)}</dl></article>)}</div>
+  </section>;
 }
 
 function FlightPipeline({
@@ -458,7 +509,7 @@ function AuditTimeline({ snapshot }: { snapshot: OperationSnapshot }) {
   );
 }
 
-export function OperationView({ snapshot, stale }: { snapshot: OperationSnapshot; stale: boolean }) {
+export function OperationView({ snapshot, stale, quizAnalytics, spyAnalytics, ngvCore }: { snapshot: OperationSnapshot; stale: boolean; quizAnalytics: QuizAnalyticsSummary; spyAnalytics: SpyAnalyticsSummary; ngvCore: NgvCoreOperationalSummary }) {
   const [query, setQuery] = useState("");
   const [stateFilter, setStateFilter] = useState<StateFilter>("ALL");
   const [phaseFilter, setPhaseFilter] = useState<number | "ALL">("ALL");
@@ -504,6 +555,9 @@ export function OperationView({ snapshot, stale }: { snapshot: OperationSnapshot
       </header>
 
       <SummaryBand snapshot={snapshot} />
+      <NgvCoreSummaryCard summary={ngvCore} />
+      <QuizAnalyticsCard summary={quizAnalytics} />
+      <SpyAnalyticsCard summary={spyAnalytics} />
 
       <section aria-labelledby="operation-pipeline" className="space-y-6">
         <SectionHeading id="operation-pipeline" eyebrow="Linha 00—07" title="Pipeline operacional" description="Cada estação representa uma fase comprovável. Selecione uma fase para filtrar a mesa sem alterar a fonte." />
@@ -536,6 +590,7 @@ export function OperationView({ snapshot, stale }: { snapshot: OperationSnapshot
           <div className="xl:col-span-8"><OfferDesk offers={filteredOffers} mode={viewMode} /></div>
           <div className="xl:col-span-4"><BlockersPanel offers={filteredOffers} generatedAt={snapshot.generated_at} /></div>
         </div>
+        {filteredOffers.length > 0 && <OperationCommandPreview offers={filteredOffers} generatedAt={snapshot.generated_at} />}
       </section>
 
       <div className="grid gap-6 xl:grid-cols-12">

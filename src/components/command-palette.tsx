@@ -63,26 +63,35 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
+  const openPalette = useCallback(() => {
+    setQuery("");
+    setSelectedIdx(0);
+    setOpen(true);
+    // Autofocus no próximo tick (após animação do Dialog abrir)
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, []);
+
   // Abre via atalho de teclado
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
-        setOpen((v) => !v);
+        if (open) setOpen(false);
+        else openPalette();
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [open, openPalette]);
 
   // Abre via evento customizado (disparado pelo trigger externo)
   useEffect(() => {
     function onOpen() {
-      setOpen(true);
+      openPalette();
     }
     window.addEventListener("open-command-palette", onOpen);
     return () => window.removeEventListener("open-command-palette", onOpen);
-  }, []);
+  }, [openPalette]);
 
   // Carrega índice lazy (somente na primeira abertura)
   useEffect(() => {
@@ -96,12 +105,6 @@ export function CommandPalette() {
           // Falha silenciosa: palette ainda funciona com páginas estáticas
           setIndexLoaded(true);
         });
-    }
-    if (open) {
-      setQuery("");
-      setSelectedIdx(0);
-      // Autofocus no próximo tick (após animação do Dialog abrir)
-      setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open, indexLoaded]);
 

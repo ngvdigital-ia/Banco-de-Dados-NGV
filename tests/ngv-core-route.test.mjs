@@ -63,7 +63,7 @@ test("emitter só considera 2xx sucesso, redirect manual e timeout de 10s", asyn
   assert.match(source, /redirect: ["']manual["']/);
   assert.match(source, /NGV_CORE_TIMEOUT_MS = 10_000/);
   assert.match(source, /if \(!response\.ok\) fail\(`INGEST_REJECTED_\$\{response\.status\}`\)/);
-  assert.match(source, /headers: \{\s*\n\s*["']content-type["']: ["']application\/json["'],\s*\n\s*apikey: config\.writerKey/s);
+  assert.match(source, /headers: \{\s*\n\s*["']content-type["']: ["']application\/json["'],\s*\n\s*["']x-ngv-core-key["']: config\.writerKey/s);
   assert.doesNotMatch(source, /console\.(log|info|error)/);
   assert.match(source, /ngv-core\/emitter|banco-global-daily-ingest/);
 });

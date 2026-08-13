@@ -301,6 +301,62 @@ test("G5 fecha métrica por ID explícito, mantém ausência PENDING e rejeita m
   assert.ok(divergent.evidence.some((item) => item.external_id === "120253109864280728"));
 });
 
+test("identidades de páginas/produto usam somente campos explícitos do manifesto", () => {
+  const projected = projectManifest({
+    offer_id: "ngv:explicit-identities",
+    offer_slug: "explicit-identities",
+    identity: { display_name: "Nome que não deve virar ID", language: "pt" },
+    systems: {
+      filesystem: { registry_slug: "explicit-identities" },
+      git: { repository: "https://github.com/NGVDigital/Explicit-Identities.git" },
+      vercel: {
+        project_name: "explicit-identities-web",
+        production_urls: [
+          "https://Example.com/path",
+          "https://example.com/other",
+          "PENDING",
+          "not a URL",
+        ],
+      },
+      apps_ofertas: { offer_slug: "explicit-identities-app" },
+    },
+  }, null);
+
+  assert.deepEqual(projected.external_ids.pages, [
+    "registry:explicit-identities",
+    "github:ngvdigital/explicit-identities",
+    "vercel:explicit-identities-web",
+    "domain:example.com",
+  ]);
+  assert.deepEqual(projected.external_ids.product, ["apps-ofertas:explicit-identities-app"]);
+  assert.equal(projected.external_ids.n8n.length, 0);
+  assert.ok(projected.reconciliation.evidence.includes("pages:github:ngvdigital/explicit-identities"));
+  assert.ok(projected.evidence.some((item) => item.external_id === "domain:example.com"));
+  assert.ok(projected.evidence.some((item) => item.external_id === "apps-ofertas:explicit-identities-app"));
+});
+
+test("identidades inválidas, PENDING e duplicatas não são inferidas", () => {
+  const projected = projectManifest({
+    offer_id: "ngv:identity-filters",
+    offer_slug: "identity-filters",
+    identity: { display_name: "github.com/acme/should-not-be-used", language: "pt" },
+    systems: {
+      filesystem: { registry_slug: "PENDING" },
+      git: { repository: "https://example.com/not-github.git" },
+      vercel: {
+        project_name: "PENDING",
+        production_urls: ["PENDING", "invalid", "https://duplicate.example/", "https://duplicate.example/again"],
+      },
+      apps_ofertas: { offer_slug: "PENDING" },
+    },
+  }, null);
+
+  assert.deepEqual(projected.external_ids.pages, ["domain:duplicate.example"]);
+  assert.deepEqual(projected.external_ids.product, []);
+  assert.deepEqual(projected.reconciliation.evidence, ["pages:domain:duplicate.example"]);
+  assert.equal(projected.display_name, "github.com/acme/should-not-be-used");
+});
+
 test("consulta recente mantém janela móvel e limite defensivo", async () => {
   const snapshotSource = await readFile(path.join(ROOT, "src", "lib", "operacao", "snapshot.ts"), "utf8");
 

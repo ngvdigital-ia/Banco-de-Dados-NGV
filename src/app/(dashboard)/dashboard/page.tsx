@@ -8,6 +8,7 @@ import {
   BarChart3,
   ArrowRight,
   Play,
+  RadioTower,
   TrendingUp,
   TrendingDown,
   Minus,
@@ -26,6 +27,7 @@ import { getDashboardStats, getProjectsSummary, getMetricsTrend, getVturbSummary
 import { LazySpendRevenueChart, LazyRoasChart } from "@/components/charts/dashboard-charts";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
+import { fetchNgvCoreOperationalSummary } from "@/lib/operacao/ngv-core-summary.mjs";
 
 const statusLabels: Record<string, string> = {
   em_teste: "Em Teste",
@@ -106,6 +108,63 @@ function VturbSectionSkeleton() {
 // Skeleton do card UTMify (hero card)
 function UtmifySkeleton() {
   return <KpiHeroSkeleton />;
+}
+
+function NgvCoreSystemsSkeleton() {
+  return (
+    <section aria-label="Sistemas NGV" className="overflow-hidden rounded-lg border bg-card">
+      <div className="flex items-center justify-between border-b px-4 py-3">
+        <Shimmer className="h-4 w-32" />
+        <Shimmer className="h-7 w-24" />
+      </div>
+      <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+        {[0, 1, 2, 3].map((index) => <div key={index} className="space-y-2 p-4"><Shimmer className="h-3 w-24" /><Shimmer className="h-6 w-20" /><Shimmer className="h-3 w-32" /></div>)}
+      </div>
+    </section>
+  );
+}
+
+function CoreSystemMetric({ label, value, detail }: { label: string; value: React.ReactNode; detail: string }) {
+  return (
+    <div className="min-w-0 p-4">
+      <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">{label}</p>
+      <p className="mt-2 font-mono text-2xl font-semibold tabular-nums tracking-tight">{value}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+async function NgvCoreSystemsSection() {
+  const core = await fetchNgvCoreOperationalSummary();
+  const isReady = core.kind === "success";
+  const sources = core.sources;
+
+  return (
+    <section aria-labelledby="ngv-systems-title" className="overflow-hidden rounded-lg border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+        <div>
+          <h2 id="ngv-systems-title" className="text-sm font-semibold">Sistemas NGV</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">Consolidação agregada do Core; cada sistema permanece com seu domínio próprio.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <StatusBadge variant={isReady ? "success" : "neutral"}>{isReady ? "Core atualizado" : "Core não disponível"}</StatusBadge>
+          <Button variant="ghost" size="sm" render={<Link href="/operacao" />}>
+            Ver torre <RadioTower className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      {isReady ? (
+        <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+          <CoreSystemMetric label="Spy Analytics" value={sources.spy?.offers_observed ?? "—"} detail={`${sources.spy?.readings_observed ?? "—"} leituras em 30 dias`} />
+          <CoreSystemMetric label="Nexfy" value={sources.nexfy?.active_projects ?? "—"} detail={`${sources.nexfy?.active_products ?? "—"} produtos ativos`} />
+          <CoreSystemMetric label="Banco NGV" value={sources.banco_ngv?.offer_tracking_count ?? "—"} detail={`${sources.banco_ngv?.metrics_snapshot_count ?? "—"} snapshots de métricas`} />
+          <CoreSystemMetric label="Quiz Analytics" value={sources.quiz_analytics?.project_count ?? "—"} detail={`${sources.quiz_analytics?.receiving_events_count ?? "—"} projeto(s) recebendo eventos`} />
+        </div>
+      ) : (
+        <p className="px-4 py-5 text-sm text-muted-foreground">A consolidação central não está disponível nesta leitura. Os sistemas e as áreas do Dashboard continuam acessíveis separadamente.</p>
+      )}
+    </section>
+  );
 }
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
@@ -352,6 +411,11 @@ export default async function DashboardPage() {
           />
         </div>
       </section>
+
+      {/* Visibilidade dos sistemas no Dashboard, sem substituir suas áreas próprias. */}
+      <Suspense fallback={<NgvCoreSystemsSkeleton />}>
+        <NgvCoreSystemsSection />
+      </Suspense>
 
       {/* ── VTurb streama depois — skeleton enquanto ~11 chamadas HTTP resolvem ── */}
       <Suspense fallback={<VturbSectionSkeleton />}>

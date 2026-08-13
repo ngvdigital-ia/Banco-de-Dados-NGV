@@ -46,4 +46,26 @@ next-env.d.ts
 whats-next.md
 test-results/
 .playwright-mcp/
+
+# backups/scratch de workflows n8n (nao pertencem a este repo)
+.n8n-tmp/
+tmp-black/
+tmp-e2e/
+tmp-ad-summary.json
+/*.png
 src/lib/operacao/operation.live.json
+
+# >>> pvs-inteligence (gerado pelo fw — nao versionar) >>>
+.antigravitycli/
+.claude/agents/
+.claude/agents.bak-pre-squad/
+.claude/skills/
+.codex/agents/
+.fw/
+.opencode/
+/AGENTS.md
+/AGENTS.md.bak
+/AGENTS.md.bak-*
+/.mcp.json
+/core/templates/
+# <<< pvs-inteligence <<<

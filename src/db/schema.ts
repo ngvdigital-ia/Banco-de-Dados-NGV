@@ -1,6 +1,7 @@
 import {
   type AnyPgColumn,
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -82,6 +83,27 @@ export const metricSourceEnum = pgEnum("metric_source", [
   "utmify",
   "meta_api",
   "tiktok_api",
+]);
+
+export const operationCommandActionEnum = pgEnum("operation_command_action", [
+  "consult",
+  "create",
+  "edit",
+  "comment",
+  "attach",
+  "complete",
+  "reopen",
+  "approve",
+]);
+
+export const operationCommandStatusEnum = pgEnum("operation_command_status", [
+  "accepted",
+  "queued",
+  "running",
+  "succeeded",
+  "divergent",
+  "waiting_human",
+  "failed",
 ]);
 
 // ============================================================
@@ -593,3 +615,53 @@ export const agentProducts = pgTable("agent_products", {
   uniqueIndex("agent_products_task_agente_exec_uniq").on(t.taskId, t.agente, t.executionId),
   index("agent_products_task_id_idx").on(t.taskId),
 ]);
+
+// ============================================================
+// 20. OPERATION COMMANDS (ledger durável de comandos operacionais)
+// Ledger de auditoria/idempotência do Banco. NÃO é outbox executora:
+// registra comandos (consult/create/edit/comment/attach/complete/reopen/approve)
+// com payload hashado e status de ciclo de vida — accepted → queued → running →
+// succeeded; desvios (divergent) e esperas humanas (waiting_human) preservados
+// pra auditoria; failed registra falha sem reexecução automática.
+// offer_id é o IDENTIFICADOR CANÔNICO textual (contrato v1: ngv:<slug>); PENDING
+// só é permitido para consult enquanto o identificador ainda não foi resolvido.
+// A reference opcional offer_tracking_id liga ao registro interno, quando existir.
+// Actor = quem executou (name + ClickUp user id, PENDING até resolvido); operator
+// = quem operou o comando (id + email). O email do actor é opcional e fica em payload.
+// Idempotência por command_id (único, 1..128) + payload_hash (sha256 lowercase hex).
+// ============================================================
+
+export const operationCommands = pgTable(
+  "operation_commands",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    commandId: text("command_id").notNull().unique(),
+    offerId: text("offer_id").notNull(),
+    offerTrackingId: integer("offer_tracking_id").references(() => offerTracking.id, { onDelete: "restrict" }),
+    action: operationCommandActionEnum("action").notNull(),
+    actorName: text("actor_name").notNull(),
+    actorClickupUserId: text("actor_clickup_user_id").notNull(),
+    operatorUserId: text("operator_user_id").notNull(),
+    operatorEmail: text("operator_email").notNull(),
+    payload: jsonb("payload").notNull(),
+    payloadHash: text("payload_hash").notNull(),
+    status: operationCommandStatusEnum("status").notNull().default("accepted"),
+    result: jsonb("result"),
+    requestedAt: timestamp("requested_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("operation_commands_command_id_length", sql`length(${t.commandId}) between 1 and 128`),
+    check("operation_commands_actor_clickup_user_id", sql`${t.actorClickupUserId} ~ '^(PENDING|[0-9]+)$'`),
+    check(
+      "operation_commands_offer_id_ngv_slug",
+      sql`${t.offerId} ~ '^ngv:[a-z0-9]+(-[a-z0-9]+)*$' OR (${t.action} = 'consult' AND ${t.offerId} = 'PENDING')`,
+    ),
+    check("operation_commands_payload_hash_sha256", sql`${t.payloadHash} ~ '^[0-9a-f]{64}$'`),
+    index("operation_commands_offer_id_idx").on(t.offerId),
+    index("operation_commands_offer_tracking_id_idx").on(t.offerTrackingId),
+    index("operation_commands_status_idx").on(t.status),
+    index("operation_commands_offer_id_status_idx").on(t.offerId, t.status),
+  ],
+);
