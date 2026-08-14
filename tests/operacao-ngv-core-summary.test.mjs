@@ -45,6 +45,26 @@ test("GET usa somente o cabeçalho privado e valida os seis agregados", async ()
   assert.deepEqual(captured.init.headers, { "x-ngv-core-key": "writer" });
 });
 
+test("aceita os contadores privados da migração rolling na versão 2", () => {
+  const rolling = {
+    apps_ofertas_linked_identities: 2,
+    apps_ofertas_active_accesses: 3,
+    plataforma_cursos_linked_identities: 5,
+    plataforma_cursos_active_accesses: 7,
+    nexfy_linked_identities: 11,
+    nexfy_active_accesses: 13,
+  };
+  const result = normalizeNgvCoreOperationalSummary({
+    ok: true,
+    summary: { ...body.summary, schema_version: 2, rolling_migration: rolling },
+  });
+  assert.deepEqual(result.rolling_migration, rolling);
+  assert.throws(() => normalizeNgvCoreOperationalSummary({
+    ok: true,
+    summary: { ...body.summary, schema_version: 2, rolling_migration: { ...rolling, unexpected: 1 } },
+  }), { code: "RESPONSE_SCHEMA_INVALID" });
+});
+
 test("contrato inválido, ausência de writer e erro de rede falham fechados", async () => {
   assert.throws(() => normalizeNgvCoreOperationalSummary({ ...body, extra: true }), { code: "RESPONSE_SCHEMA_INVALID" });
   assert.throws(() => normalizeNgvCoreOperationalSummary({ ...body, summary: { ...body.summary, sources: { ...body.summary.sources, spy: { ...body.summary.sources.spy, email: "x" } } } }), { code: "RESPONSE_SCHEMA_INVALID" });

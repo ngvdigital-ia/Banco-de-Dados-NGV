@@ -154,14 +154,23 @@ async function NgvCoreSystemsSection() {
         </div>
       </div>
       {isReady ? (
-        <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-3">
-          <CoreSystemMetric label="Spy Analytics" value={sources.spy?.offers_observed ?? "—"} detail={`${sources.spy?.readings_observed ?? "—"} leituras em 30 dias`} />
-          <CoreSystemMetric label="Nexfy" value={sources.nexfy?.active_projects ?? "—"} detail={`${sources.nexfy?.active_products ?? "—"} produtos ativos`} />
-          <CoreSystemMetric label="Banco NGV" value={sources.banco_ngv?.offer_tracking_count ?? "—"} detail={`${sources.banco_ngv?.metrics_snapshot_count ?? "—"} snapshots de métricas`} />
-          <CoreSystemMetric label="Quiz Analytics" value={sources.quiz_analytics?.project_count ?? "—"} detail={`${sources.quiz_analytics?.receiving_events_count ?? "—"} projeto(s) recebendo eventos`} />
-          <CoreSystemMetric label="Apps Ofertas" value={sources.apps_ofertas?.offers_configured ?? "—"} detail={`${sources.apps_ofertas?.access_active ?? "—"} acessos ativos`} />
-          <CoreSystemMetric label="Plataforma de Cursos" value={sources.plataforma_cursos?.courses_total ?? "—"} detail={`${sources.plataforma_cursos?.entitlements_active ?? "—"} acessos ativos`} />
-        </div>
+        <>
+          <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-3">
+            <CoreSystemMetric label="Spy Analytics" value={sources.spy?.offers_observed ?? "—"} detail={`${sources.spy?.readings_observed ?? "—"} leituras em 30 dias`} />
+            <CoreSystemMetric label="Nexfy" value={sources.nexfy?.active_projects ?? "—"} detail={`${sources.nexfy?.active_products ?? "—"} produtos ativos`} />
+            <CoreSystemMetric label="Banco NGV" value={sources.banco_ngv?.offer_tracking_count ?? "—"} detail={`${sources.banco_ngv?.metrics_snapshot_count ?? "—"} snapshots de métricas`} />
+            <CoreSystemMetric label="Quiz Analytics" value={sources.quiz_analytics?.project_count ?? "—"} detail={`${sources.quiz_analytics?.receiving_events_count ?? "—"} projeto(s) recebendo eventos`} />
+            <CoreSystemMetric label="Apps Ofertas" value={sources.apps_ofertas?.offers_configured ?? "—"} detail={`${sources.apps_ofertas?.access_active ?? "—"} acessos ativos`} />
+            <CoreSystemMetric label="Plataforma de Cursos" value={sources.plataforma_cursos?.courses_total ?? "—"} detail={`${sources.plataforma_cursos?.entitlements_active ?? "—"} acessos ativos`} />
+          </div>
+          {core.rolling_migration && (
+            <div className="grid divide-y border-t sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              <CoreSystemMetric label="Nexfy no Core" value={core.rolling_migration.nexfy_linked_identities} detail={`${core.rolling_migration.nexfy_active_accesses} acessos ativos projetados`} />
+              <CoreSystemMetric label="Apps no Core" value={core.rolling_migration.apps_ofertas_linked_identities} detail={`${core.rolling_migration.apps_ofertas_active_accesses} acessos ativos projetados`} />
+              <CoreSystemMetric label="Cursos no Core" value={core.rolling_migration.plataforma_cursos_linked_identities} detail={`${core.rolling_migration.plataforma_cursos_active_accesses} acessos ativos projetados`} />
+            </div>
+          )}
+        </>
       ) : (
         <p className="px-4 py-5 text-sm text-muted-foreground">A consolidação central não está disponível nesta leitura. Os sistemas e as áreas do Dashboard continuam acessíveis separadamente.</p>
       )}
