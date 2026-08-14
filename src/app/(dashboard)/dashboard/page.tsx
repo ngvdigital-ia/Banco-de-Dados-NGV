@@ -165,7 +165,7 @@ async function NgvCoreSystemsSection() {
           </div>
           {core.rolling_migration && (
             <div className="grid divide-y border-t sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-              <CoreSystemMetric label="Nexfy no Core" value={core.rolling_migration.nexfy_linked_identities} detail={`${core.rolling_migration.nexfy_active_accesses} acessos ativos projetados`} />
+              <CoreSystemMetric label="Nexfy no Core" value={core.rolling_migration.nexfy_linked_identities} detail={`${core.rolling_migration.nexfy_active_entitlements} acessos ativos · ${core.rolling_migration.nexfy_entitlement_exceptions} exceções`} />
               <CoreSystemMetric label="Apps no Core" value={core.rolling_migration.apps_ofertas_linked_identities} detail={`${core.rolling_migration.apps_ofertas_active_accesses} acessos ativos projetados`} />
               <CoreSystemMetric label="Cursos no Core" value={core.rolling_migration.plataforma_cursos_linked_identities} detail={`${core.rolling_migration.plataforma_cursos_active_accesses} acessos ativos projetados`} />
             </div>
