@@ -58,10 +58,68 @@ test("aceita os contadores privados da migração rolling na versão 2", () => {
     ok: true,
     summary: { ...body.summary, schema_version: 2, rolling_migration: rolling },
   });
-  assert.deepEqual(result.rolling_migration, rolling);
+  assert.deepEqual(result.rolling_migration, {
+    ...rolling,
+    nexfy_active_entitlements: rolling.nexfy_active_accesses,
+    nexfy_entitlement_exceptions: 0,
+  });
   assert.throws(() => normalizeNgvCoreOperationalSummary({
     ok: true,
     summary: { ...body.summary, schema_version: 2, rolling_migration: { ...rolling, unexpected: 1 } },
+  }), { code: "RESPONSE_SCHEMA_INVALID" });
+});
+
+test("aceita freshness estrito na versão 3 sem romper o contrato legado", () => {
+  const rolling = {
+    apps_ofertas_linked_identities: 2,
+    apps_ofertas_active_accesses: 3,
+    plataforma_cursos_linked_identities: 5,
+    plataforma_cursos_active_accesses: 7,
+    nexfy_linked_identities: 11,
+    nexfy_active_entitlements: 13,
+    nexfy_entitlement_exceptions: 0,
+  };
+  const legacyV3 = normalizeNgvCoreOperationalSummary({
+    ok: true,
+    summary: { ...body.summary, schema_version: 3, rolling_migration: rolling },
+  });
+  assert.deepEqual(legacyV3.rolling_migration, rolling);
+  assert.equal(legacyV3.freshness, null);
+  const freshness = {
+    all_fresh: false,
+    by_source: {
+      spy: { is_stale: true, age_hours: 27.5, generated_at: timestamp },
+      nexfy: { is_stale: false, age_hours: 1, generated_at: timestamp },
+      banco_ngv: { is_stale: false, age_hours: 2, generated_at: timestamp },
+      quiz_analytics: { is_stale: false, age_hours: 3, generated_at: timestamp },
+      apps_ofertas: { is_stale: false, age_hours: 4, generated_at: timestamp },
+      plataforma_cursos: { is_stale: false, age_hours: 5, generated_at: timestamp },
+    },
+    queried_at: timestamp,
+    sources_stale: 1,
+    sources_total: 6,
+    stale_sources: ["spy"],
+    stale_threshold_hours: 24,
+    oldest_source_age_hours: 27.5,
+  };
+  const result = normalizeNgvCoreOperationalSummary({
+    ok: true,
+    summary: { ...body.summary, schema_version: 3, rolling_migration: rolling, freshness },
+  });
+  assert.deepEqual(result.rolling_migration, rolling);
+  assert.deepEqual(result.freshness, freshness);
+  assert.equal(normalizeNgvCoreOperationalSummary(body).freshness, null);
+  assert.throws(() => normalizeNgvCoreOperationalSummary({
+    ok: true,
+    summary: { ...body.summary, schema_version: 3, rolling_migration: rolling, freshness: { ...freshness, unexpected: true } },
+  }), { code: "RESPONSE_SCHEMA_INVALID" });
+  assert.throws(() => normalizeNgvCoreOperationalSummary({
+    ok: true,
+    summary: { ...body.summary, schema_version: 3, rolling_migration: rolling, freshness: { ...freshness, by_source: { ...freshness.by_source, spy: { ...freshness.by_source.spy, age_hours: -1 } } } },
+  }), { code: "RESPONSE_SCHEMA_INVALID" });
+  assert.throws(() => normalizeNgvCoreOperationalSummary({
+    ok: true,
+    summary: { ...body.summary, schema_version: 4, rolling_migration: rolling, freshness },
   }), { code: "RESPONSE_SCHEMA_INVALID" });
 });
 

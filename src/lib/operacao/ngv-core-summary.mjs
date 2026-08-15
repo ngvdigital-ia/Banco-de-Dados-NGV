@@ -18,6 +18,7 @@ const isIso = (value) => typeof value === "string" && value.length <= 64
   && /T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
   && !Number.isNaN(Date.parse(value));
 const isCount = (value) => Number.isInteger(value) && value >= 0 && value <= 1_000_000_000;
+const isAgeHours = (value) => typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1_000_000_000;
 
 function configFrom(options = {}) {
   const timeout = Number(options.timeoutMs ?? NGV_CORE_OPERATIONAL_SUMMARY_TIMEOUT_MS);
@@ -65,8 +66,10 @@ function source(value, keys, expectedSource) {
 export function normalizeNgvCoreOperationalSummary(body) {
   if (!isObject(body) || Object.keys(body).length !== 2 || body.ok !== true || !isObject(body.summary)) fail("RESPONSE_SCHEMA_INVALID");
   const summary = body.summary;
-  const hasRollingMigration = summary.schema_version === 2 || summary.schema_version === 3;
-  if (Object.keys(summary).length !== (hasRollingMigration ? 4 : 3) || ![1, 2, 3].includes(summary.schema_version) || !isIso(summary.generated_at) || !isObject(summary.sources)) fail("RESPONSE_SCHEMA_INVALID");
+  const hasRollingMigration = [2, 3].includes(summary.schema_version);
+  const hasFreshness = summary.schema_version === 3 && Object.hasOwn(summary, "freshness");
+  const summaryKeyCount = hasFreshness ? 5 : hasRollingMigration ? 4 : 3;
+  if (Object.keys(summary).length !== summaryKeyCount || ![1, 2, 3].includes(summary.schema_version) || !isIso(summary.generated_at) || !isObject(summary.sources)) fail("RESPONSE_SCHEMA_INVALID");
   const sources = summary.sources;
   const sourceKeys = ["spy", "nexfy", "banco_ngv", "quiz_analytics", "apps_ofertas", "plataforma_cursos"];
   if (Object.keys(sources).length !== sourceKeys.length || !sourceKeys.every((key) => Object.hasOwn(sources, key))) fail("RESPONSE_SCHEMA_INVALID");
@@ -94,20 +97,32 @@ export function normalizeNgvCoreOperationalSummary(body) {
     ? ["apps_ofertas_linked_identities", "apps_ofertas_active_accesses", "plataforma_cursos_linked_identities", "plataforma_cursos_active_accesses", "nexfy_linked_identities", "nexfy_active_entitlements", "nexfy_entitlement_exceptions"]
     : ["apps_ofertas_linked_identities", "apps_ofertas_active_accesses", "plataforma_cursos_linked_identities", "plataforma_cursos_active_accesses", "nexfy_linked_identities", "nexfy_active_accesses"];
   if (hasRollingMigration && (!isObject(rolling) || Object.keys(rolling).length !== rollingKeys.length || !rollingKeys.every((key) => Object.hasOwn(rolling, key)) || !rollingKeys.every((key) => isCount(rolling[key])))) fail("RESPONSE_SCHEMA_INVALID");
+  const freshness = hasFreshness ? summary.freshness : null;
+  const freshnessKeys = ["all_fresh", "by_source", "queried_at", "sources_stale", "sources_total", "stale_sources", "stale_threshold_hours", "oldest_source_age_hours"];
+  if (hasFreshness && (!isObject(freshness) || Object.keys(freshness).length !== freshnessKeys.length || !freshnessKeys.every((key) => Object.hasOwn(freshness, key))
+    || typeof freshness.all_fresh !== "boolean" || !isObject(freshness.by_source) || Object.keys(freshness.by_source).length !== sourceKeys.length || !sourceKeys.every((key) => Object.hasOwn(freshness.by_source, key))
+    || !sourceKeys.every((key) => {
+      const sourceFreshness = freshness.by_source[key];
+      const sourceFreshnessKeys = ["is_stale", "age_hours", "generated_at"];
+      return isObject(sourceFreshness) && Object.keys(sourceFreshness).length === sourceFreshnessKeys.length && sourceFreshnessKeys.every((sourceKey) => Object.hasOwn(sourceFreshness, sourceKey))
+        && typeof sourceFreshness.is_stale === "boolean" && isAgeHours(sourceFreshness.age_hours) && isIso(sourceFreshness.generated_at);
+    })
+    || !isIso(freshness.queried_at) || !isCount(freshness.sources_stale) || !isCount(freshness.sources_total) || !Array.isArray(freshness.stale_sources) || !freshness.stale_sources.every((sourceName) => typeof sourceName === "string")
+    || !isCount(freshness.stale_threshold_hours) || !isAgeHours(freshness.oldest_source_age_hours))) fail("RESPONSE_SCHEMA_INVALID");
   if (invalidSpy || invalidNexfy || invalidBanco || invalidQuiz || invalidAppsOfertas || invalidPlataformaCursos) fail("RESPONSE_SCHEMA_INVALID");
 
   const normalizedRolling = summary.schema_version === 2 && rolling
     ? { ...rolling, nexfy_active_entitlements: rolling.nexfy_active_accesses, nexfy_entitlement_exceptions: 0 }
     : rolling;
-  return { kind: "success", generated_at: summary.generated_at, rolling_migration: normalizedRolling, sources: { spy, nexfy, banco_ngv: bancoNgv, quiz_analytics: quizAnalytics, apps_ofertas: appsOfertas, plataforma_cursos: plataformaCursos } };
+  return { kind: "success", generated_at: summary.generated_at, rolling_migration: normalizedRolling, freshness, sources: { spy, nexfy, banco_ngv: bancoNgv, quiz_analytics: quizAnalytics, apps_ofertas: appsOfertas, plataforma_cursos: plataformaCursos } };
 }
 
 function unavailable(code = "SUMMARY_UNAVAILABLE") {
-  return { kind: "unavailable", code, generated_at: null, rolling_migration: null, sources: { spy: null, nexfy: null, banco_ngv: null, quiz_analytics: null, apps_ofertas: null, plataforma_cursos: null } };
+  return { kind: "unavailable", code, generated_at: null, rolling_migration: null, freshness: null, sources: { spy: null, nexfy: null, banco_ngv: null, quiz_analytics: null, apps_ofertas: null, plataforma_cursos: null } };
 }
 
 export function emptyNgvCoreOperationalSummary() {
-  return { kind: "disabled", code: "SUMMARY_DISABLED", generated_at: null, rolling_migration: null, sources: { spy: null, nexfy: null, banco_ngv: null, quiz_analytics: null, apps_ofertas: null, plataforma_cursos: null } };
+  return { kind: "disabled", code: "SUMMARY_DISABLED", generated_at: null, rolling_migration: null, freshness: null, sources: { spy: null, nexfy: null, banco_ngv: null, quiz_analytics: null, apps_ofertas: null, plataforma_cursos: null } };
 }
 
 export async function fetchNgvCoreOperationalSummary(options = {}) {
