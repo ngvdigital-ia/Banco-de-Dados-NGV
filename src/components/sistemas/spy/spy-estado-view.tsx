@@ -1,8 +1,11 @@
 import { Clock3, ShieldAlert, Wrench } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatTimestamp } from "./format";
+import { GraficoPanel } from "./grafico-panel";
 import { LeiturasPanel } from "./leituras-panel";
+import { PainelPanel } from "./painel-panel";
 import { ProntasPanel } from "./prontas-panel";
 import { SummaryCards } from "./summary-cards";
 import type { SpyModuleEstadoResult } from "./types";
@@ -101,8 +104,32 @@ export function SpyEstadoView({ result }: { result: SpyModuleEstadoResult }) {
       </span>
 
       <SummaryCards data={data} />
-      <ProntasPanel data={data} />
-      <LeiturasPanel data={data} />
+
+      {/* Ordem de abas segue o original (index.html:318-325): Painel primeiro (aba "viva" por
+          padrão), depois Gráfico. As abas de escrita (Leitura do dia/Ofertas/Dados e critérios)
+          não existem nesta fase — só leitura. "Prontas pra modelar" e "Histórico de leituras" não
+          são abas no original (o original não tem tab de histórico bruto); aqui viraram abas por
+          já existirem como painéis empilhados antes deste handoff — preservados como estavam. */}
+      <Tabs defaultValue="painel">
+        <TabsList>
+          <TabsTrigger value="painel">Painel</TabsTrigger>
+          <TabsTrigger value="grafico">Gráfico</TabsTrigger>
+          <TabsTrigger value="prontas">Prontas pra modelar</TabsTrigger>
+          <TabsTrigger value="leituras">Histórico de leituras</TabsTrigger>
+        </TabsList>
+        <TabsContent value="painel" className="mt-4">
+          <PainelPanel data={data} />
+        </TabsContent>
+        <TabsContent value="grafico" className="mt-4">
+          <GraficoPanel data={data} />
+        </TabsContent>
+        <TabsContent value="prontas" className="mt-4">
+          <ProntasPanel data={data} />
+        </TabsContent>
+        <TabsContent value="leituras" className="mt-4">
+          <LeiturasPanel data={data} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
