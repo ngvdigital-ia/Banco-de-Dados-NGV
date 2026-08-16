@@ -8,11 +8,11 @@ import { SpyEstadoView } from "@/components/sistemas/spy/spy-estado-view";
 
 // Rota estática, irmã do catch-all `[system]/page.tsx` (o Next.js App Router prioriza segmento
 // estático sobre dinâmico) — mesmo padrão de src/app/(dashboard)/sistemas/quiz/page.tsx (ADR
-// docs/NGV-BANCO-MODULOS-FUNDACAO-ADR.md, Decisão 1). Fase 3: SOMENTE LEITURA — histórico de
-// leituras e ofertas prontas pra modelar, direto do adapter server-to-server. Nenhuma mutação
-// (registrar/editar/apagar leitura, cadastrar/remover oferta) existe nesta etapa — a capacidade
-// `mutate` do módulo continua com allowlist vazia de propósito (Decisão 2). `SISTEMAS_SPY_MODULE_
-// ENABLED` é o rollback: desligada (ou ausente), a rota volta ao EmptyState e NUNCA chama o Spy.
+// docs/NGV-BANCO-MODULOS-FUNDACAO-ADR.md, Decisão 1). Fase 5: leitura (Fase 3) + as 3 abas de
+// ESCRITA (Leitura do dia/Ofertas/Dados e critérios), via src/app/(dashboard)/sistemas/spy/
+// actions.ts -> mutations.ts -> requireModuleAccess("spy","mutate") + logModuleAction — nunca
+// pelo mutations-client.mjs direto. `SISTEMAS_SPY_MODULE_ENABLED` é o rollback: desligada (ou
+// ausente), a rota volta ao EmptyState e NUNCA chama o Spy (leitura nem escrita).
 export const dynamic = "force-dynamic";
 
 const isSpyModuleEnabled = () => process.env.SISTEMAS_SPY_MODULE_ENABLED === "true";

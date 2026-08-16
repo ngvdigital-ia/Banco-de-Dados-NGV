@@ -1,8 +1,14 @@
 import { Clock3, ShieldAlert, Wrench } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatTimestamp } from "./format";
+import { DadosCriteriosPanel } from "./dados-criterios-panel";
+import { GraficoPanel } from "./grafico-panel";
+import { LeituraDoDiaPanel } from "./leitura-do-dia-panel";
 import { LeiturasPanel } from "./leituras-panel";
+import { OfertasPanel } from "./ofertas-panel";
+import { PainelPanel } from "./painel-panel";
 import { ProntasPanel } from "./prontas-panel";
 import { SummaryCards } from "./summary-cards";
 import type { SpyModuleEstadoResult } from "./types";
@@ -101,8 +107,45 @@ export function SpyEstadoView({ result }: { result: SpyModuleEstadoResult }) {
       </span>
 
       <SummaryCards data={data} />
-      <ProntasPanel data={data} />
-      <LeiturasPanel data={data} />
+
+      {/* Ordem de abas segue o original (index.html: aba-painel, :356 leitura, :373 ofertas,
+          :409 gráfico, :428 prontas, :442 dados) — as 3 abas de ESCRITA (Leitura do
+          dia/Ofertas/Dados e critérios) chegam nesta fase (Fase 5). "Histórico de leituras" NÃO
+          existe como aba no original; foi preservada aqui (Fase 3) como bônus e continua —
+          "Dados e critérios → Corrigir leituras" cobre edição/remoção por oferta, mas não
+          substitui a visão consolidada de todas as ofertas que esta aba dá. */}
+      <Tabs defaultValue="painel">
+        <TabsList>
+          <TabsTrigger value="painel">Painel</TabsTrigger>
+          <TabsTrigger value="leitura">Leitura do dia</TabsTrigger>
+          <TabsTrigger value="ofertas">Ofertas</TabsTrigger>
+          <TabsTrigger value="grafico">Gráfico</TabsTrigger>
+          <TabsTrigger value="prontas">Prontas pra modelar</TabsTrigger>
+          <TabsTrigger value="dados">Dados e critérios</TabsTrigger>
+          <TabsTrigger value="leituras">Histórico de leituras</TabsTrigger>
+        </TabsList>
+        <TabsContent value="painel" className="mt-4">
+          <PainelPanel data={data} />
+        </TabsContent>
+        <TabsContent value="leitura" className="mt-4">
+          <LeituraDoDiaPanel data={data} />
+        </TabsContent>
+        <TabsContent value="ofertas" className="mt-4">
+          <OfertasPanel data={data} />
+        </TabsContent>
+        <TabsContent value="grafico" className="mt-4">
+          <GraficoPanel data={data} />
+        </TabsContent>
+        <TabsContent value="prontas" className="mt-4">
+          <ProntasPanel data={data} />
+        </TabsContent>
+        <TabsContent value="dados" className="mt-4">
+          <DadosCriteriosPanel data={data} />
+        </TabsContent>
+        <TabsContent value="leituras" className="mt-4">
+          <LeiturasPanel data={data} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
