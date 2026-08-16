@@ -85,6 +85,16 @@ function isNonEmptyString(value) {
   return typeof value === "string" && value.length > 0;
 }
 
+// Pra todo id/chave textual que vira URL (query `?id=`) ou entra no body como identificador —
+// diferente de isNonEmptyString: `'   '`/`'\t'`/`'\n'` são STRING NÃO-VAZIA (length > 0), mas não
+// são um id válido nenhum. Achado do gate held-out (pvs-master, 2026-08-16): `requireNonEmptyId`
+// usava isNonEmptyString e deixava um id só-espaço passar direto pra um DELETE real — a única
+// coisa entre esse id e uma chamada destrutiva ao Spy de produção era acidente (o stub de teste
+// não devolvia cookie), não validação. Este helper falha fechado nesse caso.
+function isNonBlankString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 function isNullableString(value) {
   return value === null || typeof value === "string";
 }
@@ -257,7 +267,7 @@ async function performSpyMutation({ config, fetchImpl, opPrefix, path, method, b
 function validateCreateOfertaInput(input) {
   if (!isPlainObject(input)) fail("OFERTA_CREATE_VALIDATION_INVALID");
   const { id, nome, formato, nicho, idioma, link, cloaker, tipo_produto } = input;
-  if (!isNonEmptyString(id)) fail("OFERTA_CREATE_VALIDATION_INVALID");
+  if (!isNonBlankString(id)) fail("OFERTA_CREATE_VALIDATION_INVALID");
   if (typeof nome !== "string" || nome.trim().length === 0) fail("OFERTA_CREATE_VALIDATION_INVALID");
   for (const value of [formato, nicho, idioma]) {
     if (value !== undefined && value !== null && typeof value !== "string") fail("OFERTA_CREATE_VALIDATION_INVALID");
@@ -267,7 +277,7 @@ function validateCreateOfertaInput(input) {
   }
   if (!valorValido(cloaker, CLOAKER_VALIDOS)) fail("OFERTA_CREATE_VALIDATION_INVALID");
   if (!valorValido(tipo_produto, TIPO_PRODUTO_VALIDOS)) fail("OFERTA_CREATE_VALIDATION_INVALID");
-  return { id, nome, formato, nicho, idioma, link, cloaker, tipo_produto };
+  return { id: id.trim(), nome, formato, nicho, idioma, link, cloaker, tipo_produto };
 }
 
 // PATCH parcial: só os campos EXPLICITAMENTE presentes no patch (checagem `in`, não `!==
@@ -301,19 +311,22 @@ function validateUpdateOfertaPatch(patch) {
   return body;
 }
 
+// isNonBlankString (não isNonEmptyString): um id só-espaço (`'   '`, `'\t'`, `'\n'`) É string
+// não-vazia, mas NÃO é um id válido — e monta uma URL destrutiva (`?id=%20%20%20`) se deixado
+// passar. Devolve o valor JÁ TRIMADO: quem chama nunca recebe espaço sobrando pra montar query.
 function requireNonEmptyId(id, code) {
-  if (!isNonEmptyString(id)) fail(code);
-  return id;
+  if (!isNonBlankString(id)) fail(code);
+  return id.trim();
 }
 
 function validateLeituraItemInput(item) {
   if (!isPlainObject(item)) fail("LEITURAS_BATCH_VALIDATION_INVALID");
   const { id, ofertaId, data, periodo, ads } = item;
-  if (!isNonEmptyString(id) || !isNonEmptyString(ofertaId)) fail("LEITURAS_BATCH_VALIDATION_INVALID");
+  if (!isNonBlankString(id) || !isNonBlankString(ofertaId)) fail("LEITURAS_BATCH_VALIDATION_INVALID");
   if (!isDateString(data)) fail("LEITURAS_BATCH_VALIDATION_INVALID");
   if (!isPeriodo(periodo)) fail("LEITURAS_BATCH_VALIDATION_INVALID");
   if (!isNonNegativeInteger(ads)) fail("LEITURAS_BATCH_VALIDATION_INVALID");
-  return { id, ofertaId, data, periodo, ads };
+  return { id: id.trim(), ofertaId: ofertaId.trim(), data, periodo, ads };
 }
 
 // Lote vazio falha fechado ANTES de qualquer rede — é exatamente o caso que o handoff pede pra

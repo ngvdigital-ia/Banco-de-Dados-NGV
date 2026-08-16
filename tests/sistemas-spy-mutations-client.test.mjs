@@ -64,6 +64,13 @@ const ofertaRowWire = {
 
 const leituraRowWire = { id: "l1", ofertaId: "o1", data: "2026-08-01", periodo: "manha", ads: 50 };
 
+// Ids "inválidos" cobrindo o furo real: '' é barrado por isNonEmptyString, mas '   '/'\t'/'\n' são
+// STRING NÃO-VAZIA (length > 0) — só falham se alguém checar .trim(). Achado do gate held-out
+// (pvs-master, 2026-08-16): sem essa checagem, um id só-espaço virava DELETE real
+// (`/api/ofertas?id=%20%20%20`), com a única barreira sendo acidente de teste (stub sem cookie),
+// não validação. Toda operação que recebe um id textual do caller é testada contra esta lista.
+const IDS_INVALIDOS = ["", null, undefined, "   ", "\t", "\n"];
+
 // ---------------------------------------------------------------------------
 // createSpyOferta — POST /api/ofertas
 // ---------------------------------------------------------------------------
@@ -100,15 +107,25 @@ test("createSpyOferta: payload válido faz login + POST com body correto, respos
   assert.equal(typeof result.mutatedAt, "string");
 });
 
-test("createSpyOferta: id ausente falha fechado ANTES de qualquer chamada de rede", async () => {
+test("createSpyOferta: id ausente/vazio/só-espaço falha fechado ANTES de qualquer chamada de rede", async () => {
   let calls = 0;
-  const result = await createSpyOferta(
-    { nome: "sem id" },
-    { ...config, fetchImpl: async () => { calls += 1; return opResponse(ofertaRowWire); } },
-  );
-  assert.equal(result.kind, "error");
-  assert.equal(result.code, "OFERTA_CREATE_VALIDATION_INVALID");
-  assert.equal(calls, 0, "payload local inválido não pode gerar rede real");
+  const fetchImpl = async () => { calls += 1; return opResponse(ofertaRowWire); };
+  for (const id of IDS_INVALIDOS) {
+    const result = await createSpyOferta({ id, nome: "sem id válido" }, { ...config, fetchImpl });
+    assert.equal(result.kind, "error");
+    assert.equal(result.code, "OFERTA_CREATE_VALIDATION_INVALID", `id=${JSON.stringify(id)}`);
+  }
+  assert.equal(calls, 0, "payload local inválido (incluindo id só-espaço) não pode gerar rede real");
+});
+
+test("createSpyOferta: id válido com espaço nas bordas sai TRIMADO no body (nunca com espaço sobrando)", async () => {
+  let opCall;
+  const result = await createSpyOferta({ ...ofertaValida, id: "  o1  " }, {
+    ...config,
+    fetchImpl: stubFetch({ onOp: async (url, init) => { opCall = { url, init }; return opResponse(ofertaRowWire); } }),
+  });
+  assert.equal(result.kind, "success");
+  assert.equal(JSON.parse(opCall.init.body).id, "o1");
 });
 
 test("createSpyOferta: nome ausente/vazio falha fechado", async () => {
@@ -183,14 +200,14 @@ test("updateSpyOferta: PATCH parcial só envia campos presentes no patch (checag
   assert.deepEqual(JSON.parse(opCall.init.body), { link: "https://novo.test" });
 });
 
-test("updateSpyOferta: id vazio/nulo/undefined falha fechado ANTES da rede", async () => {
+test("updateSpyOferta: id vazio/nulo/undefined/só-espaço falha fechado ANTES da rede", async () => {
   let calls = 0;
   const fetchImpl = async () => { calls += 1; return opResponse(ofertaRowWire); };
-  for (const id of ["", null, undefined]) {
+  for (const id of IDS_INVALIDOS) {
     const result = await updateSpyOferta(id, { nome: "x" }, { ...config, fetchImpl });
     assert.equal(result.code, "OFERTA_UPDATE_VALIDATION_INVALID", `id=${JSON.stringify(id)}`);
   }
-  assert.equal(calls, 0);
+  assert.equal(calls, 0, "rede=false pra todo id inválido, incluindo whitespace-only");
 });
 
 test("updateSpyOferta: 404 (oferta inexistente) vira OFERTA_UPDATE_NOT_FOUND", async () => {
@@ -205,14 +222,22 @@ test("updateSpyOferta: 404 (oferta inexistente) vira OFERTA_UPDATE_NOT_FOUND", a
 // deleteSpyOferta — DELETE /api/ofertas?id=
 // ---------------------------------------------------------------------------
 
-test("deleteSpyOferta: id vazio/nulo/undefined falha fechado — NUNCA monta um DELETE com id vazio", async () => {
+test("deleteSpyOferta: id vazio/nulo/undefined/só-espaço falha fechado — NUNCA monta um DELETE com id vazio", async () => {
   let calls = 0;
   const fetchImpl = async () => { calls += 1; return opResponse({ ok: true }); };
-  for (const id of ["", null, undefined]) {
+  for (const id of IDS_INVALIDOS) {
     const result = await deleteSpyOferta(id, { ...config, fetchImpl });
-  assert.equal(result.code, "OFERTA_DELETE_VALIDATION_INVALID", `id=${JSON.stringify(id)}`);
+    assert.equal(result.code, "OFERTA_DELETE_VALIDATION_INVALID", `id=${JSON.stringify(id)}`);
   }
-  assert.equal(calls, 0, "id inválido não pode gerar nenhuma chamada de rede, nem de login");
+  assert.equal(calls, 0, "rede=false: id inválido (incluindo '   '/'\\t'/'\\n') não pode gerar nenhuma chamada de rede, nem de login");
+});
+
+test("deleteSpyOferta: id só-espaço (regressão do gate held-out) — rede NUNCA chamada, isolado pra evidência", async () => {
+  let calls = 0;
+  const fetchImpl = async () => { calls += 1; return new Response(null, { status: 200 }); };
+  const result = await deleteSpyOferta("   ", { ...config, fetchImpl });
+  assert.equal(result.code, "OFERTA_DELETE_VALIDATION_INVALID");
+  assert.equal(calls, 0, "rede=false para id='   '");
 });
 
 test("deleteSpyOferta: sucesso chama DELETE com o id certo na query e valida {ok:true}", async () => {
@@ -256,20 +281,44 @@ test("saveSpyLeiturasBatch: lote vazio falha fechado ANTES da rede", async () =>
   assert.equal(calls, 0, "lote vazio/inválido não pode gerar rede real — é dado de produção");
 });
 
-test("saveSpyLeiturasBatch: item malformado (data fora do formato, periodo inválido, ads negativo) falha fechado, lote inteiro rejeitado", async () => {
+test("saveSpyLeiturasBatch: item malformado (data fora do formato, periodo inválido, ads negativo, id/ofertaId inválido) falha fechado, lote inteiro rejeitado", async () => {
   const item = { id: "l1", ofertaId: "o1", data: "2026-08-01", periodo: "manha", ads: 10 };
   const casos = [
     { ...item, data: "01-08-2026" },
     { ...item, periodo: "tarde" },
     { ...item, ads: -1 },
     { ...item, ads: 1.5 },
-    { ...item, id: "" },
-    { ...item, ofertaId: "" },
+    ...IDS_INVALIDOS.map((id) => ({ ...item, id })),
+    ...IDS_INVALIDOS.map((ofertaId) => ({ ...item, ofertaId })),
   ];
   for (const itemRuim of casos) {
     const result = await saveSpyLeiturasBatch([item, itemRuim], config);
     assert.equal(result.code, "LEITURAS_BATCH_VALIDATION_INVALID", JSON.stringify(itemRuim));
   }
+});
+
+test("saveSpyLeiturasBatch: ofertaId só-espaço no lote — rede NUNCA chamada (regressão do gate held-out)", async () => {
+  let calls = 0;
+  const fetchImpl = async () => { calls += 1; return opResponse({ leituras: [] }); };
+  const itens = [{ id: "l1", ofertaId: "   ", data: "2026-08-01", periodo: "manha", ads: 10 }];
+  const result = await saveSpyLeiturasBatch(itens, { ...config, fetchImpl });
+  assert.equal(result.code, "LEITURAS_BATCH_VALIDATION_INVALID");
+  assert.equal(calls, 0, "rede=false para ofertaId='   '");
+});
+
+test("saveSpyLeiturasBatch: id/ofertaId válidos com espaço nas bordas saem TRIMADOS no body", async () => {
+  let opCall;
+  const itens = [{ id: "  l1  ", ofertaId: "  o1  ", data: "2026-08-01", periodo: "manha", ads: 10 }];
+  const result = await saveSpyLeiturasBatch(itens, {
+    ...config,
+    fetchImpl: stubFetch({
+      onOp: async (url, init) => { opCall = { url, init }; return opResponse({ leituras: [leituraRowWire] }); },
+    }),
+  });
+  assert.equal(result.kind, "success");
+  const enviado = JSON.parse(opCall.init.body).itens[0];
+  assert.equal(enviado.id, "l1");
+  assert.equal(enviado.ofertaId, "o1");
 });
 
 test("saveSpyLeiturasBatch: lote válido faz POST com {itens} e devolve leituras validadas", async () => {
@@ -300,14 +349,16 @@ test("saveSpyLeiturasBatch: 400 (ofertaId inexistente, FK) vira LEITURAS_BATCH_R
 // updateSpyLeitura — PATCH /api/leituras?id=
 // ---------------------------------------------------------------------------
 
-test("updateSpyLeitura: id vazio ou ads inválido falham fechado ANTES da rede", async () => {
+test("updateSpyLeitura: id vazio/nulo/undefined/só-espaço ou ads inválido falham fechado ANTES da rede", async () => {
   let calls = 0;
   const fetchImpl = async () => { calls += 1; return opResponse(leituraRowWire); };
-  assert.equal((await updateSpyLeitura("", 10, { ...config, fetchImpl })).code, "LEITURA_UPDATE_VALIDATION_INVALID");
+  for (const id of IDS_INVALIDOS) {
+    assert.equal((await updateSpyLeitura(id, 10, { ...config, fetchImpl })).code, "LEITURA_UPDATE_VALIDATION_INVALID", `id=${JSON.stringify(id)}`);
+  }
   assert.equal((await updateSpyLeitura("l1", -1, { ...config, fetchImpl })).code, "LEITURA_UPDATE_VALIDATION_INVALID");
   assert.equal((await updateSpyLeitura("l1", 1.5, { ...config, fetchImpl })).code, "LEITURA_UPDATE_VALIDATION_INVALID");
   assert.equal((await updateSpyLeitura("l1", "10", { ...config, fetchImpl })).code, "LEITURA_UPDATE_VALIDATION_INVALID");
-  assert.equal(calls, 0);
+  assert.equal(calls, 0, "rede=false pra todo id/ads inválido, incluindo whitespace-only");
 });
 
 test("updateSpyLeitura: sucesso envia PATCH com {ads} e devolve a linha validada", async () => {
@@ -335,14 +386,22 @@ test("updateSpyLeitura: 404 vira LEITURA_UPDATE_NOT_FOUND", async () => {
 // deleteSpyLeitura — DELETE /api/leituras?id=
 // ---------------------------------------------------------------------------
 
-test("deleteSpyLeitura: id vazio/nulo/undefined falha fechado — NUNCA monta um DELETE com id vazio", async () => {
+test("deleteSpyLeitura: id vazio/nulo/undefined/só-espaço falha fechado — NUNCA monta um DELETE com id vazio", async () => {
   let calls = 0;
   const fetchImpl = async () => { calls += 1; return opResponse({ ok: true }); };
-  for (const id of ["", null, undefined]) {
+  for (const id of IDS_INVALIDOS) {
     const result = await deleteSpyLeitura(id, { ...config, fetchImpl });
     assert.equal(result.code, "LEITURA_DELETE_VALIDATION_INVALID", `id=${JSON.stringify(id)}`);
   }
-  assert.equal(calls, 0);
+  assert.equal(calls, 0, "rede=false: id inválido (incluindo '   '/'\\t'/'\\n') não pode gerar nenhuma chamada de rede, nem de login");
+});
+
+test("deleteSpyLeitura: id só-espaço (regressão do gate held-out) — rede NUNCA chamada, isolado pra evidência", async () => {
+  let calls = 0;
+  const fetchImpl = async () => { calls += 1; return new Response(null, { status: 200 }); };
+  const result = await deleteSpyLeitura("   ", { ...config, fetchImpl });
+  assert.equal(result.code, "LEITURA_DELETE_VALIDATION_INVALID");
+  assert.equal(calls, 0, "rede=false para id='   '");
 });
 
 test("deleteSpyLeitura: sucesso e 404", async () => {
