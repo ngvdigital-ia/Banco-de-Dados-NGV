@@ -33,5 +33,9 @@ export default async function OperacaoPage() {
     fetchSpyAnalyticsSummary({ config: { enabled: isOperationSpyAnalyticsEnabled } }),
     fetchNgvCoreOperationalSummary(),
   ]);
+  if (ngvCore.kind === "unavailable") {
+    const code = "code" in ngvCore && typeof ngvCore.code === "string" ? ngvCore.code : "SUMMARY_UNAVAILABLE";
+    console.warn("[NGV Core] operational summary unavailable", { code });
+  }
   return <OperationView snapshot={result.snapshot} stale={operationHasStaleEvidence(result.snapshot)} quizAnalytics={quizAnalytics} spyAnalytics={spyAnalytics} ngvCore={ngvCore} />;
 }

@@ -5,13 +5,15 @@ import {
   BellRing,
   Bot,
   ClipboardList,
-  ExternalLink,
+  Database,
   FolderOpen,
+  GraduationCap,
   History,
   LayoutDashboard,
   LineChart,
   PieChart,
   RadioTower,
+  Rocket,
   ScanSearch,
   Settings,
   ShieldCheck,
@@ -25,7 +27,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { isAdminEmail } from "@/lib/admin-emails";
-import { getSafeExternalUrl } from "@/lib/external-dashboard-url";
 import { isOperationCockpitEnabled } from "@/lib/operacao/feature";
 import {
   Sidebar,
@@ -44,41 +45,33 @@ type NavItem = {
   title: string;
   href: string;
   icon: LucideIcon;
-  external?: boolean;
 };
 
-const externalNavItems: NavItem[] = [
-  {
-    title: "Spy Analytics",
-    href: getSafeExternalUrl(process.env.NEXT_PUBLIC_SPY_ANALYTICS_URL),
-    icon: ScanSearch,
-  },
-  {
-    title: "Quiz Analytics",
-    href: getSafeExternalUrl(process.env.NEXT_PUBLIC_QUIZ_ANALYTICS_URL),
-    icon: BarChart3,
-  },
-].flatMap((item) =>
-  item.href ? [{ ...item, href: item.href, external: true }] : [],
-);
-
-const navItems = [
+const navItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Projetos", href: "/projects", icon: FolderOpen },
   { title: "Ofertas", href: "/offers", icon: ClipboardList },
-  ...(isOperationCockpitEnabled ? [{ title: "Operação", href: "/operacao", icon: RadioTower }] : []),
   { title: "Agentes", href: "/agentes", icon: Bot },
   { title: "Equipe", href: "/team", icon: Users },
   { title: "Métricas", href: "/metrics", icon: LineChart },
   { title: "Análises", href: "/analytics", icon: PieChart },
-  ...externalNavItems,
   { title: "Vendas", href: "/vendas", icon: ShoppingCart },
   { title: "Alertas", href: "/alertas", icon: BellRing },
   { title: "Import CSV", href: "/import", icon: Upload },
   { title: "Integrações", href: "/settings", icon: Settings },
   { title: "Tags", href: "/tags", icon: Tags },
   { title: "Changelog", href: "/changelog", icon: History },
-] satisfies NavItem[];
+];
+
+const systemNavItems: NavItem[] = [
+  { title: "Visão geral", href: "/operacao", icon: RadioTower },
+  { title: "Banco NGV", href: "/sistemas/banco-ngv", icon: Database },
+  { title: "Apps Ofertas", href: "/sistemas/apps-ofertas", icon: Rocket },
+  { title: "Cursos", href: "/sistemas/cursos", icon: GraduationCap },
+  { title: "Spy Analytics", href: "/sistemas/spy", icon: ScanSearch },
+  { title: "Quiz Analytics", href: "/sistemas/quiz", icon: BarChart3 },
+  { title: "Nexfy", href: "/sistemas/nexfy", icon: PieChart },
+];
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -103,41 +96,41 @@ export function AppSidebar() {
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
-                    render={
-                      item.external ? (
-                        <a
-                          href={item.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label={`${item.title} (abre em nova aba)`}
-                        />
-                      ) : (
-                        <Link href={item.href} />
-                      )
-                    }
-                    isActive={
-                      item.external
-                        ? false
-                        : item.href === "/"
-                          ? pathname === "/"
-                          : pathname.startsWith(item.href)
-                    }
+                    render={<Link href={item.href} />}
+                    isActive={item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)}
                     className="group/item h-11 rounded-md px-3 transition-all duration-150 ease-in-out md:h-9"
                   >
                     <item.icon className="h-4 w-4 shrink-0 transition-transform duration-150 group-hover/item:scale-110" />
                     <span className="text-sm">{item.title}</span>
-                    {item.external && (
-                      <ExternalLink
-                        aria-hidden="true"
-                        className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground"
-                      />
-                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {isOperationCockpitEnabled && (
+          <SidebarGroup className="mt-2">
+            <SidebarGroupLabel className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+              Sistemas
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0.5 px-2">
+                {systemNavItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      render={<Link href={item.href} />}
+                      isActive={pathname === item.href}
+                      className="group/item h-9 rounded-md px-3 transition-all duration-150 ease-in-out"
+                    >
+                      <item.icon className="h-4 w-4 shrink-0 transition-transform duration-150 group-hover/item:scale-110" />
+                      <span className="text-sm">{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
         {isAdmin && (
           <SidebarGroup className="mt-2">
             <SidebarGroupLabel className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
