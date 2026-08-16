@@ -24,8 +24,12 @@ test("allowlist de read reusa exatamente os operadores de OPERATION_OPERATOR_EMA
   );
 });
 
-test("allowlist de mutate está vazia na Fase 1 — ninguém entra até existir módulo que mute", () => {
-  assert.deepEqual([...moduleAllowlist("mutate")], []);
+test("allowlist de mutate = a de read (decisão do operador em 2026-08-16)", () => {
+  // Antes exigia lista VAZIA (Fase 1). O operador decidiu: quem pode agir é ele + a equipe
+  // que já usa os painéis — exatamente quem já está em read. O ganho é identidade individual
+  // e trilha, no lugar da senha compartilhada sem rastro que os 4 sistemas usam hoje.
+  assert.deepEqual([...moduleAllowlist("mutate")], [...moduleAllowlist("read")]);
+  assert.ok(moduleAllowlist("mutate").length > 0, "mutate nao pode estar vazia apos a decisao");
 });
 
 test("capability desconhecida nunca concede acesso (fail-closed)", () => {
@@ -40,11 +44,11 @@ test("hasModuleAccess NEGA quem não está na allowlist", () => {
   assert.equal(hasModuleAccess(undefined, "read"), false);
 });
 
-test("hasModuleAccess PERMITE operador em read, mas ninguém em mutate", () => {
+test("hasModuleAccess PERMITE operador em read E em mutate; nega quem nao esta na lista", () => {
   for (const email of OPERATION_OPERATOR_EMAILS) {
     assert.equal(hasModuleAccess(email, "read"), true);
     assert.equal(hasModuleAccess(email.toUpperCase(), "read"), true, "case-insensitive");
-    assert.equal(hasModuleAccess(email, "mutate"), false);
+    assert.equal(hasModuleAccess(email, "mutate"), true);
   }
 });
 
