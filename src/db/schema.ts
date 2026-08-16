@@ -665,3 +665,33 @@ export const operationCommands = pgTable(
     index("operation_commands_offer_id_status_idx").on(t.offerId, t.status),
   ],
 );
+
+// ============================================================
+// 21. MODULE ACTION LOG (audit trail dos módulos internos — Fase 1 fundação)
+// Auditoria central dos módulos que ganham identidade própria em /sistemas/<modulo>
+// (Quiz, Spy, Apps Ofertas, Cursos). Nunca grava payload bruto — só payload_hash
+// (sha256 via command-ledger.mjs). target_ref chega JÁ sanitizado (sem token/segredo,
+// sem PII direta — identificador interno ou hash). Fase 1 é só plumbing: sem eventos
+// reais ainda (o primeiro recorte do Quiz é 100% leitura, nada para auditar).
+// Decisão: ADR docs/NGV-BANCO-MODULOS-FUNDACAO-ADR.md (Decisão 3) — não reusa
+// change_log porque entity_id integer NOT NULL não cabe em alvo externo textual.
+// ============================================================
+
+export const moduleActionLog = pgTable(
+  "module_action_log",
+  {
+    id: serial("id").primaryKey(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+    actorClerkId: text("actor_clerk_id").notNull(),
+    actorEmail: text("actor_email").notNull(),
+    module: text("module").notNull(),
+    action: text("action").notNull(),
+    targetRef: text("target_ref"),
+    result: text("result").notNull(),
+    resultDetail: text("result_detail"),
+    payloadHash: text("payload_hash"),
+  },
+  (t) => [
+    index("module_action_log_module_idx").on(t.module, t.occurredAt),
+  ],
+);
