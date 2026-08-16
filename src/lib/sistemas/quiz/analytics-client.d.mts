@@ -7,6 +7,7 @@
 // `kind` (usam `"code" in summary`); aqui preferimos tipos explícitos e corretos.
 
 export declare const QUIZ_ANALYTICS_PATH: "/api/analytics";
+export declare const QUIZ_ANALYTICS_ORIGIN: "https://quiz-analytics-phi.vercel.app";
 
 export declare class QuizModuleAnalyticsError extends Error {
   code: string;

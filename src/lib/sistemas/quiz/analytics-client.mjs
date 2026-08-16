@@ -23,7 +23,10 @@ const MAX_TIMEOUT_MS = 8000;
 // configurada nunca amplia o alcance do adapter. Único host de produção do Quiz,
 // confirmado no ADR (Decisão 5, "painel antigo continua no ar") e no snippet do
 // tracker em dashboard.js.
-const QUIZ_ANALYTICS_ORIGIN = "https://quiz-analytics-phi.vercel.app";
+// Exportado (além de usado como default de configFrom abaixo) porque installer-panel.tsx
+// precisa do MESMO origin pra montar o trecho do tracker.js — single source of truth em vez
+// de duplicar o literal em dois arquivos (REUSE › ADAPT › CREATE).
+export const QUIZ_ANALYTICS_ORIGIN = "https://quiz-analytics-phi.vercel.app";
 
 export class QuizModuleAnalyticsError extends Error {
   constructor(code) {
