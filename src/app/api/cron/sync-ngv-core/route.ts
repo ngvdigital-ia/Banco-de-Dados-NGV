@@ -29,7 +29,8 @@ export async function GET(request: Request) {
   }
 
   // Fail-closed: sem WRITER_KEY, 503 ANTES de tocar banco ou rede.
-  if (!process.env.NGV_CORE_WRITER_KEY) {
+  const writerKey = process.env.NGV_CORE_BANCO_WRITER_KEY ?? process.env.NGV_CORE_WRITER_KEY;
+  if (!writerKey) {
     return NextResponse.json(
       { error: "NGV_CORE_WRITER_KEY not configured" },
       { status: 503 },

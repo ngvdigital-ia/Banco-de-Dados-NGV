@@ -18,10 +18,11 @@ test("rota expõe GET com auth timing-safe (sha256 + timingSafeEqual)", async ()
 test("auth precede o gate 503 e o gate precede o banco", async () => {
   const source = await readFile(ROUTE_PATH, "utf8");
   const auth = source.indexOf("secureEqual(authHeader");
-  const gate = source.indexOf("if (!process.env.NGV_CORE_WRITER_KEY)");
+  const gate = source.indexOf("if (!writerKey)");
   const dbCall = source.indexOf("db.execute");
   assert.ok(auth >= 0 && gate > auth, "auth deve vir antes do gate");
   assert.ok(dbCall > gate, "gate 503 deve vir antes de tocar o banco");
+  assert.match(source, /process\.env\.NGV_CORE_BANCO_WRITER_KEY \?\? process\.env\.NGV_CORE_WRITER_KEY/);
   assert.match(source, /NGV_CORE_WRITER_KEY not configured/);
   assert.match(source, /status: 503/);
 });

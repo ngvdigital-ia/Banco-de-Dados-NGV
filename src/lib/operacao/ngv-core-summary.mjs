@@ -24,7 +24,9 @@ function configFrom(options = {}) {
   const timeout = Number(options.timeoutMs ?? NGV_CORE_OPERATIONAL_SUMMARY_TIMEOUT_MS);
   return {
     enabled: options.enabled ?? process.env.OPERATION_NGV_CORE_SUMMARY_ENABLED ?? false,
-    writerKey: options.writerKey ?? process.env.NGV_CORE_WRITER_KEY ?? "",
+    // A credencial exclusiva do Banco evita que o cockpit dependa do writer
+    // compartilhado por outros sistemas. Mantém fallback para instalações legadas.
+    writerKey: options.writerKey ?? process.env.NGV_CORE_BANCO_WRITER_KEY ?? process.env.NGV_CORE_WRITER_KEY ?? "",
     timeoutMs: Number.isFinite(timeout) ? Math.min(NGV_CORE_OPERATIONAL_SUMMARY_TIMEOUT_MS, Math.max(1, timeout)) : NGV_CORE_OPERATIONAL_SUMMARY_TIMEOUT_MS,
   };
 }

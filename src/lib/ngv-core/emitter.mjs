@@ -5,7 +5,8 @@
 //
 // Config (server-side, ver .env.example):
 //   NGV_CORE_URL            https://<project>.supabase.co/functions/v1/banco-global-daily-ingest
-//   NGV_CORE_WRITER_KEY     credencial de escrita do NGV Core (header privado)
+//   NGV_CORE_BANCO_WRITER_KEY credencial exclusiva do Banco (header privado)
+//   NGV_CORE_WRITER_KEY     fallback legado para a credencial de escrita do NGV Core
 //   NGV_CORE_HOST_ALLOWLIST allowlist de hostnames (fail-closed)
 //
 // Testável via node:test com fetchImpl injetado (padrão da squad operacao).
@@ -44,7 +45,7 @@ export function resolveNgvCoreConfig(options = {}) {
   const requestedTimeout = Number(options.timeoutMs ?? NGV_CORE_TIMEOUT_MS);
   return {
     url: options.url ?? process.env.NGV_CORE_URL ?? "",
-    writerKey: options.writerKey ?? process.env.NGV_CORE_WRITER_KEY ?? "",
+    writerKey: options.writerKey ?? process.env.NGV_CORE_BANCO_WRITER_KEY ?? process.env.NGV_CORE_WRITER_KEY ?? "",
     hostAllowlist: options.hostAllowlist ?? process.env.NGV_CORE_HOST_ALLOWLIST ?? "",
     timeoutMs: Number.isFinite(requestedTimeout) ? Math.min(NGV_CORE_TIMEOUT_MS, Math.max(1, requestedTimeout)) : NGV_CORE_TIMEOUT_MS,
   };
