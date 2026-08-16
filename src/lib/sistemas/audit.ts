@@ -22,9 +22,16 @@ export interface LogModuleActionParams {
   payload?: unknown;
 }
 
-// target_ref deve chegar já sanitizado do caller (ADR, Decisão 3) — esta função é a
-// segunda linha de defesa: reusa detectSensitivePayload() de command-ledger.mjs
-// (sem reescrever regex) e nunca deixa passar algo que pareça token/segredo.
+// target_ref deve chegar JÁ SANITIZADO do caller (ADR, Decisão 3). Esta função é uma
+// rede de segurança ESTREITA, não uma garantia: reusa detectSensitivePayload() de
+// command-ledger.mjs, que reconhece SEGREDO/TOKEN (JWT, chave AWS/OpenAI/GitHub/Slack,
+// PEM, hex de 64) — e NÃO reconhece PII.
+//
+// Medido pelo gate held-out em 2026-08-16: e-mail, CPF, telefone, nome e número de
+// cartão passam por aqui SEM serem sinalizados. Portanto, quem chamar logModuleAction()
+// é responsável por não passar PII em target_ref/result_detail — este arquivo não salva
+// ninguém disso. Ao ligar o primeiro caller real (Fase 2/3), o QA daquele ciclo tem de
+// verificar a sanitização NO CALLER.
 function sanitizeTargetRef(targetRef: string | null | undefined): string | null {
   if (typeof targetRef !== "string" || targetRef.length === 0) return null;
   if (detectSensitivePayload(targetRef).sensitive) {
