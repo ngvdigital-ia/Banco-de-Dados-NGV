@@ -278,10 +278,15 @@ export async function fetchSpyModuleEstado(options = {}) {
       }),
     );
 
-    if (isRedirect(loginResponse)) return errorResult("UNEXPECTED_REDIRECT");
-    if (loginResponse.status === 401 || loginResponse.status === 403) return errorResult("UNAUTHORIZED");
-    if (loginResponse.status === 429) return errorResult("RATE_LIMITED");
-    if (!loginResponse.ok) return errorResult(loginResponse.status >= 500 ? "UPSTREAM_ERROR" : "REQUEST_INVALID");
+    // Códigos com a ETAPA no nome. O gate held-out provou que usar o mesmo
+    // "UNAUTHORIZED" nas duas etapas torna indistinguível, em produção, "a senha
+    // está errada" (corrigir SPY_DASHBOARD_PASSWORD aqui) de "o Spy rejeitou uma
+    // sessão que ele mesmo acabou de emitir" (divergência de SESSION_SECRET, que é
+    // problema do lado do Spy). São diagnósticos e donos diferentes.
+    if (isRedirect(loginResponse)) return errorResult("LOGIN_UNEXPECTED_REDIRECT");
+    if (loginResponse.status === 401 || loginResponse.status === 403) return errorResult("LOGIN_UNAUTHORIZED");
+    if (loginResponse.status === 429) return errorResult("LOGIN_RATE_LIMITED");
+    if (!loginResponse.ok) return errorResult(loginResponse.status >= 500 ? "LOGIN_UPSTREAM_ERROR" : "LOGIN_REQUEST_INVALID");
 
     const sessionCookie = extractSessionCookie(loginResponse);
     if (!sessionCookie) return errorResult("LOGIN_COOKIE_MISSING");
@@ -297,9 +302,13 @@ export async function fetchSpyModuleEstado(options = {}) {
       }),
     );
 
-    if (isRedirect(estadoResponse)) return errorResult("UNEXPECTED_REDIRECT");
-    if (estadoResponse.status === 401 || estadoResponse.status === 403) return errorResult("UNAUTHORIZED");
-    if (!estadoResponse.ok) return errorResult(estadoResponse.status >= 500 ? "UPSTREAM_ERROR" : "REQUEST_INVALID");
+    // Etapa ESTADO — ver nota na etapa de login sobre por que o código carrega a etapa.
+    // ESTADO_UNAUTHORIZED aqui significa: o login funcionou, o cookie foi emitido, e
+    // ainda assim o Spy recusou. Isso NÃO é senha errada — é sinal de problema do lado
+    // do Spy, e escala para o dono dele, não para quem configurou o Banco NGV.
+    if (isRedirect(estadoResponse)) return errorResult("ESTADO_UNEXPECTED_REDIRECT");
+    if (estadoResponse.status === 401 || estadoResponse.status === 403) return errorResult("ESTADO_UNAUTHORIZED");
+    if (!estadoResponse.ok) return errorResult(estadoResponse.status >= 500 ? "ESTADO_UPSTREAM_ERROR" : "ESTADO_REQUEST_INVALID");
 
     const text = await readBoundedText(estadoResponse);
     let body;

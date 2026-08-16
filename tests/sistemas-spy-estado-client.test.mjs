@@ -98,16 +98,16 @@ test("senha incorreta (login 401) vira UNAUTHORIZED e NUNCA chama /api/estado", 
       onEstado: async () => { estadoCalls += 1; return estadoResponse(validBody); },
     }),
   });
-  assert.deepEqual(result, { kind: "error", code: "UNAUTHORIZED", fetchedAt: null, data: null });
+  assert.deepEqual(result, { kind: "error", code: "LOGIN_UNAUTHORIZED", fetchedAt: null, data: null });
   assert.equal(estadoCalls, 0, "login recusado não pode seguir pro /api/estado");
 });
 
-test("login limitado por rate-limit (429) vira RATE_LIMITED", async () => {
+test("login limitado por rate-limit (429) vira LOGIN_RATE_LIMITED", async () => {
   const result = await fetchSpyModuleEstado({
     ...config,
     fetchImpl: stubFetch({ onLogin: async () => new Response(JSON.stringify({ erro: "muitas tentativas" }), { status: 429 }) }),
   });
-  assert.deepEqual(result, { kind: "error", code: "RATE_LIMITED", fetchedAt: null, data: null });
+  assert.deepEqual(result, { kind: "error", code: "LOGIN_RATE_LIMITED", fetchedAt: null, data: null });
 });
 
 test("login sem Set-Cookie na resposta 200 vira LOGIN_COOKIE_MISSING — nunca segue sem sessão", async () => {
@@ -128,7 +128,7 @@ test("sessão recusada em /api/estado (401 mesmo com cookie) vira UNAUTHORIZED",
     ...config,
     fetchImpl: stubFetch({ onEstado: async () => new Response(JSON.stringify({ erro: "sessao invalida" }), { status: 401 }) }),
   });
-  assert.deepEqual(result, { kind: "error", code: "UNAUTHORIZED", fetchedAt: null, data: null });
+  assert.deepEqual(result, { kind: "error", code: "ESTADO_UNAUTHORIZED", fetchedAt: null, data: null });
 });
 
 test("redirect não é seguido em nenhuma das duas chamadas — 3xx vira erro tipado, nunca segue Location", async () => {
@@ -136,13 +136,13 @@ test("redirect não é seguido em nenhuma das duas chamadas — 3xx vira erro ti
     ...config,
     fetchImpl: stubFetch({ onLogin: async () => new Response(null, { status: 302, headers: { location: "https://evil.example.test/" } }) }),
   });
-  assert.deepEqual(naLogin, { kind: "error", code: "UNEXPECTED_REDIRECT", fetchedAt: null, data: null });
+  assert.deepEqual(naLogin, { kind: "error", code: "LOGIN_UNEXPECTED_REDIRECT", fetchedAt: null, data: null });
 
   const noEstado = await fetchSpyModuleEstado({
     ...config,
     fetchImpl: stubFetch({ onEstado: async () => new Response(null, { status: 302, headers: { location: "https://evil.example.test/" } }) }),
   });
-  assert.deepEqual(noEstado, { kind: "error", code: "UNEXPECTED_REDIRECT", fetchedAt: null, data: null });
+  assert.deepEqual(noEstado, { kind: "error", code: "ESTADO_UNEXPECTED_REDIRECT", fetchedAt: null, data: null });
 });
 
 test("timeout (AbortError) vira erro tipado TIMEOUT", async () => {
@@ -283,4 +283,23 @@ test("leituras AUSENTE falha fechado — não vira lista vazia silenciosa", asyn
   const result = await fetchSpyModuleEstado({ ...config, fetchImpl: stubFetch({ onEstado: async () => estadoResponse(semLeituras) }) });
   assert.equal(result.kind, "error");
   assert.equal(result.code, "RESPONSE_SCHEMA_INVALID");
+});
+
+// Regressão do achado do gate held-out (2026-08-16): antes, senha errada no login e
+// sessão recusada no /api/estado devolviam ambos "UNAUTHORIZED", tornando impossível
+// distinguir em produção "corrigir SPY_DASHBOARD_PASSWORD aqui" de "o Spy rejeitou a
+// própria sessão que emitiu — escalar para o dono do Spy". Donos e correções diferentes.
+test("falha de LOGIN e falha de ESTADO sao DISTINGUIVEIS (regressao do gate)", async () => {
+  const senhaErrada = await fetchSpyModuleEstado({
+    ...config,
+    fetchImpl: stubFetch({ onLogin: async () => new Response(null, { status: 401 }) }),
+  });
+  const sessaoRecusada = await fetchSpyModuleEstado({
+    ...config,
+    fetchImpl: stubFetch({ onEstado: async () => new Response(null, { status: 401 }) }),
+  });
+
+  assert.equal(senhaErrada.code, "LOGIN_UNAUTHORIZED");
+  assert.equal(sessaoRecusada.code, "ESTADO_UNAUTHORIZED");
+  assert.notEqual(senhaErrada.code, sessaoRecusada.code, "os dois cenarios NAO podem colidir no mesmo codigo");
 });
