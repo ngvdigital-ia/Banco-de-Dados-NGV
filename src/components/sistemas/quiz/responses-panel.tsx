@@ -15,7 +15,9 @@ export function ResponsesPanel({ responses }: { responses: QuizModuleAnalyticsDa
       {responses.map((question) => (
         <article key={question.id} className="rounded-lg border bg-card p-4">
           <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
-            {question.stageNumber ? `Etapa ${question.stageNumber} — ${question.stageLabel}` : `Etapa — ${question.stageLabel}`}
+            {/* `!== null` e não truthy: o schema aceita stage_number 0 como etapa
+                legítima, e `0 ?` cairia no ramo de "etapa desconhecida". */}
+            {question.stageNumber !== null ? `Etapa ${question.stageNumber} — ${question.stageLabel}` : `Etapa — ${question.stageLabel}`}
           </p>
           <div className="mt-1 flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="text-sm font-semibold">{question.label}</h3>

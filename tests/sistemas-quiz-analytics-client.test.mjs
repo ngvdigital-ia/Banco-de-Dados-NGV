@@ -143,3 +143,25 @@ test("host fora do allowlist (origin http, ou host trocado) falha fechado", asyn
   assert.equal(insecure.kind, "error");
   assert.equal(insecure.code, "BASE_URL_INVALID");
 });
+
+// Regressão do furo achado pelo gate held-out em 2026-08-16: `journeys` era o único
+// campo com fallback silencioso (`input ?? {zeros}`), então payload sem a chave — ou
+// com ela nula — virava kind:"success" com 0 jornadas, sem sinal de erro. Isso
+// contradizia a garantia do módulo de que falha nunca vira zero. Agora falha fechado
+// como os outros 6 campos.
+test("journeys AUSENTE falha fechado — nao vira zero silencioso (regressao do gate)", async () => {
+  const semJourneys = { ...JSON.parse(JSON.stringify(validBody)) };
+  delete semJourneys.journeys;
+  const result = await fetchQuizModuleAnalytics({}, { ...config, fetchImpl: async () => response(semJourneys) });
+  assert.equal(result.kind, "error");
+  assert.equal(result.code, "RESPONSE_SCHEMA_INVALID");
+  assert.equal(result.data, null);
+});
+
+test("journeys NULL falha fechado — nao vira zero silencioso (regressao do gate)", async () => {
+  const journeysNulo = { ...JSON.parse(JSON.stringify(validBody)), journeys: null };
+  const result = await fetchQuizModuleAnalytics({}, { ...config, fetchImpl: async () => response(journeysNulo) });
+  assert.equal(result.kind, "error");
+  assert.equal(result.code, "RESPONSE_SCHEMA_INVALID");
+  assert.equal(result.data, null);
+});

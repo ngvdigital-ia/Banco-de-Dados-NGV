@@ -225,7 +225,14 @@ function validateJourneyPage(input) {
 }
 
 function validateJourneys(input) {
-  const value = input ?? { summary: { total_journeys: 0, cross_page_journeys: 0 }, pages: [] };
+  // Falha fechado como TODOS os outros campos do payload. A versão anterior tinha
+  // `input ?? { ...zeros }`, e o gate held-out provou o furo: payload sem a chave
+  // `journeys` (ou com `journeys: null`) virava kind:"success" com 0 jornadas, sem
+  // nenhum sinal de erro — exatamente o "falha vira zero" que este módulo promete
+  // não ter. O servidor real (quiz-analytics/server.js:398) sempre manda o objeto,
+  // então rejeitar aqui não quebra o caminho feliz e transforma um schema quebrado
+  // em erro visível em vez de dado silenciosamente errado.
+  const value = input;
   if (!isPlainObject(value)) fail("RESPONSE_SCHEMA_INVALID");
   const { summary, pages } = value;
   if (
