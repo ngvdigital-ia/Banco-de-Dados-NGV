@@ -2,9 +2,11 @@ import { Clock3, ShieldAlert, Wrench } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CampaignsPanel } from "./campaigns-panel";
 import { EventsPanel } from "./events-panel";
 import { FunnelPanel } from "./funnel-panel";
 import { formatTimestamp } from "./format";
+import { InstallerPanel } from "./installer-panel";
 import { JourneysPanel } from "./journeys-panel";
 import type { PeriodKey } from "./period";
 import { PeriodFilter } from "./period-filter";
@@ -46,7 +48,17 @@ function errorMessage(code: string | undefined) {
   }
 }
 
-export function QuizAnalyticsView({ result, period }: { result: QuizModuleAnalyticsResult; period: PeriodKey }) {
+export function QuizAnalyticsView({
+  result,
+  period,
+  customFrom,
+  customTo,
+}: {
+  result: QuizModuleAnalyticsResult;
+  period: PeriodKey;
+  customFrom?: string;
+  customTo?: string;
+}) {
   if (result.kind === "not_configured") {
     return (
       <div className="space-y-6">
@@ -96,7 +108,7 @@ export function QuizAnalyticsView({ result, period }: { result: QuizModuleAnalyt
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PeriodFilter current={period} />
+        <PeriodFilter current={period} customFrom={customFrom} customTo={customTo} />
         <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
           <Clock3 className="size-3.5" aria-hidden="true" /> Gerado em {formatTimestamp(data.generatedAt)}
         </span>
@@ -110,9 +122,10 @@ export function QuizAnalyticsView({ result, period }: { result: QuizModuleAnalyt
           <TabsTrigger value="answers">Respostas</TabsTrigger>
           <TabsTrigger value="events">Eventos</TabsTrigger>
           <TabsTrigger value="journeys">Jornadas</TabsTrigger>
+          <TabsTrigger value="installer">Instalar tracker</TabsTrigger>
         </TabsList>
         <TabsContent value="funnel" className="mt-4">
-          <FunnelPanel funnel={data.funnel} campaigns={data.utmCampaigns} />
+          <FunnelPanel funnel={data.funnel} />
         </TabsContent>
         <TabsContent value="answers" className="mt-4">
           <ResponsesPanel responses={data.responses} />
@@ -123,7 +136,14 @@ export function QuizAnalyticsView({ result, period }: { result: QuizModuleAnalyt
         <TabsContent value="journeys" className="mt-4">
           <JourneysPanel journeys={data.journeys} />
         </TabsContent>
+        <TabsContent value="installer" className="mt-4">
+          <InstallerPanel />
+        </TabsContent>
       </Tabs>
+
+      {/* Persistente, fora das abas — igual ao original (index (1).html:97-100): visível
+         sob qualquer aba ativa, não só a de Funil. */}
+      <CampaignsPanel campaigns={data.utmCampaigns} />
     </div>
   );
 }

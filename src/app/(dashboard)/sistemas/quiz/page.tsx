@@ -10,9 +10,9 @@ import { parsePeriodKey, resolvePeriod } from "@/components/sistemas/quiz/period
 // Rota estática, irmã do catch-all `[system]/page.tsx` (o Next.js App Router
 // prioriza segmento estático sobre dinâmico) — ADR docs/NGV-BANCO-MODULOS-FUNDACAO-ADR.md,
 // Decisão 1. Fase 2: as 4 abas de leitura (funil, respostas, eventos, jornadas)
-// vêm do adapter server-to-server. `SISTEMAS_QUIZ_MODULE_ENABLED` é o rollback
-// previsto no ADR — desligada (ou ausente), a rota volta ao EmptyState da Fase 1
-// e NUNCA chama o Quiz.
+// vêm do adapter server-to-server; a 5ª aba (Instalar tracker) é local, sem fetch.
+// `SISTEMAS_QUIZ_MODULE_ENABLED` é o rollback previsto no ADR — desligada (ou
+// ausente), a rota volta ao EmptyState da Fase 1 e NUNCA chama o Quiz.
 export const dynamic = "force-dynamic";
 
 const isQuizModuleEnabled = () => process.env.SISTEMAS_QUIZ_MODULE_ENABLED === "true";
@@ -41,9 +41,18 @@ export default async function QuizModulePage({
 
   const params = await searchParams;
   const periodParam = typeof params.period === "string" ? params.period : undefined;
-  const range = resolvePeriod(periodParam);
+  const customFromParam = typeof params.from === "string" ? params.from : undefined;
+  const customToParam = typeof params.to === "string" ? params.to : undefined;
+  const range = resolvePeriod(periodParam, customFromParam, customToParam);
 
   const result = await fetchQuizModuleAnalytics({ from: range.from ?? undefined, to: range.to ?? undefined });
 
-  return <QuizAnalyticsView result={result} period={parsePeriodKey(periodParam)} />;
+  return (
+    <QuizAnalyticsView
+      result={result}
+      period={parsePeriodKey(periodParam)}
+      customFrom={customFromParam}
+      customTo={customToParam}
+    />
+  );
 }
