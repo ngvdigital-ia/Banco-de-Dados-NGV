@@ -9,7 +9,17 @@ export const MODULE_CAPABILITIES = Object.freeze(["read", "mutate"]);
 const READ_ALLOWLIST = Object.freeze(
   OPERATION_OPERATOR_EMAILS.map((email) => email.toLowerCase()),
 );
-const MUTATE_ALLOWLIST = Object.freeze([]);
+// Decisão do operador em 2026-08-16: quem pode EXECUTAR AÇÃO é "ele + a equipe que já usa
+// os painéis". Isso é exatamente quem já está em OPERATION_OPERATOR_EMAILS — não inventamos
+// e-mail de ninguém aqui; se a equipe crescer, cresce naquela lista e reflete nas duas.
+//
+// O ganho real desta linha não é permitir mais coisa: é que a mesma pessoa que hoje age por
+// uma SENHA COMPARTILHADA (sem identidade e sem rastro, nos 4 sistemas) passa a agir com
+// identidade individual do Clerk e trilha em module_action_log.
+//
+// Inócua hoje: nenhuma ação de mutação está habilitada (o disparo de push dos Cursos está
+// com o botão desabilitado por decisão do operador, e Quiz/Spy são leitura pura).
+const MUTATE_ALLOWLIST = READ_ALLOWLIST;
 
 export function moduleAllowlist(capability) {
   if (capability === "read") return READ_ALLOWLIST;
