@@ -38,3 +38,40 @@ test("é função pura: não muta o array recebido", () => {
   shouldReplaceSnapshots(results);
   assert.equal(JSON.stringify(results), snapshot);
 });
+
+// --- Fail-closed em entrada inesperada: guarda de "posso apagar?" NUNCA pode lançar ---
+
+test("null -> protege (false), sem lançar", () => {
+  assert.doesNotThrow(() => shouldReplaceSnapshots(null));
+  assert.equal(shouldReplaceSnapshots(null), false);
+});
+
+test("undefined -> protege (false), sem lançar", () => {
+  assert.doesNotThrow(() => shouldReplaceSnapshots(undefined));
+  assert.equal(shouldReplaceSnapshots(undefined), false);
+});
+
+test("não-array objeto solto -> protege (false), sem lançar", () => {
+  assert.doesNotThrow(() => shouldReplaceSnapshots({ status: "ok" }));
+  assert.equal(shouldReplaceSnapshots({ status: "ok" }), false);
+});
+
+test("não-array string -> protege (false), sem lançar", () => {
+  assert.doesNotThrow(() => shouldReplaceSnapshots("ok"));
+  assert.equal(shouldReplaceSnapshots("ok"), false);
+});
+
+test("array com item nulo mas com um ok real -> true (item malformado não invalida os outros)", () => {
+  // Escolha deliberada: um item nulo/estranho é tratado como "não é ok" (igual a um item
+  // com status="error" já era), não como motivo pra ignorar sucessos legítimos no resto do
+  // array. Malformação de 1 item não é evidência de falha sistêmica das outras listas.
+  assert.doesNotThrow(() => shouldReplaceSnapshots([{ status: "ok" }, null]));
+  assert.equal(shouldReplaceSnapshots([{ status: "ok" }, null]), true);
+  assert.doesNotThrow(() => shouldReplaceSnapshots([null, { status: "ok" }]));
+  assert.equal(shouldReplaceSnapshots([null, { status: "ok" }]), true);
+});
+
+test("array só com itens nulos/malformados -> protege (false), sem lançar", () => {
+  assert.doesNotThrow(() => shouldReplaceSnapshots([null, undefined, {}]));
+  assert.equal(shouldReplaceSnapshots([null, undefined, {}]), false);
+});
