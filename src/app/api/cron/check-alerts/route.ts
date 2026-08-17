@@ -12,6 +12,7 @@ import {
 } from "@/lib/alerts-config";
 import { checkAgentsHealth } from "@/lib/agentes/n8n/health";
 import { computeDataFreshness } from "@/lib/alerts-freshness.mjs";
+import { isAuthorizedBearer } from "@/lib/auth-bearer.mjs";
 
 export const maxDuration = 60;
 
@@ -20,7 +21,7 @@ const COOLDOWN_MS = 20 * 60 * 60 * 1000;
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedBearer(authHeader, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

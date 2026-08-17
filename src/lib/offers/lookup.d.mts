@@ -92,10 +92,8 @@ export declare const OFFER_LOOKUP_CODES: Readonly<{
 export declare const MAX_CANDIDATES: number;
 export declare const MAX_NAME_LENGTH: number;
 
-export declare function isAuthorizedBearer(
-  authHeader: string | null,
-  secret: string | undefined,
-): boolean;
+/** Reexportado de ../auth-bearer.mjs — a regra mora lá, aqui é só compatibilidade de import. */
+export { isAuthorizedBearer } from "../auth-bearer.mjs";
 export declare function parseIdentifier(params: {
   id?: string | null;
   name?: string | null;

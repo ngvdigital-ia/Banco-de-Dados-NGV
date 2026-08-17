@@ -15,6 +15,7 @@ import {
   computeDelta,
   deltaSummary,
 } from "@/lib/site-urls";
+import { isAuthorizedBearer } from "@/lib/auth-bearer.mjs";
 
 // POST /api/admin/offer-domains
 // Authorization: Bearer <CRON_SECRET>
@@ -59,7 +60,7 @@ const requestSchema = z
 export async function POST(request: Request) {
   // 1. Auth
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedBearer(authHeader, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

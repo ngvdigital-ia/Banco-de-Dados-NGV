@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { offerTracking } from "@/db/schema";
 import type { SiteUrls } from "@/lib/site-urls";
 import { totalLinks } from "@/lib/site-urls";
+import { isAuthorizedBearer } from "@/lib/auth-bearer.mjs";
 
 // GET /api/admin/offers
 // Authorization: Bearer <CRON_SECRET>
@@ -19,7 +20,7 @@ import { totalLinks } from "@/lib/site-urls";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedBearer(authHeader, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

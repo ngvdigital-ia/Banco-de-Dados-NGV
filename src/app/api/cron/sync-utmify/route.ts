@@ -3,13 +3,14 @@ import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
 import { DASHBOARDS, fetchDashboardSummary, fetchMetaAdObjects } from "@/lib/utmify";
 import { getDbCampaignMappings, resolveOfferFromCampaign } from "@/lib/offer-mappings";
+import { isAuthorizedBearer } from "@/lib/auth-bearer.mjs";
 
 export const maxDuration = 300;
 
 export async function GET(request: Request) {
   // Verify cron secret
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedBearer(authHeader, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

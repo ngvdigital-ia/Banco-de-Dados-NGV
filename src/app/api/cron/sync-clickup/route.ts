@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { shouldReplaceSnapshots } from "@/lib/cron/sync-clickup-guards.mjs";
+import { isAuthorizedBearer } from "@/lib/auth-bearer.mjs";
 
 export const maxDuration = 300;
 
@@ -77,7 +78,7 @@ const ON_TIME_GRACE_MS = 48 * 60 * 60 * 1000;
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedBearer(authHeader, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

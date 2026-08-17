@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
 import { extractOfferFromCampaignName } from "@/lib/utmify";
 import { eq, and, gte, lte } from "drizzle-orm";
+import { isAuthorizedBearer } from "@/lib/auth-bearer.mjs";
 
 type DailyCampaignInput = {
   id: string;
@@ -28,7 +29,7 @@ type RequestBody = {
 // by Claude/MCP or external schedulers until UTMify REST API is re-enabled.
 export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedBearer(authHeader, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

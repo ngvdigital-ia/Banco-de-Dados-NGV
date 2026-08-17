@@ -14,6 +14,8 @@
 //   - observations (texto livre digitado por humano — é onde segredo/PII vaza por acidente).
 // Coluna nova em offer_tracking NÃO entra no retorno sozinha: tem que ser adicionada aqui.
 
+import { isAuthorizedBearer } from "../auth-bearer.mjs";
+
 export const OFFER_LOOKUP_CODES = Object.freeze({
   UNAUTHORIZED: "UNAUTHORIZED",
   MISSING_IDENTIFIER: "MISSING_IDENTIFIER",
@@ -33,13 +35,11 @@ const MAX_INT4 = 2147483647; // offer_tracking.id é serial (int4)
 const LIST_HINT =
   "GET /api/admin/offers (mesmo Bearer) lista id + nome de todas as ofertas — use o id de lá.";
 
-// Compara o header inteiro, igual às rotas admin/cron já existentes.
-// Diferença deliberada: sem CRON_SECRET configurado NINGUÉM entra (o `Bearer undefined`
-// interpolado seria uma senha adivinhável).
-export function isAuthorizedBearer(authHeader, secret) {
-  if (typeof secret !== "string" || secret.trim() === "") return false;
-  return authHeader === `Bearer ${secret}`;
-}
+// A guarda de Bearer nasceu aqui e agora mora em ../auth-bearer.mjs — as 9 rotas admin/cron
+// passaram a usar a MESMA função, então esta é uma reexportação, não uma segunda cópia da
+// regra. O re-export mantém `import { isAuthorizedBearer } from ".../offers/lookup.mjs"`
+// funcionando pra quem já importava daqui.
+export { isAuthorizedBearer };
 
 function asTrimmed(value) {
   if (value == null) return "";
