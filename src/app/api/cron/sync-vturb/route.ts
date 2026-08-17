@@ -12,7 +12,10 @@ export async function GET(request: Request) {
   }
 
   if (!process.env.VTURB_API_KEY) {
-    return NextResponse.json({ success: false, message: "VTURB_API_KEY not configured" });
+    return NextResponse.json(
+      { success: false, message: "VTURB_API_KEY not configured" },
+      { status: 500 },
+    );
   }
 
   // Date range: last 7 days
@@ -125,7 +128,9 @@ export async function GET(request: Request) {
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ success: false, error: msg });
+    // Dispara antes de qualquer db.insert() (steps 1–2, fetchPlayers/fetchEventsByPlayer) —
+    // 5xx é seguro aqui: nada foi gravado ainda, retry não duplica linha.
+    return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 
   return NextResponse.json({
