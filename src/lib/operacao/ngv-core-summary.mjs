@@ -70,8 +70,10 @@ export function normalizeNgvCoreOperationalSummary(body) {
   const summary = body.summary;
   const hasRollingMigration = [2, 3].includes(summary.schema_version);
   const hasFreshness = summary.schema_version === 3 && Object.hasOwn(summary, "freshness");
-  const summaryKeyCount = hasFreshness ? 5 : hasRollingMigration ? 4 : 3;
-  if (Object.keys(summary).length !== summaryKeyCount || ![1, 2, 3].includes(summary.schema_version) || !isIso(summary.generated_at) || !isObject(summary.sources)) fail("RESPONSE_SCHEMA_INVALID");
+  const hasGeneratedAtMeaning = summary.schema_version === 3 && Object.hasOwn(summary, "generated_at_meaning");
+  const summaryKeyCount = hasFreshness ? (hasGeneratedAtMeaning ? 6 : 5) : hasRollingMigration ? 4 : 3;
+  if (Object.keys(summary).length !== summaryKeyCount || ![1, 2, 3].includes(summary.schema_version) || !isIso(summary.generated_at) || !isObject(summary.sources)
+    || (hasGeneratedAtMeaning && typeof summary.generated_at_meaning !== "string")) fail("RESPONSE_SCHEMA_INVALID");
   const sources = summary.sources;
   const sourceKeys = ["spy", "nexfy", "banco_ngv", "quiz_analytics", "apps_ofertas", "plataforma_cursos"];
   if (Object.keys(sources).length !== sourceKeys.length || !sourceKeys.every((key) => Object.hasOwn(sources, key))) fail("RESPONSE_SCHEMA_INVALID");
