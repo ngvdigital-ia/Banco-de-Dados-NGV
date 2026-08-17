@@ -26,7 +26,16 @@ export async function GET(request: Request) {
   yesterday.setDate(yesterday.getDate() - 1);
   yesterday.setHours(0, 0, 0, 0);
 
-  const results: { dashboard: string; status: string; dailySnapshots?: number; error?: string }[] = [];
+  const results: {
+    dashboard: string;
+    status: string;
+    dailySnapshots?: number;
+    error?: string;
+    // Sinal próprio pra falha ISOLADA da busca de campanhas: "status: ok" com
+    // dailySnapshots: 0 sozinho é indistinguível de "não houve campanha hoje" —
+    // este campo é o que diferencia os dois casos.
+    campaignsError?: string;
+  }[] = [];
 
   // Accumulate all rows — one batch insert per type at the end (avoids N round-trips and
   // makes re-runs safe when the caller retries: each dashboard loop is independent).
@@ -63,6 +72,7 @@ export async function GET(request: Request) {
       // Each row = one campaign's spend/revenue for `yesterday`.
       // Used for period filters (Hoje/7d/15d/30d/Este mes/Mes passado) via aggregation.
       let dailySnapshots = 0;
+      let campaignsError: string | undefined;
       try {
         const metaData = await fetchMetaAdObjects(dashboard.id, dashboard.timeZone);
         for (const campaign of metaData.results) {
@@ -95,10 +105,20 @@ export async function GET(request: Request) {
           }
         }
       } catch (err) {
+        // Falha ISOLADA na busca de campanhas: o resumo do dashboard já foi obtido acima
+        // (por isso o dashboard continua "ok"), mas dailySnapshots: 0 aqui não significa
+        // "sem campanha hoje" — significa "não conseguimos nem checar". campaignsError
+        // é o sinal que separa os dois casos no corpo da resposta.
+        campaignsError = err instanceof Error ? err.message : "Unknown error";
         console.error("[UTMify] Daily campaign sync error:", err);
       }
 
-      results.push({ dashboard: dashboard.name, status: "ok", dailySnapshots });
+      results.push({
+        dashboard: dashboard.name,
+        status: "ok",
+        dailySnapshots,
+        ...(campaignsError ? { campaignsError } : {}),
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       console.error(`[UTMify Sync] Error for ${dashboard.name}:`, message);
@@ -122,7 +142,9 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    success: true,
+    // Sucesso real: pelo menos 1 dashboard sincronizou (nunca fixo). Falha isolada de
+    // campanhas (campaignsError por item) não derruba isso — já está sinalizada acima.
+    success: results.some((r) => r.status === "ok"),
     syncedAt: new Date().toISOString(),
     snapshotDate: yesterday.toISOString(),
     results,
