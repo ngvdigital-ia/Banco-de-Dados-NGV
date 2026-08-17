@@ -49,9 +49,14 @@ const FAIL_CLOSED_BY_EXPLICIT_GATE = new Map([
   ["src/app/api/cron/sync-ngv-core/route.ts", "if (!expected || !secureEqual("],
 ]);
 
-// Rota que delega a guarda pro módulo puro (lookupOffer chama isAuthorizedBearer lá dentro).
+// Rotas que delegam a guarda pro módulo puro (o módulo chama isAuthorizedBearer lá dentro).
+// O caminho é fail-closed do mesmo jeito — o que muda é ONDE a comparação mora. Cada entrada
+// exige a marca de que o segredo do ambiente ainda é REPASSADO pro delegado; quem apagar o
+// repasse quebra aqui. Os dois lados (401 sem bearer / 200 com bearer certo) são provados nos
+// testes do módulo: tests/admin-offer-lookup.test.mjs e tests/apps-admin-lookup-core.test.mjs.
 const FAIL_CLOSED_BY_DELEGATION = new Map([
   ["src/app/api/admin/offers/lookup/route.ts", "cronSecret: process.env.CRON_SECRET"],
+  ["src/app/api/admin/apps/lookup/route.ts", "secret: process.env.CRON_SECRET"],
 ]);
 
 async function listRouteFiles(dir) {
@@ -242,8 +247,8 @@ test("toda rota que lê process.env.CRON_SECRET é fail-closed por um caminho co
     }
   }
   assert.deepEqual(semGuarda, []);
-  // Conferência de contagem: 9 convertidas + sync-ngv-core + offers/lookup.
-  assert.equal(conferidas, GUARDED_ROUTES.length + 2, `rotas com CRON_SECRET: ${conferidas}`);
+  // Conferência de contagem: 9 convertidas + sync-ngv-core + offers/lookup + apps/lookup.
+  assert.equal(conferidas, GUARDED_ROUTES.length + 3, `rotas com CRON_SECRET: ${conferidas}`);
 });
 
 // ── 4. As 9 rotas, uma a uma ─────────────────────────────────────────────────
