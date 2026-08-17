@@ -153,9 +153,14 @@ function inteiro(valor) {
 
 /**
  * @param {unknown} summary resultado de fetchNgvCoreOperationalSummary()
- * @returns {{ medido: boolean, completo: boolean, projetados: number|null, naFonte: number|null,
- *            faltando: number|null, idadeHoras: number|null, titulo: string, detalhe: string,
- *            tom: "aviso"|"info" }}
+ * @returns {{ medido: boolean, coerente: boolean, completo: boolean, projetados: number|null,
+ *            naFonte: number|null, faltando: number|null, idadeHoras: number|null, titulo: string,
+ *            detalhe: string, tom: "aviso"|"info" }}
+ *
+ * `medido`   houve os dois números para comparar.
+ * `coerente` os dois números fazem sentido juntos (espelho <= fonte). `false` SÓ quando medimos
+ *            e eles se contradizem — não-medido não é incoerente, é desconhecido.
+ * `completo` só pode ser `true` quando `medido && coerente`.
  */
 export function descreverEspelhoApps(summary) {
   const resumo = summary && typeof summary === "object" ? summary : null;
@@ -166,6 +171,7 @@ export function descreverEspelhoApps(summary) {
   if (resumo?.kind !== "success" || projetados === null || naFonte === null) {
     return {
       medido: false,
+      coerente: true,
       completo: false,
       projetados,
       naFonte,
@@ -177,12 +183,40 @@ export function descreverEspelhoApps(summary) {
     };
   }
 
-  const faltando = Math.max(0, naFonte - projetados);
   const idade = idadeHoras === null ? "idade desconhecida" : `medido há ${idadeHoras} h`;
+
+  // Espelho MAIOR que a fonte não existe no mundo real: é sinal de que uma das duas medidas
+  // está velha. Sem esta guarda, o Math.max() abaixo zera a diferença e a tela declara
+  // "completo" com tranquilidade — foi exatamente o que aconteceu com 110 espelhados contra
+  // 106 na fonte (a projeção apps_offers_daily congelou e ficou para trás do espelho vivo).
+  // Declarar completude a partir de números que se contradizem é a mentira mais cara desta
+  // tela, então aqui ela se recusa a afirmar qualquer das duas coisas.
+  if (projetados > naFonte) {
+    return {
+      medido: true,
+      coerente: false,
+      completo: false,
+      projetados,
+      naFonte,
+      faltando: null,
+      idadeHoras,
+      titulo: `Números do espelho não batem: ${projetados} espelhados contra ${naFonte} na fonte (${idade})`,
+      detalhe:
+        `O espelho tem MAIS acessos (${projetados}) do que a fonte diz existir (${naFonte}), e isso não ` +
+        "acontece de verdade — uma das duas medidas está atrasada. Enquanto os números não baterem, NÃO dá " +
+        "pra afirmar se o espelho está completo: \"não encontrei\" nesta tela PODE ser espelho incompleto, e " +
+        "não ausência de acesso. Confirme no painel do Apps antes de responder ao cliente, e avise o time de " +
+        "dados que as duas contagens do Core divergiram.",
+      tom: "aviso",
+    };
+  }
+
+  const faltando = Math.max(0, naFonte - projetados);
 
   if (faltando === 0) {
     return {
       medido: true,
+      coerente: true,
       completo: true,
       projetados,
       naFonte,
@@ -198,6 +232,7 @@ export function descreverEspelhoApps(summary) {
 
   return {
     medido: true,
+    coerente: true,
     completo: false,
     projetados,
     naFonte,

@@ -159,7 +159,10 @@ export function AppsLookupPanel({ espelho }: { espelho: EspelhoAviso }) {
         tom={espelho.tom}
         titulo={espelho.titulo}
         detalhe={espelho.detalhe}
-        icone={espelho.completo ? Info : AlertTriangle}
+        // Ícone pelo TOM, não por `completo` — é a mesma fonte que decide a cor logo abaixo.
+        // Com duas fontes diferentes, um estado "aviso" mas não-incompleto (números do espelho
+        // se contradizendo) ganharia ícone de ok em cima de fundo de aviso.
+        icone={espelho.tom === "aviso" ? AlertTriangle : Info}
       />
 
       <Card className="gap-4 p-5">

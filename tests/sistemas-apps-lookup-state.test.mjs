@@ -141,10 +141,68 @@ test("espelho completo muda o tom, mas continua dizendo que a fonte da verdade �
   assert.equal(aviso.tom, "info");
 });
 
-test("espelho à frente da fonte não vira número negativo", () => {
-  const aviso = descreverEspelhoApps(resumo({ projetados: 141, naFonte: 139 }));
-  assert.equal(aviso.faltando, 0);
-  assert.equal(aviso.completo, true);
+// Repro medido no Core em 17/08/2026: o espelho ngv_apps é um número VIVO (110) e a projeção
+// apps_offers_daily está CONGELADA desde 16/08 (106) — a RPC do Core recusa snapshot quando as
+// contagens mudam. Espelho maior que a fonte não existe no mundo real; antes desta guarda, o
+// Math.max() zerava a diferença e a tela dizia "Espelho completo: 110 de 106 acessos" com tom
+// "info", enquanto a realidade era 110 de 138 (28 faltando). É o caso que esta tarefa existe
+// para impedir.
+test("110 espelhados contra 106 na fonte NÃO vira 'completo' — sai como aviso de incoerência", () => {
+  const aviso = descreverEspelhoApps(resumo({ projetados: 110, naFonte: 106, idade: 39 }));
+
+  assert.equal(aviso.completo, false, "números que se contradizem NUNCA podem declarar completo");
+  assert.equal(aviso.tom, "aviso");
+  assert.equal(aviso.coerente, false);
+  assert.equal(aviso.medido, true);
+  assert.doesNotMatch(aviso.titulo, /completo/i);
+  // o detalhe pode (e deve) NEGAR completude — o que ele não pode é AFIRMAR: a frase do
+  // ramo realmente-completo não aparece aqui.
+  assert.doesNotMatch(aviso.detalhe, /está com todos os acessos/);
+
+  // o título cita OS DOIS números e a idade
+  assert.match(aviso.titulo, /não batem/i);
+  assert.match(aviso.titulo, /110/);
+  assert.match(aviso.titulo, /106/);
+  assert.match(aviso.titulo, /há 39 h/);
+
+  // `faltando` não pode virar 0: zero lido como "não falta nada" é a própria mentira
+  assert.equal(aviso.faltando, null);
+
+  // e o detalhe ensina o que fazer
+  assert.match(aviso.detalhe, /uma das duas medidas está atrasada/);
+  assert.match(aviso.detalhe, /NÃO dá pra afirmar/);
+  assert.match(aviso.detalhe, /PODE ser espelho incompleto/);
+  assert.match(aviso.detalhe, /painel do Apps/);
+});
+
+test("qualquer inversão espelho>fonte cai na incoerência, não em 'completo'", () => {
+  for (const [projetados, naFonte] of [[141, 139], [1, 0], [200, 106], [111, 110]]) {
+    const aviso = descreverEspelhoApps(resumo({ projetados, naFonte }));
+    assert.equal(aviso.completo, false, `${projetados}/${naFonte} não pode ser completo`);
+    assert.equal(aviso.coerente, false, `${projetados}/${naFonte} não pode ser coerente`);
+    assert.equal(aviso.tom, "aviso");
+    assert.equal(aviso.faltando, null);
+  }
+});
+
+test("`completo` só é true quando medido E coerente — invariante da tela", () => {
+  const casos = [
+    resumo({ projetados: 110, naFonte: 106 }),  // incoerente
+    resumo({ projetados: 110, naFonte: 139 }),  // incompleto
+    resumo({ projetados: 139, naFonte: 139 }),  // completo
+    { kind: "unavailable" },                     // sem medida
+    undefined,
+  ];
+  for (const entrada of casos) {
+    const aviso = descreverEspelhoApps(entrada);
+    if (aviso.completo) {
+      assert.equal(aviso.medido, true);
+      assert.equal(aviso.coerente, true);
+      assert.equal(aviso.tom, "info");
+    }
+    // e nenhum estado fica sem o campo
+    assert.equal(typeof aviso.coerente, "boolean");
+  }
 });
 
 test("sem medida (Core indisponível ou campos ausentes) cai no aviso FIXO, nunca em silêncio", () => {
@@ -202,6 +260,16 @@ test("o painel desenha TODO estado pela descrição (nenhum branch de texto solt
   assert.match(src, /useState<"idle" \| "loading" \| "done">\("idle"\)/);
   // o catch existe: Server Action que estoura vira estado de erro, não tela muda
   assert.match(src, /catch \{[\s\S]*setFalhou\(true\)/);
+});
+
+test("o aviso do espelho tira cor E ícone do mesmo `tom` — incoerente nunca aparece como ok", async () => {
+  const src = await readFile(PANEL_PATH, "utf8");
+  assert.match(src, /tom=\{espelho\.tom\}/);
+  assert.match(src, /icone=\{espelho\.tom === "aviso" \? AlertTriangle : Info\}/);
+  // o ícone NÃO pode voltar a ser decidido por `completo`: com duas fontes, um estado
+  // "aviso" e não-incompleto ganharia ícone amigável em cima de fundo de aviso.
+  assert.doesNotMatch(src, /icone=\{espelho\.completo/);
+  assert.match(src, /aviso: "border-warning\/40 bg-warning-muted"/);
 });
 
 test("o painel mostra os 3 blocos na ordem Acessos → Compras → Produtos", async () => {

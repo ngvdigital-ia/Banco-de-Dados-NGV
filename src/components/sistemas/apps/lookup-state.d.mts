@@ -39,6 +39,12 @@ export declare function descreverLookup(entrada?: {
 
 export interface EspelhoAviso {
   medido: boolean;
+  /**
+   * Os dois números fazem sentido juntos (espelho <= fonte). `false` SÓ quando medimos e eles
+   * se contradizem — espelho maior que a fonte significa que uma das medidas está velha, e aí
+   * `completo` nunca pode ser `true`.
+   */
+  coerente: boolean;
   completo: boolean;
   projetados: number | null;
   naFonte: number | null;
