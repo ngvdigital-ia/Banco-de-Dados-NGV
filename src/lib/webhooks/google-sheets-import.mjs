@@ -215,8 +215,15 @@ export function buildImportResponse({ received, imported, errors }) {
     // Guarda contra a própria classe de bug que esta rota tinha: sem erro nenhum, o número TEM
     // que fechar. Se não fechar, alguém sumiu com linha em silêncio — e isso grita, não passa.
     if (imported !== received) {
+      // O STATUS depende de já ter linha persistida, e o motivo não é estético.
+      // A invariante que sustenta "parcial é 200" é: **5xx só existe quando imported === 0**.
+      // `db.insert(creatives)` não tem `onConflictDoNothing`, então 5xx com linha já gravada
+      // convida retry e DUPLICA o que entrou. Devolver 500 aqui com `imported > 0` quebrava
+      // exatamente essa invariante — o corpo gritava certo e o status mentia.
+      // Com linha gravada: 200 `success:false`, que grita igual e não convida retry.
+      // Sem nada gravado: 500, porque aí repetir é seguro e a falha é do servidor.
       return {
-        status: 500,
+        status: imported > 0 ? 200 : 500,
         body: {
           success: false,
           error: `Contagem não fecha: ${received} linha(s) recebida(s), ${imported} importada(s), 0 erro(s) registrado(s).`,

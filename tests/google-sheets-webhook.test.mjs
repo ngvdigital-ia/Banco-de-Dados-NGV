@@ -260,29 +260,67 @@ test("describeRowErrorForLog usa a mensagem do driver, nunca a do drizzle com os
 
 // --- Invariantes que travam a regressão --------------------------------------------------
 
-test("INVARIANTE: 5xx só quando imported === 0 — reenviar depois de um 5xx nunca duplica", () => {
-  const dbErr = { row: 0, code: SHEETS_IMPORT_CODES.ROW_DB_ERROR, callerFixable: false };
-  for (const [received, imported, errors] of [
-    [10, 8, [dbErr, { ...dbErr, row: 5 }]],
-    [2, 1, [dbErr]],
-    [1, 1, []],
-    [5, 5, []],
-  ]) {
-    const res = buildImportResponse({ received, imported, errors });
-    assert.ok(res.status < 500, `imported=${imported} não pode responder ${res.status}`);
+// Esta é a invariante que sustenta "parcial é 200": `db.insert(creatives)` não tem
+// `onConflictDoNothing`, então 5xx com linha já gravada convida retry e DUPLICA.
+// Varre o ESPAÇO de combinações em vez de escolher tuplas a dedo — uma lista escolhida à mão
+// pode ser recortada, sem ninguém perceber, exatamente em volta do ramo que quebra a regra.
+// (Foi o que aconteceu: o ramo IMPORT_COUNT_MISMATCH devolvia 500 com imported > 0 e as 4
+// tuplas da versão anterior nunca encostavam nele.)
+test("INVARIANTE: 5xx só quando imported === 0 — varrendo TODAS as combinações", () => {
+  const errOf = (n, callerFixable) =>
+    Array.from({ length: n }, (_, i) => ({
+      row: i,
+      code: callerFixable ? SHEETS_IMPORT_CODES.ROW_INVALID : SHEETS_IMPORT_CODES.ROW_DB_ERROR,
+      callerFixable,
+    }));
+
+  let comImportado = 0;
+  let comZero = 0;
+
+  for (let received = 0; received <= 6; received++) {
+    for (let imported = 0; imported <= received; imported++) {
+      // failed varia LIVREMENTE, inclusive fora de `imported + failed === received` — é
+      // justamente o descasamento que o ramo de mismatch existe pra pegar.
+      for (let failed = 0; failed <= received; failed++) {
+        for (const callerFixable of [true, false]) {
+          const res = buildImportResponse({ received, imported, errors: errOf(failed, callerFixable) });
+          const ctx = `received=${received} imported=${imported} failed=${failed} fixable=${callerFixable} → ${res.status} ${res.body.code ?? "ok"}`;
+
+          if (imported > 0) {
+            assert.ok(res.status < 500, `5xx com linha já persistida convida retry e duplica: ${ctx}`);
+            comImportado++;
+          } else {
+            comZero++;
+          }
+          // O corpo nunca pode dizer "deu tudo certo" quando não deu.
+          if (failed > 0 || imported !== received) {
+            assert.equal(res.body.success, false, `success:true mentindo em ${ctx}`);
+          }
+        }
+      }
+    }
   }
-  assert.equal(buildImportResponse({ received: 1, imported: 0, errors: [dbErr] }).status, 500);
+
+  // Se a varredura parar de cobrir os dois lados, ela deixa de provar a invariante.
+  assert.ok(comImportado > 40, `poucos casos com imported > 0 (${comImportado})`);
+  assert.ok(comZero > 10, `poucos casos com imported === 0 (${comZero})`);
 });
 
 test("INVARIANTE: success:true só existe quando failed === 0 E imported === received", () => {
   const ok = buildImportResponse({ received: 3, imported: 3, errors: [] });
   assert.equal(ok.body.success, true);
 
-  // Sumiço silencioso de linha (a própria classe de bug desta rota) grita em vez de passar.
-  const mismatch = buildImportResponse({ received: 3, imported: 2, errors: [] });
-  assert.equal(mismatch.status, 500);
-  assert.equal(mismatch.body.success, false);
-  assert.equal(mismatch.body.code, SHEETS_IMPORT_CODES.IMPORT_COUNT_MISMATCH);
+  // Sumiço silencioso de linha (a própria classe de bug desta rota) grita em vez de passar —
+  // mas grita no CORPO, não num 5xx: 2 linhas já entraram, e repetir duplicaria.
+  const parcial = buildImportResponse({ received: 3, imported: 2, errors: [] });
+  assert.equal(parcial.status, 200);
+  assert.equal(parcial.body.success, false);
+  assert.equal(parcial.body.code, SHEETS_IMPORT_CODES.IMPORT_COUNT_MISMATCH);
+
+  // Sem nada gravado, aí sim 5xx: repetir é seguro e a falha é do servidor.
+  const nadaGravado = buildImportResponse({ received: 3, imported: 0, errors: [] });
+  assert.equal(nadaGravado.status, 500);
+  assert.equal(nadaGravado.body.code, SHEETS_IMPORT_CODES.IMPORT_COUNT_MISMATCH);
 });
 
 test("lote grande e todo quebrado: errors[] é limitado, mas failed continua exato", async () => {
