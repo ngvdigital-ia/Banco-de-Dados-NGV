@@ -11,6 +11,7 @@ import {
   type AlertMetric,
 } from "@/lib/alerts-config";
 import { checkAgentsHealth } from "@/lib/agentes/n8n/health";
+import { computeDataFreshness } from "@/lib/alerts-freshness.mjs";
 
 export const maxDuration = 60;
 
@@ -62,6 +63,7 @@ export async function GET(request: Request) {
           line: message,
           target: target?.label ?? a.entityType,
           asOf: res.asOf,
+          freshness: computeDataFreshness(res.asOf, now),
         });
       }
       fired.push(a.name);
@@ -171,10 +173,21 @@ async function sendAgentsHealthAlert(
 
 async function sendSlackAlert(
   url: string,
-  a: { name: string; line: string; target: string; asOf: Date | null },
+  a: {
+    name: string;
+    line: string;
+    target: string;
+    asOf: Date | null;
+    freshness: { ageDays: number | null; isStale: boolean };
+  },
 ) {
   const dashboardUrl = "https://banco-de-dados-ngv.vercel.app/alertas";
   const asOfStr = a.asOf ? a.asOf.toISOString().slice(0, 10) : "—";
+  // Dado velho não muda se o alerta dispara (o número velho ainda pode ser um problema
+  // real) — só deixa explícito, pra quem lê saber que o número pode não valer mais.
+  const freshnessLine = a.freshness.isStale
+    ? `\n⚠️ Dado atrasado — ${a.freshness.ageDays ?? "?"} ${a.freshness.ageDays === 1 ? "dia" : "dias"} sem sincronizar, o valor acima pode não valer mais`
+    : "";
   const message = {
     blocks: [
       {
@@ -183,7 +196,7 @@ async function sendSlackAlert(
       },
       {
         type: "section",
-        text: { type: "mrkdwn", text: `*${a.line}*\n_Dado de: ${asOfStr}_` },
+        text: { type: "mrkdwn", text: `*${a.line}*\n_Dado de: ${asOfStr}_${freshnessLine}` },
       },
       {
         type: "context",

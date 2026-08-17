@@ -1,4 +1,4 @@
-import { BellRing, Pause, Play, Trash2 } from "lucide-react";
+import { AlertTriangle, BellRing, Pause, Play, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -24,6 +24,7 @@ import {
   operatorSymbol,
   formatMetricValue,
 } from "@/lib/alerts-config";
+import { computeDataFreshness } from "@/lib/alerts-freshness.mjs";
 
 // Mostra o valor atual das métricas (muda a cada sync) — nunca prerenderizar estático.
 export const dynamic = "force-dynamic";
@@ -47,6 +48,9 @@ export default async function AlertasPage() {
     getAlertsWithStatus(),
     getRecentAlertHistory(30),
   ]);
+  // Uma referência de "agora" só, reusada em toda a tabela — evita cada linha calcular
+  // um "hoje" ligeiramente diferente durante o mesmo render.
+  const now = new Date();
 
   return (
     <div className="space-y-8">
@@ -103,6 +107,7 @@ export default async function AlertasPage() {
                       fmt_,
                       r.currency
                     );
+                    const freshness = computeDataFreshness(r.asOf, now);
 
                     return (
                       <TableRow
@@ -132,8 +137,24 @@ export default async function AlertasPage() {
                             {currentStr}
                           </span>
                           {r.asOf && (
-                            <span className="block text-xs text-muted-foreground">
+                            <span
+                              className={
+                                "flex items-center justify-end gap-1 text-xs " +
+                                (freshness.isStale
+                                  ? "text-warning font-medium"
+                                  : "text-muted-foreground")
+                              }
+                              title={
+                                freshness.isStale
+                                  ? `Dado de ${fmtDate(r.asOf)} — ${freshness.ageDays} dia${freshness.ageDays === 1 ? "" : "s"} sem sincronizar, valor pode não valer mais`
+                                  : undefined
+                              }
+                            >
+                              {freshness.isStale && (
+                                <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden="true" />
+                              )}
                               {fmtDate(r.asOf)}
+                              {freshness.isStale && ` · ${freshness.ageDays}d atrás`}
                             </span>
                           )}
                         </TableCell>
