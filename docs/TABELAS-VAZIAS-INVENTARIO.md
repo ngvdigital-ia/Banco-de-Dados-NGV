@@ -96,6 +96,14 @@ duas chaves de ativação. **Não apagar.**
 É exatamente o mesmo "sucesso mentiroso" das 4 rotinas que corrigi ontem à noite. **Este ficou
 de fora** — não estava na lista.
 
+> **Atualização — a resposta já não mente.** A rota continua sem conseguir inserir (a FK e a
+> tabela vazia seguem intocadas, como decidido), mas agora responde **500 `NOTHING_IMPORTED`**
+> quando nada foi importado, 422 quando a culpa é do payload e 200 `success:false` no import
+> parcial (parcial não é 5xx: parte das linhas foi persistida e o insert não tem
+> `onConflictDoNothing`). Decisão e justificativa em `src/lib/webhooks/google-sheets-import.mjs`;
+> cobertura em `tests/google-sheets-webhook.test.mjs`. **Preencher `projects` continua pendente
+> de decisão de negócio** — é o que falta pro webhook importar de verdade.
+
 **2. Código morto:** `getVslsForComparison` não tem nenhum chamador e consulta 3 tabelas vazias.
 
 ---
