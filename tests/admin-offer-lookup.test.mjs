@@ -11,6 +11,7 @@ import {
 
 const ROUTE_PATH = new URL("../src/app/api/admin/offers/lookup/route.ts", import.meta.url);
 const DOMAINS_ROUTE_PATH = new URL("../src/app/api/admin/offer-domains/route.ts", import.meta.url);
+const SITE_URLS_TYPES_PATH = new URL("../src/lib/site-urls-types.ts", import.meta.url);
 
 const SECRET = "segredo-de-teste";
 const AUTH = `Bearer ${SECRET}`;
@@ -144,8 +145,63 @@ test("oferta sem site_urls: hasSiteUrls false, siteUrls null, sem quebrar", asyn
   });
   assert.equal(result.status, 200);
   assert.equal(result.body.offer.hasSiteUrls, false);
+  assert.equal(result.body.offer.linkCount, 0);
   assert.equal(result.body.offer.siteUrls, null);
   assert.equal(result.body.offer.domain, null);
+});
+
+// O consumidor pergunta "essa oferta já tem página?" pra decidir se CRIA uma.
+// Responder "sim" pra oferta com zero páginas faz o agente pular a criação — e `{}` é o
+// estado normal de quem nunca teve link ou teve o último removido (normalizeSiteUrls
+// devolve objeto vazio, e os dois escritores persistem isso: POST /api/admin/offer-domains
+// e updateOfferSiteUrls do dashboard).
+test("site_urls vazio ou corrompido: hasSiteUrls false, nunca 'sim' com zero páginas", async () => {
+  const casos = [
+    { rotulo: "objeto vazio {} — estado normal de oferta sem link", siteUrls: {} },
+    { rotulo: "array (jsonb corrompido)", siteUrls: [] },
+    { rotulo: "listas presentes mas vazias", siteUrls: { whites: [], custom: [] } },
+    { rotulo: "só domínio comprado, nenhuma página publicada", siteUrls: { domain: "alpha.de" } },
+  ];
+  for (const caso of casos) {
+    const result = await lookupOffer({
+      authHeader: AUTH,
+      cronSecret: SECRET,
+      params: { id: "7" },
+      ...fakeDb({ byId: new Map([[7, row({ id: 7, siteUrls: caso.siteUrls })]]) }),
+    });
+    assert.equal(result.status, 200, caso.rotulo);
+    assert.equal(result.body.offer.hasSiteUrls, false, caso.rotulo);
+    assert.equal(result.body.offer.linkCount, 0, caso.rotulo);
+  }
+});
+
+test("domínio comprado sem página: hasSiteUrls false MAS o domain continua vindo", async () => {
+  const result = await lookupOffer({
+    authHeader: AUTH,
+    cronSecret: SECRET,
+    params: { id: "7" },
+    ...fakeDb({ byId: new Map([[7, row({ id: 7, siteUrls: { domain: "alpha.de" } })]]) }),
+  });
+  // As duas coisas juntas são a resposta útil: "o domínio é esse, e ainda não tem página nele".
+  assert.equal(result.body.offer.hasSiteUrls, false);
+  assert.equal(result.body.offer.domain, "alpha.de");
+  assert.deepEqual(result.body.offer.siteUrls, { domain: "alpha.de" });
+});
+
+test("linkCount conta vsl+quiz+whites+custom e NÃO conta domain (igual totalLinks)", async () => {
+  const casos = [
+    [{ vsl: "https://a.de/v" }, 1],
+    [{ domain: "a.de", vsl: "https://a.de/v" }, 1],
+    [{ vsl: "https://a.de/v", quiz: "https://a.de/q" }, 2],
+    [{ whites: ["https://a.de/w1", "https://a.de/w2"] }, 2],
+    [{ custom: [{ label: "pix", url: "https://a.de/p" }] }, 1],
+    [row().siteUrls, 4], // vsl + quiz + 1 white + 1 custom (domain fora)
+  ];
+  for (const [siteUrls, esperado] of casos) {
+    const projected = projectOffer(row({ siteUrls }));
+    assert.equal(projected.linkCount, esperado, JSON.stringify(siteUrls));
+    assert.equal(projected.hasSiteUrls, esperado > 0, JSON.stringify(siteUrls));
+  }
 });
 
 // ── 200: achado por nome ─────────────────────────────────────────────────────
@@ -355,6 +411,25 @@ test("SELECT da route também é allowlist: coluna de pessoa não sai do Postgre
     );
   }
   assert.match(source, /siteUrls: offerTracking\.siteUrls/);
+});
+
+// countLinks() é cópia de totalLinks() — este módulo é .mjs (testável sem Next/Drizzle) e
+// não importa o .ts. Cópia sem guarda é cópia que envelhece calada: se totalLinks passar a
+// contar domain, ou parar de contar custom, este teste quebra e obriga a atualizar as duas.
+test("countLinks não pode divergir de totalLinks (src/lib/site-urls-types.ts)", async () => {
+  const source = await readFile(SITE_URLS_TYPES_PATH, "utf8");
+  const corpo = source.slice(source.indexOf("export function totalLinks"));
+  const fim = corpo.indexOf("\n}");
+  const totalLinks = corpo.slice(0, fim);
+
+  for (const campo of ["vsl", "quiz", "whites", "custom"]) {
+    assert.match(totalLinks, new RegExp(`urls\\.${campo}\\b`), `totalLinks parou de contar ${campo}`);
+  }
+  assert.doesNotMatch(
+    totalLinks,
+    /urls\.domain\b/,
+    "totalLinks passou a contar domain — countLinks em src/lib/offers/lookup.mjs precisa acompanhar",
+  );
 });
 
 test("ler e gravar concordam: os dois casam nome por ILIKE %nome% e recusam ambíguo", async () => {

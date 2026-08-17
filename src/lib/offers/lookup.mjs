@@ -103,7 +103,24 @@ function toIso(value) {
 
 function siteUrlsOf(row) {
   const urls = row?.siteUrls;
-  return urls && typeof urls === "object" ? urls : null;
+  if (!urls || typeof urls !== "object" || Array.isArray(urls)) return null;
+  return urls;
+}
+
+// Espelho de totalLinks() em src/lib/site-urls-types.ts:121 — a fonte da verdade.
+// Duplicado aqui de propósito: este módulo é .mjs pra ser testável sem Next/Drizzle, e
+// não consegue importar o .ts. Se totalLinks mudar, mudar aqui também.
+//
+// `domain` NÃO conta como link (é o host raiz, não uma página) — mesma regra do filtro
+// ?has_site_urls= do GET /api/admin/offers, que também usa totalLinks(urls) > 0.
+function countLinks(urls) {
+  if (!urls) return 0;
+  let n = 0;
+  if (urls.vsl) n++;
+  if (urls.quiz) n++;
+  if (Array.isArray(urls.whites)) n += urls.whites.length;
+  if (Array.isArray(urls.custom)) n += urls.custom.length;
+  return n;
 }
 
 // Registro completo do ponto de vista de quem pergunta "qual é o link dessa oferta?".
@@ -132,7 +149,16 @@ export function projectOffer(row) {
       editedCount: row.adsEditedCount ?? 0,
       rejectedCount: row.adsRejectedCount ?? 0,
     },
-    hasSiteUrls: siteUrls != null,
+    // hasSiteUrls responde "essa oferta já tem PÁGINA no ar?" — que é a pergunta que o
+    // consumidor faz antes de decidir se cria uma. Por isso é linkCount > 0, e NÃO
+    // "a coluna jsonb é não-nula": tirar o último link pela UI ou pelo webhook grava `{}`
+    // (normalizeSiteUrls devolve objeto vazio), então `siteUrls != null` diria "sim" pra
+    // oferta com zero páginas e o agente pularia a criação.
+    // Divergência deliberada do campo homônimo do GET /api/admin/offers, que devolve
+    // `urls != null` — lá o linkCount ao lado desmente; aqui o resumo tem que ser honesto
+    // sozinho. Bate com o filtro ?has_site_urls= daquela rota, que já usa totalLinks > 0.
+    hasSiteUrls: countLinks(siteUrls) > 0,
+    linkCount: countLinks(siteUrls),
     domain: siteUrls?.domain ?? null,
     siteUrls,
     // siteUrl é o espelho legado de siteUrls.vsl (one-way) — vem junto só pra quem ainda lê o campo antigo.

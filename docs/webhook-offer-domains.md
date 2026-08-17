@@ -2,12 +2,13 @@
 
 Endpoints pro **agente Claude Code de criação de páginas** listar ofertas e atualizar URLs no banco NGV Digital.
 
-> **Versão**: 1.1 (Maio/2026)
+> **Versão**: 1.2 (Agosto/2026)
 > **Endpoints**:
 > - `GET https://banco-de-dados-ngv.vercel.app/api/admin/offers` — listar ofertas (resolver matches)
+> - `GET https://banco-de-dados-ngv.vercel.app/api/admin/offers/lookup` — **ler UMA oferta inteira, com os links** (seção 0.5)
 > - `POST https://banco-de-dados-ngv.vercel.app/api/admin/offer-domains` — atualizar URLs
 >
-> **Auth (ambos)**: `Authorization: Bearer ${CRON_SECRET}`
+> **Auth (todos)**: `Authorization: Bearer ${CRON_SECRET}`
 
 ## 0. Endpoint de descoberta — `GET /api/admin/offers`
 
@@ -61,6 +62,110 @@ Exemplo combinado: `?language=DE&has_site_urls=false` retorna alemãs ainda sem 
 5. **POST com `offerId`** (não `offerName`) — zero ambiguidade
 
 ---
+
+## 0.5. Endpoint de leitura — `GET /api/admin/offers/lookup`
+
+**Use isso quando a pergunta for "qual é o link dessa oferta?"** — o `GET /api/admin/offers` da
+seção 0 devolve lista enxuta pra resolver nome→id, e **não traz as URLs**. Este traz a oferta
+inteira, com o `siteUrls` completo.
+
+É o par de leitura do `POST /api/admin/offer-domains`: você grava um link por aqui e **lê de
+volta por ali**, em vez de perguntar de novo ao Pedro na sessão seguinte.
+
+### Request
+
+```bash
+# Por id (preferido — sem ambiguidade)
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://banco-de-dados-ngv.vercel.app/api/admin/offers/lookup?id=175"
+
+# Por nome (busca "contém", case-insensitive)
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://banco-de-dados-ngv.vercel.app/api/admin/offers/lookup?name=Sciatic"
+```
+
+`?id=` tem precedência sobre `?name=` (mesma precedência de `offerId` sobre `offerName` no POST).
+
+### Response (200)
+
+```json
+{
+  "success": true,
+  "matchedBy": "id",
+  "offer": {
+    "id": 175,
+    "name": "Sciatic Shield",
+    "language": "EN",
+    "ticket": "97",
+    "gender": "Homens",
+    "adFormat": "VSL",
+    "status": {
+      "copyVsl": "SIM", "copyCriativos": "SIM", "vslInVturb": "SIM",
+      "campaignsActive": "NAO", "validation": "EM ANDAMENTO", "preScale": "NAO",
+      "scale": "NAO", "productCreated": "SIM", "productApproved": "SIM", "siteCreated": "SIM"
+    },
+    "ads": { "editedCount": 12, "rejectedCount": 2 },
+    "hasSiteUrls": true,
+    "linkCount": 4,
+    "domain": "sciaticshield.com",
+    "siteUrls": {
+      "domain": "sciaticshield.com",
+      "vsl": "https://sciaticshield.com/vsl",
+      "whites": ["https://sciaticshield.com/white-1"],
+      "quiz": "https://sciaticshield.com/quiz",
+      "custom": [{ "label": "Obrigado", "url": "https://sciaticshield.com/obrigado" }]
+    },
+    "siteUrl": "https://sciaticshield.com/vsl",
+    "createdAt": "2026-01-02T03:04:05.000Z",
+    "updatedAt": "2026-02-03T04:05:06.000Z"
+  }
+}
+```
+
+**`hasSiteUrls` responde "já tem PÁGINA no ar?"** — é `linkCount > 0`, e `linkCount` conta
+`vsl + quiz + whites + custom`. **`domain` não conta como página**: oferta com domínio comprado e
+nenhuma página publicada vem `hasSiteUrls: false` com o `domain` preenchido — que é exatamente o
+sinal de "o domínio é esse, pode criar as páginas nele".
+
+> Cuidado: no `GET /api/admin/offers` (seção 0) o campo homônimo `hasSiteUrls` significa outra
+> coisa — "a coluna existe" — e lá quem desmente é o `linkCount` ao lado. **Nas duas rotas,
+> confie no `linkCount`.**
+
+### Erros
+
+| Status | Código | Quando | O que fazer |
+|---|---|---|---|
+| `401` | `UNAUTHORIZED` | Bearer errado ou ausente | conferir o `CRON_SECRET` |
+| `400` | `MISSING_IDENTIFIER` | nem `?id=` nem `?name=` | mandar um dos dois |
+| `400` | `INVALID_ID` | `?id=` não é inteiro positivo | usar o `id` do `GET /api/admin/offers` |
+| `404` | `OFFER_NOT_FOUND` | não existe | criar a oferta no dashboard antes |
+| `409` | `OFFER_NAME_AMBIGUOUS` | `?name=` casou com 2+ | **ver abaixo** |
+
+**O 409 não escolhe por você — de propósito.** Nomes colidem nesta base (`Skyvault` vs
+`SkyVault (Leva04)`), e uma escolha no chute aqui vira gravação na oferta errada depois. A
+resposta traz `totalMatches` e até 10 `candidates` com `{id, name, language, validation, domain,
+createdAt}`: desempate e repita com `?id=`.
+
+```json
+{
+  "error": "2 ofertas casam com \"Alpha\". Escolha uma e repita com ?id=<id>.",
+  "code": "OFFER_NAME_AMBIGUOUS",
+  "totalMatches": 2,
+  "candidates": [
+    { "id": 12, "name": "Alpha DE", "language": "DE", "validation": "SIM", "domain": "alpha.de", "createdAt": "..." },
+    { "id": 30, "name": "Alpha PT", "language": "PT", "validation": "SIM", "domain": "alpha.com.br", "createdAt": "..." }
+  ]
+}
+```
+
+### O que NÃO vem (allowlist, de propósito)
+
+Quem é a **pessoa** (copywriter, editor, contagens por pessoa) e o campo livre `observations`
+ficam fora do retorno. O consumidor aqui é máquina e quer link/status, não equipe — e
+`observations` é onde telefone e dado pessoal entram por acidente.
+
+**Atenção com `siteUrls.custom`**: é `{label, url}` livre. Se alguém gravou um link de
+checkout/preview com `?token=`, ele volta inteiro aqui. Trate a resposta como sensível.
 
 ---
 
@@ -306,6 +411,10 @@ A premissa é: **toda vez que o agente externo terminar de criar UM artefato**, 
 
 Use sempre `offerId` (consultado via `GET /api/admin/offers` — seção 0).
 
+**Antes de criar qualquer página, leia o que já existe**: `GET /api/admin/offers/lookup?id=<id>`
+(seção 0.5) devolve o `siteUrls` inteiro. É o que evita recriar uma VSL que já está no ar e
+perguntar de novo "qual era o domínio mesmo?".
+
 | Evento (no agente externo) | Payload do POST | Resultado |
 |---|---|---|
 | **Comprou domínio raiz** (ex: `meusite.com`) | `{ "offerId": 201, "domain": "meusite.com" }` | `domain` definido |
@@ -341,6 +450,7 @@ await postWebhook({ offerId, custom: [pixel] });       // ao configurar pixel
 
 1. **No boot da skill**: chame `GET /api/admin/offers` 1x e cacheie `Map<lowercase(name) → offerId>`. Resolve matches sem 409 ambíguo.
 2. **Sempre use `offerId`** no POST (não `offerName`). Mais rápido, sem ambiguidade.
+2.5. **Antes de criar página, LEIA**: `GET /api/admin/offers/lookup?id=<id>` (seção 0.5) devolve o `siteUrls` inteiro. O banco é a fonte da verdade sobre o que já está no ar — não o seu cache nem a memória da sessão anterior. Cheque `linkCount`, não `hasSiteUrls` sozinho.
 3. **Uma chamada por evento** (seção 8.5): cada artefato criado dispara seu próprio POST com apenas o campo correspondente.
 4. **Use `merge=true`** (default). `merge=false` só quando explicitamente refazendo setup do zero — perde rastro.
 5. **Verifique `delta.added` na resposta**: se vier vazio, é dedup detectando que não mudou nada (esperado em retry).
@@ -353,6 +463,14 @@ await postWebhook({ offerId, custom: [pixel] });       // ao configurar pixel
 ## 10. Quick reference (TLDR)
 
 ```bash
+# Ler o que a oferta JÁ tem (antes de criar qualquer coisa):
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://banco-de-dados-ngv.vercel.app/api/admin/offers/lookup?id=<ID DA OFERTA>"
+
+# Não sabe o id? Busca por nome (409 se ambíguo, com as candidatas):
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://banco-de-dados-ngv.vercel.app/api/admin/offers/lookup?name=<TRECHO DO NOME>"
+
 # Adicionar tudo de uma vez:
 curl -X POST https://banco-de-dados-ngv.vercel.app/api/admin/offer-domains \
   -H "Authorization: Bearer $CRON_SECRET" \
