@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { shouldReplaceSnapshots } from "@/lib/cron/sync-clickup-guards.mjs";
 
 export const maxDuration = 300;
 
@@ -230,31 +231,37 @@ export async function GET(request: Request) {
   }
 
   // Replace per-task snapshots atomically: delete old clickup_task rows, then insert fresh.
-  await db.delete(metricsSnapshots).where(eq(metricsSnapshots.entityType, "clickup_task"));
+  // Fail-closed: só apaga se pelo menos 1 lista desta passada teve sucesso — senão uma
+  // falha sistêmica (chave revogada, ClickUp fora do ar) apagaria dado bom sem repor nada.
+  const doneSyncOk = shouldReplaceSnapshots(results);
 
-  if (taskRows.length > 0) {
-    const rowsToInsert = taskRows.map((r) => ({
-      date: new Date(r.filterMs),
-      entityType: "clickup_task",
-      entityId: parseInt(r.memberId) || 0,
-      source: "manual" as const,
-      extraData: {
-        taskId: r.taskId,
-        taskName: r.taskName,
-        listId: r.listId,
-        listName: r.listName,
-        category: r.category,
-        memberId: r.memberId,
-        memberName: r.memberName,
-        doneAt: r.doneMs,
-        dueDate: r.dueMs,
-        onTime: r.onTime,
-      },
-    }));
-    // Insert in chunks to avoid Postgres parameter limits
-    const CHUNK = 500;
-    for (let i = 0; i < rowsToInsert.length; i += CHUNK) {
-      await db.insert(metricsSnapshots).values(rowsToInsert.slice(i, i + CHUNK));
+  if (doneSyncOk) {
+    await db.delete(metricsSnapshots).where(eq(metricsSnapshots.entityType, "clickup_task"));
+
+    if (taskRows.length > 0) {
+      const rowsToInsert = taskRows.map((r) => ({
+        date: new Date(r.filterMs),
+        entityType: "clickup_task",
+        entityId: parseInt(r.memberId) || 0,
+        source: "manual" as const,
+        extraData: {
+          taskId: r.taskId,
+          taskName: r.taskName,
+          listId: r.listId,
+          listName: r.listName,
+          category: r.category,
+          memberId: r.memberId,
+          memberName: r.memberName,
+          doneAt: r.doneMs,
+          dueDate: r.dueMs,
+          onTime: r.onTime,
+        },
+      }));
+      // Insert in chunks to avoid Postgres parameter limits
+      const CHUNK = 500;
+      for (let i = 0; i < rowsToInsert.length; i += CHUNK) {
+        await db.insert(metricsSnapshots).values(rowsToInsert.slice(i, i + CHUNK));
+      }
     }
   }
 
@@ -378,37 +385,44 @@ export async function GET(request: Request) {
     }
   }
 
-  // Replace atômico: apaga todos os clickup_open_task e insere os novos
-  await db.delete(metricsSnapshots).where(eq(metricsSnapshots.entityType, "clickup_open_task"));
+  // Replace atômico: apaga todos os clickup_open_task e insere os novos.
+  // Mesmo fail-closed do passo anterior: só apaga se pelo menos 1 lista teve sucesso.
+  const openSyncOk = shouldReplaceSnapshots(openResults);
 
-  if (openTaskRows.length > 0) {
-    const openRowsToInsert = openTaskRows.map((r) => ({
-      date: now,
-      entityType: "clickup_open_task",
-      entityId: parseInt(r.memberId) || 0,
-      source: "manual" as const,
-      extraData: {
-        taskId: r.taskId,
-        taskName: r.taskName,
-        listId: r.listId,
-        listName: r.listName,
-        category: r.category,
-        memberId: r.memberId,
-        memberName: r.memberName,
-        status: r.status,
-        dueDate: r.dueDate,
-        dateUpdated: r.dateUpdated,
-        overdue: r.overdue,
-      },
-    }));
-    const CHUNK = 500;
-    for (let i = 0; i < openRowsToInsert.length; i += CHUNK) {
-      await db.insert(metricsSnapshots).values(openRowsToInsert.slice(i, i + CHUNK));
+  if (openSyncOk) {
+    await db.delete(metricsSnapshots).where(eq(metricsSnapshots.entityType, "clickup_open_task"));
+
+    if (openTaskRows.length > 0) {
+      const openRowsToInsert = openTaskRows.map((r) => ({
+        date: now,
+        entityType: "clickup_open_task",
+        entityId: parseInt(r.memberId) || 0,
+        source: "manual" as const,
+        extraData: {
+          taskId: r.taskId,
+          taskName: r.taskName,
+          listId: r.listId,
+          listName: r.listName,
+          category: r.category,
+          memberId: r.memberId,
+          memberName: r.memberName,
+          status: r.status,
+          dueDate: r.dueDate,
+          dateUpdated: r.dateUpdated,
+          overdue: r.overdue,
+        },
+      }));
+      const CHUNK = 500;
+      for (let i = 0; i < openRowsToInsert.length; i += CHUNK) {
+        await db.insert(metricsSnapshots).values(openRowsToInsert.slice(i, i + CHUNK));
+      }
     }
   }
 
   return NextResponse.json({
-    success: true,
+    // Sucesso real: pelo menos 1 lista (de qualquer uma das 2 passadas) sincronizou.
+    // Nunca fixo — reflete o que `results`/`openResults` de fato reportaram.
+    success: doneSyncOk || openSyncOk,
     syncedAt: new Date().toISOString(),
     historyDays: HISTORY_DAYS,
     tasksIndexed: taskRows.length,
