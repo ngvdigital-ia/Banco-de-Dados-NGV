@@ -28,6 +28,7 @@ export async function GET(request: Request) {
   const now = new Date();
   const fired: string[] = [];
   const onCooldown: string[] = [];
+  const evalErrors: { name: string; error: string }[] = [];
 
   for (const a of active) {
     try {
@@ -65,12 +66,19 @@ export async function GET(request: Request) {
       }
       fired.push(a.name);
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
       console.error(`[check-alerts] erro no alerta "${a.name}":`, err);
+      evalErrors.push({ name: a.name, error: message });
     }
   }
 
-  // Saúde dos agentes — detecção de silêncio anômalo
+  // Saúde dos agentes — detecção de silêncio anômalo.
+  // `checked` distingue "checagem rodou e não achou nada" (silentCount: 0, checked: true)
+  // de "a checagem em si quebrou" (checked: false) — as duas não podem parecer iguais,
+  // senão o vigia fica surdo justo quando mais precisa avisar.
   let silentCount = 0;
+  let agentsHealthChecked = true;
+  let agentsHealthError: string | undefined;
   try {
     const health = await checkAgentsHealth();
     silentCount = health.silent.length;
@@ -79,6 +87,8 @@ export async function GET(request: Request) {
       await sendAgentsHealthAlert(webhookUrl, health.silent);
     }
   } catch (err) {
+    agentsHealthChecked = false;
+    agentsHealthError = err instanceof Error ? err.message : "Unknown error";
     console.error("[check-alerts] falha ao checar saúde dos agentes:", err);
   }
 
@@ -87,7 +97,12 @@ export async function GET(request: Request) {
     evaluated: active.length,
     fired,
     onCooldown,
-    agentsHealth: { silentCount },
+    evalErrors,
+    agentsHealth: {
+      silentCount,
+      checked: agentsHealthChecked,
+      ...(agentsHealthError ? { error: agentsHealthError } : {}),
+    },
     at: now.toISOString(),
   });
 }
