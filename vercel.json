@@ -27,6 +27,10 @@
     {
       "path": "/api/cron/sync-ngv-core",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/sync-ngv-core-catalog",
+      "schedule": "10 5 * * *"
     }
   ]
 }
