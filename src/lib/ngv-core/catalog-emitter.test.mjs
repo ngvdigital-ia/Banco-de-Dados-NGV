@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  PLATAFORMA_PRODUTO_GATEWAY,
   buildCatalogItems,
   buildCatalogPayload,
   resolveCatalogUrl,
@@ -97,7 +98,7 @@ test("host fora da allowlist e recusado ANTES de qualquer rede", () => {
 test("sem credencial falha ANTES de tocar a rede", async () => {
   let chamou = false;
   await assert.rejects(
-    () => emitCatalogSnapshot([oferta()], {
+    () => emitCatalogSnapshot([oferta()], [], {
       config: { ...CONFIG, writerKey: "" },
       fetchImpl: () => { chamou = true; return Promise.resolve(new Response("{}", { status: 200 })); },
     }),
@@ -108,7 +109,7 @@ test("sem credencial falha ANTES de tocar a rede", async () => {
 
 test("envio bem-sucedido manda a credencial no header e devolve o resumo", async () => {
   let visto = null;
-  const resultado = await emitCatalogSnapshot([oferta(), oferta({ id: 224, name: "Celestino" })], {
+  const resultado = await emitCatalogSnapshot([oferta(), oferta({ id: 224, name: "Celestino" })], [], {
     config: CONFIG,
     fetchImpl: (url, init) => {
       visto = { url: url.toString(), init };
@@ -124,10 +125,56 @@ test("envio bem-sucedido manda a credencial no header e devolve o resumo", async
 
 test("resposta nao-2xx vira erro com o status, nunca sucesso silencioso", async () => {
   await assert.rejects(
-    () => emitCatalogSnapshot([oferta()], {
+    () => emitCatalogSnapshot([oferta()], [], {
       config: CONFIG,
       fetchImpl: () => Promise.resolve(new Response("{}", { status: 409 })),
     }),
     /CATALOG_REJECTED_409/,
   );
+});
+
+const ligacao = (extra = {}) => ({
+  entity_id: 222, platform: PLATAFORMA_PRODUTO_GATEWAY,
+  external_id: "989cc89b-bf99-4c98-b543-8d7a0a4616e9", created_at: "2026-08-21T13:00:00.000Z",
+  ...extra,
+});
+
+test("produto do gateway vira FILHO da oferta, com as mesmas 10 chaves", () => {
+  const { items } = buildCatalogItems([oferta()], [ligacao()]);
+  const produto = items.find((i) => i.entity_type === "product");
+  assert.deepEqual(Object.keys(produto).sort(), [...CHAVES_ITEM].sort());
+  assert.equal(produto.parent_entity_type, "offer");
+  assert.equal(produto.parent_source_id, "222");
+  assert.equal(produto.source_id, "989cc89b-bf99-4c98-b543-8d7a0a4616e9");
+  assert.equal(produto.title, "Squirting School");
+});
+
+test("filho herda o is_active do pai — oferta morta nao deixa produto vivo", () => {
+  const { items } = buildCatalogItems(
+    [oferta({ validation: VALIDACAO_OFERTA_MORTA })],
+    [ligacao()],
+  );
+  assert.deepEqual(items.map((i) => i.is_active), [false, false]);
+});
+
+test("ligacao orfa NAO vira item — filho sem pai seria oferta fantasma", () => {
+  const { items, ignoradas } = buildCatalogItems([oferta()], [ligacao({ entity_id: 999 })]);
+  assert.equal(items.filter((i) => i.entity_type === "product").length, 0);
+  assert.equal(ignoradas.length, 1);
+  assert.match(ignoradas[0].motivo, /sem oferta correspondente/);
+});
+
+test("plataforma que nao e produto (ex: campanha da UTMify) e ignorada", () => {
+  const { items } = buildCatalogItems([oferta()], [ligacao({ platform: "utmify_campaign" })]);
+  assert.equal(items.filter((i) => i.entity_type === "product").length, 0);
+});
+
+test("o resumo separa ofertas de produtos", async () => {
+  const r = await emitCatalogSnapshot([oferta()], [ligacao()], {
+    config: CONFIG,
+    fetchImpl: () => Promise.resolve(new Response("{}", { status: 200 })),
+  });
+  assert.equal(r.ofertas, 1);
+  assert.equal(r.produtos, 1);
+  assert.equal(r.enviadas, 2);
 });

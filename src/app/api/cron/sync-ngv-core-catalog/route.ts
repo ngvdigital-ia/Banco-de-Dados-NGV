@@ -46,7 +46,17 @@ export async function GET(request: Request) {
       ORDER BY id
     `);
 
-    const result = await emitCatalogSnapshot(rows.rows);
+    // As ligacoes produto-do-gateway -> oferta viajam junto, como FILHOS da oferta.
+    // Sem elas no Core, somar receita por oferta continuaria dependendo do offer_slug,
+    // que e carimbo do ?group= do webhook e nao identifica oferta nenhuma.
+    const mappings = await db.execute(sql`
+      SELECT entity_id, platform, external_id, created_at
+      FROM external_mappings
+      WHERE entity_type = 'offer'
+      ORDER BY entity_id, external_id
+    `);
+
+    const result = await emitCatalogSnapshot(rows.rows, mappings.rows);
 
     // Oferta pulada não derruba o envio, mas não pode sumir em silêncio: quem foi
     // ignorado vira log nomeado, para não virar "sumiu do catálogo e ninguém viu".

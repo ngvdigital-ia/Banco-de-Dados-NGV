@@ -29,6 +29,11 @@ export const MAX_CATALOG_ITEMS = 5000;
 // qualquer outro valor ("EM ANDAMENTO", "NAO", nulo) é oferta ainda em jogo.
 export const VALIDACAO_OFERTA_MORTA = "NÃO DEU CERTO";
 
+// Quais linhas de external_mappings viram FILHO de oferta no catálogo. Só a plataforma
+// de produto do gateway entra: campanha de UTMify tambem mora em external_mappings, mas
+// campanha nao e produto — publicar tudo misturaria dois conceitos dentro de "product".
+export const PLATAFORMA_PRODUTO_GATEWAY = "apps_ofertas_product";
+
 /** @returns {never} */
 function fail(code) {
   throw new NgvCoreEmitterError(code);
@@ -51,10 +56,13 @@ function toIso(value) {
  * Oferta sem nome utilizável é PULADA em vez de derrubar o snapshot: uma linha ruim
  * não pode custar as outras 80. Quem foi pulado volta em `ignoradas` pra virar log.
  */
-export function buildCatalogItems(rows) {
+export function buildCatalogItems(rows, mappings = []) {
   if (!Array.isArray(rows)) fail("CATALOG_ROWS_INVALID");
+  if (!Array.isArray(mappings)) fail("CATALOG_ROWS_INVALID");
   const items = [];
   const ignoradas = [];
+  const nomePorOferta = new Map();
+  const ativoPorOferta = new Map();
   for (const row of rows) {
     if (row === null || typeof row !== "object") {
       ignoradas.push({ id: null, motivo: "linha nao e objeto" });
@@ -70,6 +78,9 @@ export function buildCatalogItems(rows) {
       ignoradas.push({ id, motivo: "nome vazio" });
       continue;
     }
+    const ativo = String(row.validation ?? "").trim() !== VALIDACAO_OFERTA_MORTA;
+    nomePorOferta.set(String(id), title.slice(0, 500));
+    ativoPorOferta.set(String(id), ativo);
     items.push({
       entity_type: "offer",
       source_id: String(id),
@@ -78,9 +89,40 @@ export function buildCatalogItems(rows) {
       title: title.slice(0, 500),
       description: null,
       sort_order: null,
-      is_active: String(row.validation ?? "").trim() !== VALIDACAO_OFERTA_MORTA,
+      is_active: ativo,
       origin_created_at: toIso(row.created_at ?? row.createdAt),
       origin_updated_at: toIso(row.updated_at ?? row.updatedAt),
+    });
+  }
+  // Produto do gateway entra como FILHO da oferta. Sem tabela nova no Core: o catálogo
+  // já tem parent_entity_type/parent_source_id, e "este product_id pertence a esta
+  // oferta" é exatamente uma relação pai-filho. É o que permite, do lado do Core,
+  // somar receita por OFERTA a partir do product_id — o identificador que o gateway
+  // emite de verdade, em vez do offer_slug, que é carimbo do ?group= do webhook.
+  for (const m of mappings) {
+    if (m === null || typeof m !== "object") continue;
+    if (String(m.platform ?? "") !== PLATAFORMA_PRODUTO_GATEWAY) continue;
+    const paiId = String(m.entity_id ?? "");
+    const externo = String(m.external_id ?? "").trim();
+    // Ligacao orfa (aponta pra oferta que nao veio) nao pode virar item sem pai: o
+    // Core exige o par, e um filho sem pai seria uma oferta fantasma no catalogo.
+    if (!nomePorOferta.has(paiId) || externo.length === 0 || externo.length > 128) {
+      ignoradas.push({ id: externo || null, motivo: "ligacao sem oferta correspondente" });
+      continue;
+    }
+    items.push({
+      entity_type: "product",
+      source_id: externo,
+      parent_entity_type: "offer",
+      parent_source_id: paiId,
+      // O par foi derivado de igualdade EXATA de nome, entao o nome da oferta e o nome
+      // do produto sao o mesmo texto. Repetir aqui e fiel, nao invencao.
+      title: nomePorOferta.get(paiId),
+      description: null,
+      sort_order: null,
+      is_active: ativoPorOferta.get(paiId),
+      origin_created_at: toIso(m.created_at),
+      origin_updated_at: null,
     });
   }
   if (items.length > MAX_CATALOG_ITEMS) fail("CATALOG_TOO_LARGE");
@@ -138,11 +180,11 @@ async function readLimited(response, limit = NGV_CORE_MAX_RESPONSE_BYTES) {
  * Envia o snapshot do catálogo. Fail-closed na credencial, timeout de 10s,
  * redirect manual, só 2xx é sucesso. Nunca registra credencial nem payload.
  */
-export async function emitCatalogSnapshot(rows, options = {}) {
+export async function emitCatalogSnapshot(rows, mappings = [], options = {}) {
   const config = resolveNgvCoreConfig(options.config);
   if (typeof config.writerKey !== "string" || !config.writerKey) fail("NGV_CORE_WRITER_KEY_MISSING");
   const url = resolveCatalogUrl(options.config);
-  const { items, ignoradas } = buildCatalogItems(rows);
+  const { items, ignoradas } = buildCatalogItems(rows, mappings);
   const payload = buildCatalogPayload(items, options.generatedAt);
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
   if (typeof fetchImpl !== "function") fail("FETCH_UNAVAILABLE");
@@ -165,6 +207,8 @@ export async function emitCatalogSnapshot(rows, options = {}) {
       kind: "success",
       http_status: response.status,
       enviadas: items.length,
+      ofertas: items.filter((i) => i.entity_type === "offer").length,
+      produtos: items.filter((i) => i.entity_type === "product").length,
       ignoradas,
       generated_at: payload.generated_at,
     };
