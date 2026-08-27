@@ -112,7 +112,7 @@ export function SystemDetailView({ system, summary }: { system: SystemId; summar
           <section className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border bg-card px-4 py-3 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-2"><Clock3 className="size-4" aria-hidden="true" /> Leitura: {formatTimestamp(details.observedAt)}</span>
             {details.freshness && <span>Idade do dado: {details.freshness.age_hours} h</span>}
-            <span>Fonte em modo somente leitura.</span>
+            <span>Core é autoridade de saúde/freshness; a fonte dona preserva os dados operacionais.</span>
           </section>
         </>
       )}

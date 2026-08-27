@@ -515,12 +515,13 @@ function AuditTimeline({ snapshot }: { snapshot: OperationSnapshot }) {
   );
 }
 
-export function OperationView({ snapshot, stale, quizAnalytics, spyAnalytics, ngvCore }: { snapshot: OperationSnapshot; stale: boolean; quizAnalytics: QuizAnalyticsSummary; spyAnalytics: SpyAnalyticsSummary; ngvCore: NgvCoreOperationalSummary }) {
+export function OperationView({ snapshot, stale, coreSources, quizAnalytics, spyAnalytics, ngvCore }: { snapshot: OperationSnapshot; stale: boolean; coreSources: OperationSource[]; quizAnalytics: QuizAnalyticsSummary; spyAnalytics: SpyAnalyticsSummary; ngvCore: NgvCoreOperationalSummary }) {
   const [query, setQuery] = useState("");
   const [stateFilter, setStateFilter] = useState<StateFilter>("ALL");
   const [phaseFilter, setPhaseFilter] = useState<number | "ALL">("ALL");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const isRuntimeSource = snapshot.source === "banco-ngv-runtime";
+  const sources = [...snapshot.sources, ...coreSources];
 
   const filteredOffers = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
@@ -600,7 +601,7 @@ export function OperationView({ snapshot, stale, quizAnalytics, spyAnalytics, ng
       </section>
 
       <div className="grid gap-6 xl:grid-cols-12">
-        <div className="xl:col-span-6"><SourcesHealth sources={snapshot.sources} /></div>
+        <div className="xl:col-span-6"><SourcesHealth sources={sources} /></div>
         <div className="xl:col-span-6"><AuditTimeline snapshot={snapshot} /></div>
       </div>
 

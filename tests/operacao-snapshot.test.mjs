@@ -6,7 +6,7 @@ import test from "node:test";
 import { compareBlockerRows } from "../src/lib/operacao/blocker-order.mjs";
 import { expectedSnapshotForCheck, isLiveArtifactStale, mergeLiveEvidence, normalizeSnapshotForCheck, projectLiveArtifact, projectManifest, writeSnapshotAtomic } from "../src/lib/operacao/generate-snapshot.mjs";
 import { refreshOperation } from "../src/lib/operacao/refresh-operation.mjs";
-import { canonicalProjectionByBancoId, captureReadOnlySnapshot, operationHasStaleEvidence, phaseForOffer, projectCanonicalSources, projectRecentOffers, RECENT_OFFERS_LIMIT, ROLLING_WINDOW_DAYS, stateForPhase } from "../src/lib/operacao/recent-offers.mjs";
+import { captureReadOnlySnapshot, phaseForOffer, projectRecentOffers, RECENT_OFFERS_LIMIT, ROLLING_WINDOW_DAYS, stateForPhase } from "../src/lib/operacao/recent-offers.mjs";
 
 const ROOT = process.cwd();
 const SNAPSHOT_PATH = path.join(ROOT, "src", "lib", "operacao", "operation.snapshot.json");
@@ -211,24 +211,7 @@ test("projeção recente usa ID real e o marco mais avançado comprovado", () =>
   assert.equal(stateForPhase(7), "READY_FOR_REVIEW");
 });
 
-test("mapa canônico usa somente external_ids.banco_ngv, sem fuzzy por nome, e rejeita duplicata", () => {
-  const canonical = {
-    offers: [{
-      offer_id: "ngv:bumbumflix",
-      display_name: "Bumbumflix",
-      external_ids: { banco_ngv: [253] },
-      phase: 6,
-      state: "IN_MOTION",
-      aggregated_status: "IN_MOTION",
-      next_owner: "Diogo",
-      evidence: [{ source: "clickup", external_id: "86ajxg9ax", relation: "apply_tracking", state: "briefing", observed_at: "2026-08-11T12:00:00.000Z" }],
-      blockers: [],
-      last_evidence_at: "2026-08-11T12:00:00.000Z",
-    }],
-  };
-  const byBancoId = canonicalProjectionByBancoId(canonical);
-  assert.equal(byBancoId.get("253"), canonical.offers[0]);
-
+test("runtime não herda identidade, estado ou evidência do snapshot local", () => {
   const row = {
     id: 253,
     name: "nome divergente",
@@ -237,13 +220,13 @@ test("mapa canônico usa somente external_ids.banco_ngv, sem fuzzy por nome, e r
     updatedAt: new Date("2026-08-11T11:00:00.000Z"),
     validation: "EM ANDAMENTO",
   };
-  const projected = projectRecentOffers([row], new Date("2026-08-11T12:00:00.000Z"), byBancoId).offers[0];
-  assert.equal(projected.display_name, "Bumbumflix");
-  assert.equal(projected.state, "IN_MOTION");
-  assert.equal(projected.next_owner, "Diogo");
-  assert.ok(projected.evidence.some((item) => item.external_id === "86ajxg9ax"));
-  assert.equal(projectRecentOffers([{ ...row, id: 999, name: "Bumbumflix" }], new Date(), byBancoId).offers[0].offer_id, "banco:999");
-  assert.throws(() => canonicalProjectionByBancoId({ offers: [{ external_ids: { banco_ngv: [253] } }, { external_ids: { banco_ngv: ["253"] } }] }), /ID banco_ngv duplicado/);
+  const projected = projectRecentOffers([row], new Date("2026-08-11T12:00:00.000Z")).offers[0];
+  assert.equal(projected.display_name, "nome divergente");
+  assert.equal(projected.offer_id, "banco:253");
+  assert.equal(projected.reconciliation.status, "PENDING");
+  assert.equal(projected.next_owner, "PENDING");
+  assert.deepEqual(projected.external_ids.clickup, []);
+  assert.deepEqual(projected.metric_binding.metric_ids, []);
 });
 
 test("G5 fecha métrica por ID explícito, mantém ausência PENDING e rejeita mismatch", async () => {
@@ -365,25 +348,9 @@ test("consulta recente mantém janela móvel e limite defensivo", async () => {
   assert.match(snapshotSource, /gte\(offerTracking\.createdAt, recentOffersCutoff\(now\)\)/);
   assert.match(snapshotSource, /orderBy\(desc\(offerTracking\.createdAt\)\)/);
   assert.match(snapshotSource, /limit\(RECENT_OFFERS_LIMIT\)/);
-  assert.match(snapshotSource, /operation\.snapshot\.json/);
-  assert.match(snapshotSource, /canonicalProjectionByBancoId\(canonicalSnapshot\)/);
-  assert.match(snapshotSource, /projectRecentOffers\(rows, now, canonicalOffers\)/);
-  assert.match(snapshotSource, /projectCanonicalSources\(canonicalSnapshot, now\)/);
-});
-
-test("runtime degrada evidência ClickUp/n8n antiga e expõe o selo stale", () => {
-  const sources = projectCanonicalSources({
-    sources: [
-      { id: "clickup", label: "ClickUp", state: "OPERANT", coverage: "6/6", detail: "ok", last_read_at: "2026-08-10T23:00:00.000Z" },
-      { id: "n8n", label: "n8n", state: "OPERANT", coverage: "0/6", detail: "ok", last_read_at: "2026-08-11T11:30:00.000Z" },
-      { id: "registry", label: "Registry", state: "OPERANT", coverage: "1/1", detail: "ok", last_read_at: "2026-08-10T23:00:00.000Z" },
-    ],
-  }, new Date("2026-08-11T12:00:00.000Z"));
-
-  assert.deepEqual(sources.map((source) => source.id), ["clickup", "n8n"]);
-  assert.equal(sources[0].state, "DEGRADED");
-  assert.equal(sources[1].state, "OPERANT");
-  assert.equal(operationHasStaleEvidence({ sources }), true);
+  assert.match(snapshotSource, /projectRecentOffers\(rows, now\)/);
+  assert.doesNotMatch(snapshotSource, /operation\.snapshot\.json/);
+  assert.doesNotMatch(snapshotSource, /canonicalProjectionByBancoId/);
 });
 
 test("dashboard preservado continua acessível em rota própria", async () => {

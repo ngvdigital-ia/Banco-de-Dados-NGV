@@ -1,12 +1,13 @@
 import { OperationErrorState, OperationView } from "@/components/operacao/operation-view";
 import { requireOperationOperator } from "@/lib/operacao/authz";
 import { isOperationCockpitEnabled } from "@/lib/operacao/feature";
-import { isOperationQuizAnalyticsEnabled, isOperationSpyAnalyticsEnabled } from "@/lib/operacao/feature";
+import { isOperationCoreSourceStateEnabled, isOperationQuizAnalyticsEnabled, isOperationSpyAnalyticsEnabled } from "@/lib/operacao/feature";
+import { coreSourceStates, coreSourceStatesHaveStaleEvidence } from "@/lib/operacao/core-source-state.mjs";
 import { loadOperationSnapshot } from "@/lib/operacao/snapshot";
 import { fetchQuizAnalyticsSummary } from "@/lib/operacao/quiz-analytics-summary.mjs";
 import { fetchSpyAnalyticsSummary } from "@/lib/operacao/spy-analytics-summary.mjs";
 import { fetchNgvCoreOperationalSummary } from "@/lib/operacao/ngv-core-summary.mjs";
-import { captureReadOnlySnapshot, operationHasStaleEvidence } from "@/lib/operacao/recent-offers.mjs";
+import { captureReadOnlySnapshot } from "@/lib/operacao/recent-offers.mjs";
 import type { OperationOffer } from "@/lib/operacao/schema";
 import { redirect } from "next/navigation";
 
@@ -37,5 +38,6 @@ export default async function OperacaoPage() {
     const code = "code" in ngvCore && typeof ngvCore.code === "string" ? ngvCore.code : "SUMMARY_UNAVAILABLE";
     console.warn("[NGV Core] operational summary unavailable", { code });
   }
-  return <OperationView snapshot={result.snapshot} stale={operationHasStaleEvidence(result.snapshot)} quizAnalytics={quizAnalytics} spyAnalytics={spyAnalytics} ngvCore={ngvCore} />;
+  const coreSources = coreSourceStates(ngvCore, { enabled: isOperationCoreSourceStateEnabled });
+  return <OperationView snapshot={result.snapshot} stale={coreSourceStatesHaveStaleEvidence(coreSources)} coreSources={coreSources} quizAnalytics={quizAnalytics} spyAnalytics={spyAnalytics} ngvCore={ngvCore} />;
 }

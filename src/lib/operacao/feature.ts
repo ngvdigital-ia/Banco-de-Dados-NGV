@@ -18,3 +18,8 @@ export const isOperationQuizAnalyticsEnabled =
 
 export const isOperationSpyAnalyticsEnabled =
   typeof window === "undefined" && process.env.OPERATION_SPY_ANALYTICS_ENABLED === "true";
+
+// Ativa somente a apresentação da saúde por fonte vinda do Core. Não troca a
+// autoridade do Neon, não despacha comandos e permite rollback imediato.
+export const isOperationCoreSourceStateEnabled =
+  typeof window === "undefined" && process.env.OPERATION_CORE_SOURCE_STATE_ENABLED === "true";

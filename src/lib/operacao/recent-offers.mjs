@@ -1,8 +1,6 @@
 export const RECENT_OFFERS_LIMIT = 200;
 export const ROLLING_WINDOW_DAYS = 30;
 export const ROLLING_WINDOW_MS = ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000;
-export const OPERATION_EVIDENCE_STALE_AFTER_MS = 12 * 60 * 60 * 1000;
-const STALE_EVIDENCE_DETAIL = "Evidência live com mais de 12 horas.";
 
 const PENDING_METRIC_BINDING = {
   status: "PENDING",
@@ -66,69 +64,14 @@ function iso(value) {
   return value.toISOString();
 }
 
-export function canonicalProjectionByBancoId(snapshot) {
-  const projections = new Map();
-  for (const offer of Array.isArray(snapshot?.offers) ? snapshot.offers : []) {
-    const bancoIds = offer?.external_ids?.banco_ngv;
-    if (!Array.isArray(bancoIds)) continue;
-    for (const bancoId of bancoIds) {
-      if (bancoId === null || bancoId === undefined) continue;
-      const id = String(bancoId);
-      if (!id || id === "PENDING") continue;
-      if (projections.has(id)) throw new Error(`ID banco_ngv duplicado no snapshot: ${id}`);
-      projections.set(id, offer);
-    }
-  }
-  return projections;
-}
-
-export function projectCanonicalSources(snapshot, now = new Date()) {
-  const nowMs = now instanceof Date ? now.getTime() : new Date(now).getTime();
-  return (Array.isArray(snapshot?.sources) ? snapshot.sources : [])
-    .filter((source) => source?.id === "clickup" || source?.id === "n8n")
-    .map((source) => {
-      const lastReadMs = typeof source.last_read_at === "string" ? Date.parse(source.last_read_at) : Number.NaN;
-      const stale = Number.isFinite(nowMs) && Number.isFinite(lastReadMs)
-        && nowMs - lastReadMs > OPERATION_EVIDENCE_STALE_AFTER_MS;
-      return stale && source.state !== "UNAVAILABLE" && source.state !== "UNVERIFIED"
-        ? { ...source, state: "DEGRADED", detail: STALE_EVIDENCE_DETAIL }
-        : structuredClone(source);
-    });
-}
-
-export function operationHasStaleEvidence(snapshot) {
-  return (Array.isArray(snapshot?.sources) ? snapshot.sources : [])
-    .some((source) => source?.detail === STALE_EVIDENCE_DETAIL);
-}
-
-function isClosedEvidenceState(value) {
-  return new Set(["FINALIZADO", "FINALIZADA", "CONCLUIDO", "CONCLUIDA", "COMPLETE", "COMPLETED", "CLOSED"])
-    .has(normalizedStatus(value));
-}
-
-function hasCanonicalOpenTask(canonical) {
-  return (Array.isArray(canonical?.evidence) ? canonical.evidence : [])
-    .some((item) => item?.source === "clickup" && !isClosedEvidenceState(item.state));
-}
-
-function latestIso(...values) {
-  return values
-    .filter((value) => typeof value === "string" && !Number.isNaN(Date.parse(value)))
-    .map((value) => new Date(value).toISOString())
-    .sort()
-    .at(-1) ?? null;
-}
-
-/** @param {Map<string, object> | Record<string, object> | null} canonicalOffers */
-export function projectRecentOffers(rows, now = new Date(), canonicalOffers = null) {
+export function projectRecentOffers(rows, now = new Date()) {
   const generatedAt = iso(now);
   const offers = rows.map((row) => {
     const dbPhase = phaseForOffer(row);
-    const canonical = canonicalOffers?.get?.(String(row.id)) ?? canonicalOffers?.[String(row.id)] ?? null;
-    const phase = Math.max(dbPhase, Number.isInteger(canonical?.phase) ? canonical.phase : 0);
-    const offerId = canonical?.offer_id ?? `banco:${row.id}`;
-    const offerSlug = canonical?.offer_slug ?? `banco-${row.id}`;
-    const displayName = canonical?.display_name ?? row.name;
+    const phase = dbPhase;
+    const offerId = `banco:${row.id}`;
+    const offerSlug = `banco-${row.id}`;
+    const displayName = row.name;
     const dbEvidence = {
       source: "banco-ngv",
       external_id: String(row.id),
@@ -136,47 +79,31 @@ export function projectRecentOffers(rows, now = new Date(), canonicalOffers = nu
       state: `phase:${dbPhase}`,
       observed_at: iso(row.updatedAt ?? row.createdAt),
     };
-    const canonicalState = canonical?.state ?? canonical?.aggregated_status;
-    const canonicalBlockers = Array.isArray(canonical?.blockers) ? canonical.blockers : [];
-    const canonicalHasBlockers = canonicalBlockers.length > 0;
-    const canonicalStateIsReady = canonicalState === "READY_FOR_REVIEW"
-      && !canonicalHasBlockers
-      && !hasCanonicalOpenTask(canonical);
-    const state = ["BLOCKED", "IN_MOTION", "ATTENTION"].includes(canonicalState)
-      ? canonicalState
-      : canonicalStateIsReady
-        ? canonicalState
-        : stateForPhase(dbPhase);
-    const canonicalEvidence = Array.isArray(canonical?.evidence) ? structuredClone(canonical.evidence) : [];
-    const evidence = [...canonicalEvidence, dbEvidence];
-    const dbEvidenceAt = dbEvidence.observed_at;
-    const canonicalEvidenceAt = [canonical?.last_evidence_at, ...canonicalEvidence.map((item) => item.observed_at)];
+    const state = stateForPhase(dbPhase);
+    const evidence = [dbEvidence];
 
     return {
-      ...(canonical ? structuredClone(canonical) : {}),
       offer_id: offerId,
       offer_slug: offerSlug,
       display_name: displayName,
-      language: canonical?.language ?? row.language,
+      language: row.language,
       phase,
       state,
       source_of_truth: "banco-ngv",
-      external_ids: canonical?.external_ids ?? {
+      external_ids: {
         banco_ngv: [String(row.id)], clickup: [], n8n: [], pages: [], product: [], metrics: [],
       },
-      reconciliation: canonical?.reconciliation ?? {
+      reconciliation: {
         status: "PENDING",
         evidence: [],
       },
-      source_status: canonical?.source_status ?? `phase:${phase}`,
+      source_status: `phase:${phase}`,
       aggregated_status: state,
-      next_owner: canonical?.next_owner ?? "PENDING",
+      next_owner: "PENDING",
       evidence,
-      metric_binding: canonical?.metric_binding
-        ? structuredClone(canonical.metric_binding)
-        : structuredClone(PENDING_METRIC_BINDING),
-      blockers: structuredClone(canonicalBlockers),
-      last_evidence_at: latestIso(dbEvidenceAt, ...canonicalEvidenceAt),
+      metric_binding: structuredClone(PENDING_METRIC_BINDING),
+      blockers: [],
+      last_evidence_at: dbEvidence.observed_at,
     };
   });
 
@@ -189,10 +116,10 @@ export function projectRecentOffers(rows, now = new Date(), canonicalOffers = nu
     offers,
     sources: [{
       id: "banco-ngv",
-      label: "Banco NGV",
+      label: "Banco NGV · Neon",
       state: "OPERANT",
       coverage: `${offers.length} ofertas recentes`,
-      detail: "Consulta read-only em offer_tracking.",
+      detail: "Autoridade de ofertas e métricas; consulta read-only em offer_tracking.",
       last_read_at: generatedAt,
     }],
     events: [],
