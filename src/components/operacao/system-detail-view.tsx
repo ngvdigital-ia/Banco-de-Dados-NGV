@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Clock3, ShieldAlert } from "lucide-react";
+import { ArrowLeft, CircleDashed, Clock3, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SYSTEM_DIRECTORY, type SystemId } from "@/lib/operacao/system-directory";
@@ -63,12 +63,28 @@ function metricsFor(system: SystemId, summary: NgvCoreOperationalSummary): { met
       const source = summary.sources.nexfy;
       return { metrics: [{ label: "Projetos ativos", value: source?.active_projects ?? null }, { label: "Produtos ativos", value: source?.active_products ?? null }, { label: "Projetos inativos", value: source?.inactive_projects ?? null }, { label: "Vínculos projeto-produto", value: source?.project_product_links ?? null }], observedAt: source?.generated_at, freshness: sourceFreshness?.nexfy };
     }
+    case "monitoramento": {
+      const source = summary.sources.monitoramento_ngv;
+      return {
+        metrics: [
+          { label: "Projetos", value: source?.projects_total ?? null },
+          { label: "Projetos em atenção", value: source?.projects_attention ?? null },
+          { label: "Domínios", value: source?.domains_total ?? null },
+          { label: "Vencendo em 30 dias", value: source?.domains_expiring_30d ?? null },
+          { label: "Assinaturas ativas", value: source?.subscriptions_active ?? null },
+          { label: "Infra em atenção", value: source?.infra_resources_attention ?? null },
+        ],
+        observedAt: source?.generated_at,
+        freshness: sourceFreshness?.monitoramento_ngv,
+      };
+    }
   }
 }
 
 export function SystemDetailView({ system, summary }: { system: SystemId; summary: NgvCoreOperationalSummary }) {
   const definition = SYSTEM_DIRECTORY[system];
-  const unavailable = summary.kind !== "success";
+  const unavailable = summary.kind === "unavailable";
+  const disabled = summary.kind === "disabled";
   const unavailableCode = "code" in summary && typeof summary.code === "string" ? summary.code : undefined;
   const details = metricsFor(system, summary);
 
@@ -84,11 +100,21 @@ export function SystemDetailView({ system, summary }: { system: SystemId; summar
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{definition.title}</h1>
             <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{definition.description}</p>
           </div>
-          {unavailable ? <StatusBadge variant="warning">Core indisponível</StatusBadge> : <StatusBadge variant={details.freshness?.is_stale ? "warning" : "success"}>{details.freshness?.is_stale ? "Dados desatualizados" : "Dados atualizados"}</StatusBadge>}
+          {disabled ? <StatusBadge variant="neutral">Resumo central desligado</StatusBadge> : unavailable ? <StatusBadge variant="warning">Leitura do Core indisponível</StatusBadge> : <StatusBadge variant={details.freshness?.is_stale ? "warning" : "neutral"}>{details.freshness ? details.freshness.is_stale ? "Leitura antiga do Core" : "Leitura recente do Core" : "Resumo agregado"}</StatusBadge>}
         </div>
       </div>
 
-      {unavailable ? (
+      {disabled ? (
+        <section className="rounded-lg border bg-muted/20 p-5" role="status">
+          <div className="flex items-start gap-3">
+            <CircleDashed className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <div>
+              <h2 className="font-semibold">Resumo central desligado ou não verificado</h2>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">A leitura central não está habilitada neste ambiente. As fontes externas não foram verificadas por este resumo.</p>
+            </div>
+          </div>
+        </section>
+      ) : unavailable ? (
         <section className="rounded-lg border border-warning/40 bg-warning/5 p-5" aria-live="polite">
           <div className="flex items-start gap-3">
             <ShieldAlert className="mt-0.5 size-5 shrink-0 text-warning" aria-hidden="true" />
@@ -101,18 +127,18 @@ export function SystemDetailView({ system, summary }: { system: SystemId; summar
         </section>
       ) : (
         <>
-          <section className="grid overflow-hidden rounded-lg border bg-card sm:grid-cols-2 lg:grid-cols-4" aria-label={`Indicadores de ${definition.title}`}>
-            {details.metrics.map((metric, index) => (
-              <div key={metric.label} className={`min-h-28 p-4 ${index > 0 ? "border-t sm:border-t-0 sm:border-l" : ""} ${index === 2 ? "lg:border-l" : ""}`}>
+          <section className="grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2 xl:grid-cols-3" aria-label={`Indicadores de ${definition.title}`}>
+            {details.metrics.map((metric) => (
+              <div key={metric.label} className="min-h-28 bg-card p-4">
                 <p className="font-mono text-2xl font-semibold tabular-nums tracking-tight">{metric.value ?? "—"}</p>
                 <p className="mt-2 text-xs text-muted-foreground">{metric.label}</p>
               </div>
             ))}
           </section>
           <section className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border bg-card px-4 py-3 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-2"><Clock3 className="size-4" aria-hidden="true" /> Leitura: {formatTimestamp(details.observedAt)}</span>
-            {details.freshness && <span>Idade do dado: {details.freshness.age_hours} h</span>}
-            <span>Core é autoridade de saúde/freshness; a fonte dona preserva os dados operacionais.</span>
+            <span className="inline-flex items-center gap-2"><Clock3 className="size-4" aria-hidden="true" /> Resumo agregado: {formatTimestamp(details.observedAt)}</span>
+            {details.freshness && <span>Idade da leitura no Core: {details.freshness.age_hours} h</span>}
+            <span>Esta idade descreve a leitura do Core, não a saúde externa. A fonte dona preserva os dados operacionais.</span>
           </section>
         </>
       )}

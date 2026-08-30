@@ -53,10 +53,10 @@ const SOURCE_META: Record<OperationSource["state"], {
   variant: "neutral" | "danger" | "warning" | "success";
   icon: typeof CircleDashed;
 }> = {
-  OPERANT: { label: "Operante", variant: "success", icon: CheckCircle2 },
-  DEGRADED: { label: "Degradada", variant: "warning", icon: AlertTriangle },
-  UNAVAILABLE: { label: "Indisponível", variant: "danger", icon: WifiOff },
-  UNVERIFIED: { label: "Não verificada", variant: "neutral", icon: CircleDashed },
+  OPERANT: { label: "Leitura recente", variant: "success", icon: CheckCircle2 },
+  DEGRADED: { label: "Leitura antiga", variant: "warning", icon: AlertTriangle },
+  UNAVAILABLE: { label: "Leitura indisponível", variant: "danger", icon: WifiOff },
+  UNVERIFIED: { label: "Resumo não verificado", variant: "neutral", icon: CircleDashed },
 };
 
 function formatTimestamp(value: string | null): string {
@@ -210,6 +210,8 @@ function NgvCoreSummaryCard({ summary }: { summary: NgvCoreOperationalSummary })
   const unverified = summary.kind === "disabled";
   const unavailableCode = "code" in summary && typeof summary.code === "string" ? summary.code : null;
   const freshness = summary.freshness;
+  const hasRecentCoreRead = freshness?.all_fresh === true;
+  const hasOldCoreRead = freshness?.all_fresh === false;
   const value = (item: number | null | undefined) => item ?? "—";
   const sources = [
     { key: "spy", label: "Spy", observedAt: summary.sources.spy?.generated_at, values: [["ofertas", value(summary.sources.spy?.offers_observed)], ["leituras", value(summary.sources.spy?.readings_observed)]] },
@@ -218,10 +220,11 @@ function NgvCoreSummaryCard({ summary }: { summary: NgvCoreOperationalSummary })
     { key: "quiz_analytics", label: "Quiz", observedAt: summary.sources.quiz_analytics?.generated_at, values: [["projetos", value(summary.sources.quiz_analytics?.project_count)], ["com eventos", value(summary.sources.quiz_analytics?.receiving_events_count)]] },
     { key: "apps_ofertas", label: "Apps Ofertas", observedAt: summary.sources.apps_ofertas?.generated_at, values: [["ofertas", value(summary.sources.apps_ofertas?.offers_configured)], ["acessos ativos", value(summary.sources.apps_ofertas?.access_active)]] },
     { key: "plataforma_cursos", label: "Cursos", observedAt: summary.sources.plataforma_cursos?.generated_at, values: [["cursos", value(summary.sources.plataforma_cursos?.courses_total)], ["acessos ativos", value(summary.sources.plataforma_cursos?.entitlements_active)]] },
+    { key: "monitoramento_ngv", label: "Monitoramento", observedAt: summary.sources.monitoramento_ngv?.generated_at, values: [["projetos", value(summary.sources.monitoramento_ngv?.projects_total)], ["domínios", value(summary.sources.monitoramento_ngv?.domains_total)], ["infra em atenção", value(summary.sources.monitoramento_ngv?.infra_resources_attention)]] },
   ];
   return <section aria-labelledby="ngv-core-summary" className="overflow-hidden rounded-lg border bg-card">
-    <div className="flex flex-wrap items-start justify-between gap-4 border-b px-4 py-4 sm:px-6"><div><p className="font-mono text-[11px] uppercase tracking-[0.1em] text-primary">NGV Core</p><h2 id="ngv-core-summary" className="mt-1 text-lg font-semibold">Fontes sincronizadas, somente leitura</h2><p className="mt-1 max-w-[68ch] text-sm leading-relaxed text-muted-foreground">Última projeção agregada de cada sistema; ausência de uma fonte permanece explícita e não altera a operação local.</p></div><StatusBadge variant={unavailable || freshness?.all_fresh === false ? "warning" : unverified ? "neutral" : "success"}>{unavailable ? "Core indisponível" : unverified ? "Core não verificado" : freshness?.all_fresh === false ? `${freshness.sources_stale} fonte(s) desatualizada(s)` : "Core sincronizado"}</StatusBadge></div>
-    <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-3">{sources.map((source, index) => { const sourceFreshness = freshness?.by_source[source.key]; return <article key={source.label} className={cn("min-h-32 p-4", index >= 2 && "sm:border-t xl:border-t-0")}><div className="flex items-baseline justify-between gap-3"><h3 className="text-sm font-semibold">{source.label}</h3><time className="font-mono text-[10px] tabular-nums text-muted-foreground" dateTime={source.observedAt ?? undefined}>{formatTimestamp(source.observedAt ?? null)}</time></div>{sourceFreshness && <StatusBadge variant={sourceFreshness.is_stale ? "warning" : "success"} className="mt-3 gap-1.5"><Clock3 className="size-3" aria-hidden="true" />{sourceFreshness.is_stale ? "Desatualizada" : "Atualizada"} · {sourceFreshness.age_hours} h</StatusBadge>}<dl className="mt-4 grid grid-cols-2 gap-3">{source.values.map(([label, metric]) => <div key={label}><dd className="font-mono text-xl font-semibold tabular-nums">{metric}</dd><dt className="mt-1 text-[11px] leading-tight text-muted-foreground">{label}</dt></div>)}</dl></article>; })}</div>
+    <div className="flex flex-wrap items-start justify-between gap-4 border-b px-4 py-4 sm:px-6"><div><p className="font-mono text-[11px] uppercase tracking-[0.1em] text-primary">NGV Core</p><h2 id="ngv-core-summary" className="mt-1 text-lg font-semibold">Resumo agregado, somente leitura</h2><p className="mt-1 max-w-[68ch] text-sm leading-relaxed text-muted-foreground">A idade exibida mede quando o Core leu cada resumo; não confirma a saúde externa de nenhum sistema.</p></div><StatusBadge variant={unavailable || hasOldCoreRead ? "warning" : unverified || !hasRecentCoreRead ? "neutral" : "success"}>{unavailable ? "Leitura do Core indisponível" : unverified ? "Resumo não verificado" : hasOldCoreRead ? `${freshness?.sources_stale} resumo(s) antigo(s)` : hasRecentCoreRead ? "Leitura recente do Core" : "Resumo agregado"}</StatusBadge></div>
+    <div className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-4">{sources.map((source) => { const sourceFreshness = freshness?.by_source[source.key]; return <article key={source.label} className="min-h-32 bg-card p-4"><div className="flex items-baseline justify-between gap-3"><h3 className="text-sm font-semibold">{source.label}</h3><time className="font-mono text-[10px] tabular-nums text-muted-foreground" dateTime={source.observedAt ?? undefined}>{formatTimestamp(source.observedAt ?? null)}</time></div>{sourceFreshness && <StatusBadge variant={sourceFreshness.is_stale ? "warning" : "neutral"} className="mt-3 gap-1.5"><Clock3 className="size-3" aria-hidden="true" />{sourceFreshness.is_stale ? "Leitura antiga" : "Leitura recente"} · {sourceFreshness.age_hours} h</StatusBadge>}<dl className="mt-4 grid grid-cols-2 gap-3">{source.values.map(([label, metric]) => <div key={label}><dd className="font-mono text-xl font-semibold tabular-nums">{metric}</dd><dt className="mt-1 text-[11px] leading-tight text-muted-foreground">{label}</dt></div>)}</dl></article>; })}</div>
     {summary.rolling_migration && <div className="grid divide-y border-t sm:grid-cols-3 sm:divide-x sm:divide-y-0"><article className="p-4"><h3 className="text-sm font-semibold">Nexfy no Core</h3><p className="mt-3 font-mono text-xl font-semibold tabular-nums">{summary.rolling_migration.nexfy_linked_identities}</p><p className="mt-1 text-[11px] text-muted-foreground">{summary.rolling_migration.nexfy_active_entitlements} acessos ativos · {summary.rolling_migration.nexfy_entitlement_exceptions} exceções</p></article><article className="p-4"><h3 className="text-sm font-semibold">Apps no Core</h3><p className="mt-3 font-mono text-xl font-semibold tabular-nums">{summary.rolling_migration.apps_ofertas_linked_identities}</p><p className="mt-1 text-[11px] text-muted-foreground">{summary.rolling_migration.apps_ofertas_active_accesses} acessos ativos projetados</p></article><article className="p-4"><h3 className="text-sm font-semibold">Cursos no Core</h3><p className="mt-3 font-mono text-xl font-semibold tabular-nums">{summary.rolling_migration.plataforma_cursos_linked_identities}</p><p className="mt-1 text-[11px] text-muted-foreground">{summary.rolling_migration.plataforma_cursos_active_accesses} acessos ativos projetados</p></article></div>}
     {unavailableCode && <p className="border-t px-4 py-3 font-mono text-xs text-muted-foreground">Diagnóstico seguro do Core: {unavailableCode}</p>}
   </section>;
@@ -426,8 +429,8 @@ function BlockersPanel({ offers, generatedAt }: { offers: OperationOffer[]; gene
 function SourcesHealth({ sources }: { sources: OperationSource[] }) {
   return (
     <section aria-labelledby="operation-sources" className="rounded-lg border bg-card p-4 sm:p-6">
-      <SectionHeading id="operation-sources" eyebrow="Fontes" title="Saúde da leitura" description="Presença local não é prova de conexão externa; estados não verificados permanecem neutros." />
-      <ul className="mt-5 space-y-2 md:hidden" aria-label="Saúde das fontes">
+      <SectionHeading id="operation-sources" eyebrow="Fontes" title="Estado da leitura" description="A idade descreve o resumo disponível, não a saúde externa. Estados não verificados permanecem neutros." />
+      <ul className="mt-5 space-y-2 md:hidden" aria-label="Estado das leituras">
         {sources.map((source) => {
           const meta = SOURCE_META[source.state];
           const Icon = meta.icon;

@@ -15,6 +15,7 @@ function summary({ freshness = true, spy = true } = {}) {
       quiz_analytics: source("quiz-analytics"),
       apps_ofertas: source("apps-ofertas"),
       plataforma_cursos: source("plataforma-cursos"),
+      monitoramento_ngv: source("monitoramento-ngv"),
     },
     freshness: freshness ? {
       by_source: {
@@ -24,6 +25,7 @@ function summary({ freshness = true, spy = true } = {}) {
         quiz_analytics: { is_stale: false, age_hours: 2, generated_at: generatedAt },
         apps_ofertas: { is_stale: false, age_hours: 2, generated_at: generatedAt },
         plataforma_cursos: { is_stale: false, age_hours: 2, generated_at: generatedAt },
+        monitoramento_ngv: { is_stale: false, age_hours: 2, generated_at: generatedAt },
       },
     } : null,
   };
@@ -35,9 +37,10 @@ test("flag desligada não acrescenta fonte nem muda a leitura Neon", () => {
 
 test("Core pronto normaliza cada fonte e stale nunca vira operante", () => {
   const states = coreSourceStates(summary(), { enabled: true });
-  assert.equal(states.length, 6);
+  assert.equal(states.length, 7);
   assert.equal(states.find((item) => item.id === "core-spy")?.state, "DEGRADED");
   assert.equal(states.find((item) => item.id === "core-banco-ngv")?.state, "OPERANT");
+  assert.equal(states.find((item) => item.id === "core-monitoramento-ngv")?.state, "OPERANT");
   assert.equal(coreSourceStatesHaveStaleEvidence(states), true);
   assert.ok(states.every((item) => item.last_read_at === generatedAt));
 });

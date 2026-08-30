@@ -5,6 +5,7 @@ export const SYSTEM_IDS = [
   "spy",
   "quiz",
   "nexfy",
+  "monitoramento",
 ] as const;
 
 export type SystemId = (typeof SYSTEM_IDS)[number];
@@ -43,6 +44,11 @@ export const SYSTEM_DIRECTORY: Record<SystemId, {
     title: "Nexfy",
     eyebrow: "Operação separada",
     description: "Visão de projetos e produtos; financeiro permanece fora desta onda.",
+  },
+  monitoramento: {
+    title: "Monitoramento NGV",
+    eyebrow: "Domínios e infraestrutura",
+    description: "Resumo agregado de projetos, domínios, assinaturas e infraestrutura monitorados.",
   },
 };
 

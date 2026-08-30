@@ -15,6 +15,7 @@ import {
   RadioTower,
   Rocket,
   ScanSearch,
+  ServerCog,
   Settings,
   ShieldCheck,
   ShoppingCart,
@@ -71,6 +72,7 @@ const systemNavItems: NavItem[] = [
   { title: "Spy Analytics", href: "/sistemas/spy", icon: ScanSearch },
   { title: "Quiz Analytics", href: "/sistemas/quiz", icon: BarChart3 },
   { title: "Nexfy", href: "/sistemas/nexfy", icon: PieChart },
+  { title: "Monitoramento", href: "/sistemas/monitoramento", icon: ServerCog },
 ];
 
 export function AppSidebar() {
@@ -120,7 +122,7 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       render={<Link href={item.href} />}
                       isActive={pathname === item.href}
-                      className="group/item h-9 rounded-md px-3 transition-all duration-150 ease-in-out"
+                      className="group/item h-11 rounded-md px-3 transition-all duration-150 ease-in-out md:h-9"
                     >
                       <item.icon className="h-4 w-4 shrink-0 transition-transform duration-150 group-hover/item:scale-110" />
                       <span className="text-sm">{item.title}</span>

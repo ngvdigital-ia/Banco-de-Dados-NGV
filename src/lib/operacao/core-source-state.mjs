@@ -12,6 +12,7 @@ export const CORE_OPERATION_SOURCES = Object.freeze([
   { key: "quiz_analytics", id: "core-quiz", label: "Quiz · Core" },
   { key: "apps_ofertas", id: "core-apps", label: "Apps Ofertas · Core" },
   { key: "plataforma_cursos", id: "core-cursos", label: "Cursos · Core" },
+  { key: "monitoramento_ngv", id: "core-monitoramento-ngv", label: "Monitoramento · Core" },
 ]);
 
 /** @returns {CoreOperationSource} */
@@ -21,8 +22,8 @@ function disabledOrUnavailable(summary) {
       id: "ngv-core",
       label: "NGV Core",
       state: "UNAVAILABLE",
-      coverage: "6 fontes",
-      detail: "Leitura central indisponível; fontes locais foram preservadas.",
+      coverage: "7 fontes",
+      detail: "Leitura do resumo agregado central indisponível; fontes locais foram preservadas.",
       last_read_at: null,
     };
   }
@@ -30,8 +31,8 @@ function disabledOrUnavailable(summary) {
     id: "ngv-core",
     label: "NGV Core",
     state: "UNVERIFIED",
-    coverage: "6 fontes",
-    detail: "Leitura central não habilitada neste ambiente.",
+    coverage: "7 fontes",
+    detail: "Leitura do resumo agregado central não habilitada neste ambiente.",
     last_read_at: null,
   };
 }
@@ -50,7 +51,7 @@ export function coreSourceStates(summary, { enabled = false } = {}) {
         label,
         state: "UNVERIFIED",
         coverage: "PENDING",
-        detail: "O Core não recebeu uma projeção desta fonte.",
+        detail: "O Core não recebeu um resumo agregado desta fonte.",
         last_read_at: null,
       };
     }
@@ -59,8 +60,8 @@ export function coreSourceStates(summary, { enabled = false } = {}) {
         id,
         label,
         state: "UNVERIFIED",
-        coverage: "Core · ready",
-        detail: "O Core recebeu a fonte, mas não informou freshness por fonte.",
+        coverage: "Core · resumo agregado",
+        detail: "O Core recebeu o resumo agregado, mas não informou a idade dessa leitura.",
         last_read_at: source.generated_at ?? null,
       };
     }
@@ -68,10 +69,10 @@ export function coreSourceStates(summary, { enabled = false } = {}) {
       id,
       label,
       state: freshness.is_stale ? "DEGRADED" : "OPERANT",
-      coverage: "Core · ready",
+      coverage: "Core · resumo agregado",
       detail: freshness.is_stale
-        ? `Projeção do Core desatualizada (${freshness.age_hours} h).`
-        : `Saúde e freshness confirmadas pelo Core (${freshness.age_hours} h).`,
+        ? `Resumo agregado do Core antigo (${freshness.age_hours} h).`
+        : `Leitura recente do resumo agregado no Core (${freshness.age_hours} h).`,
       last_read_at: freshness.generated_at ?? source.generated_at ?? null,
     };
   });

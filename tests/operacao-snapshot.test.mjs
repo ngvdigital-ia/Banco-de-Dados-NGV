@@ -381,7 +381,7 @@ test("sidebar e command palette preservam Dashboard e condicionam Operação à 
 
 test("UI de operação preserva reflow mobile, IDs e alvos de 44px", async () => {
   const sources = `${await readFile(VIEW_PATH, "utf8")}\n${await readFile(ERROR_PATH, "utf8")}`;
-  assert.match(sources, /aria-label="Saúde das fontes"/);
+  assert.match(sources, /aria-label="Estado das leituras"/);
   assert.match(sources, /md:hidden/);
   assert.match(sources, /hidden md:block/);
   assert.equal(sources.includes("min-w-[520px]"), false);
