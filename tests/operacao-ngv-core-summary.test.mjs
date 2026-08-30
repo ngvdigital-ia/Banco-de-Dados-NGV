@@ -33,11 +33,12 @@ test("flag desligada não faz fetch", async () => {
   assert.equal(calls, 0);
 });
 
-test("GET usa somente o cabeçalho privado e valida os seis agregados", async () => {
+test("GET usa somente o cabeçalho privado e preserva Monitoramento PENDING no legado", async () => {
   let captured;
   const result = await fetchNgvCoreOperationalSummary({ config: { enabled: true, writerKey: "writer" }, fetchImpl: async (url, init) => { captured = { url, init }; return response(body); } });
   assert.equal(result.kind, "success");
-  assert.deepEqual(Object.keys(result.sources).sort(), ["apps_ofertas", "banco_ngv", "nexfy", "plataforma_cursos", "quiz_analytics", "spy"]);
+  assert.deepEqual(Object.keys(result.sources).sort(), ["apps_ofertas", "banco_ngv", "monitoramento_ngv", "nexfy", "plataforma_cursos", "quiz_analytics", "spy"]);
+  assert.equal(result.sources.monitoramento_ngv, null);
   assert.equal(captured.url, NGV_CORE_OPERATIONAL_SUMMARY_URL);
   assert.equal(captured.init.method, "GET");
   assert.equal(captured.init.cache, "no-store");
@@ -123,7 +124,7 @@ test("aceita freshness estrito na versão 3 sem romper o contrato legado", () =>
   }), { code: "RESPONSE_SCHEMA_INVALID" });
 });
 
-test("aceita generated_at_meaning (v4) mantendo o legado v3 sem quebrar", () => {
+test("aceita v4 completa com sete fontes, freshness e os nove contadores autorizados de Monitoramento", () => {
   const rolling = {
     apps_ofertas_linked_identities: 2,
     apps_ofertas_active_accesses: 3,
@@ -142,41 +143,104 @@ test("aceita generated_at_meaning (v4) mantendo o legado v3 sem quebrar", () => 
       quiz_analytics: { is_stale: false, age_hours: 3, generated_at: timestamp },
       apps_ofertas: { is_stale: false, age_hours: 4, generated_at: timestamp },
       plataforma_cursos: { is_stale: false, age_hours: 5, generated_at: timestamp },
+      monitoramento_ngv: { is_stale: false, age_hours: 6, generated_at: timestamp },
     },
     queried_at: timestamp,
     sources_stale: 1,
-    sources_total: 6,
+    sources_total: 7,
     stale_sources: ["spy"],
     stale_threshold_hours: 24,
     oldest_source_age_hours: 27.5,
   };
 
-  // resposta v4 completa (6 chaves, com generated_at_meaning) → aceita, e freshness chega no retorno
+  const monitoramento = source("monitoramento-ngv", {
+    projects_total: 38,
+    projects_active: 31,
+    projects_attention: 7,
+    domains_total: 64,
+    domains_expiring_30d: 4,
+    domains_pending_decision: 2,
+    subscriptions_active: 11,
+    infra_resources_total: 19,
+    infra_resources_attention: 3,
+  });
+  const v4Summary = {
+    ...body.summary,
+    schema_version: 4,
+    sources: { ...body.summary.sources, monitoramento_ngv: monitoramento },
+    rolling_migration: rolling,
+    freshness,
+    generated_at_meaning: "hora da última leitura consolidada",
+  };
+
+  // v4 completa só aceita as sete fontes e os nove contadores agregados autorizados.
   const v4 = normalizeNgvCoreOperationalSummary({
     ok: true,
-    summary: { ...body.summary, schema_version: 3, rolling_migration: rolling, freshness, generated_at_meaning: "hora da última leitura consolidada" },
+    summary: v4Summary,
   });
   assert.equal(v4.kind, "success");
   assert.deepEqual(v4.freshness, freshness);
+  assert.deepEqual(v4.sources.monitoramento_ngv, monitoramento);
 
   // resposta v3 antiga (5 chaves, sem generated_at_meaning) → continua aceita
   const v3 = normalizeNgvCoreOperationalSummary({
     ok: true,
-    summary: { ...body.summary, schema_version: 3, rolling_migration: rolling, freshness },
+    summary: {
+      ...body.summary,
+      schema_version: 3,
+      rolling_migration: rolling,
+      freshness: {
+        ...freshness,
+        by_source: Object.fromEntries(Object.entries(freshness.by_source).filter(([key]) => key !== "monitoramento_ngv")),
+        sources_total: 6,
+      },
+    },
   });
   assert.equal(v3.kind, "success");
-  assert.deepEqual(v3.freshness, freshness);
+  assert.equal(v3.sources.monitoramento_ngv, null);
 
   // resposta com chave desconhecida → continua rejeitada
   assert.throws(() => normalizeNgvCoreOperationalSummary({
     ok: true,
-    summary: { ...body.summary, schema_version: 3, rolling_migration: rolling, freshness, generated_at_meaning: "x", unexpected: true },
+    summary: { ...v4Summary, unexpected: true },
   }), { code: "RESPONSE_SCHEMA_INVALID" });
 
-  // generated_at_meaning com tipo errado (número em vez de texto) → rejeitada
+  // Campo textual com tipo errado continua inválido.
   assert.throws(() => normalizeNgvCoreOperationalSummary({
     ok: true,
-    summary: { ...body.summary, schema_version: 3, rolling_migration: rolling, freshness, generated_at_meaning: 123 },
+    summary: { ...v4Summary, generated_at_meaning: 123 },
+  }), { code: "RESPONSE_SCHEMA_INVALID" });
+
+  // Uma fonte Monitoramento só pode conter os nove contadores agregados permitidos.
+  for (const sensitiveField of ["project_name", "domain_url"]) {
+    assert.throws(() => normalizeNgvCoreOperationalSummary({
+      ok: true,
+      summary: { ...v4Summary, sources: { ...v4Summary.sources, monitoramento_ngv: { ...monitoramento, [sensitiveField]: "privado" } } },
+    }), { code: "RESPONSE_SCHEMA_INVALID" });
+  }
+  assert.throws(() => normalizeNgvCoreOperationalSummary({
+    ok: true,
+    summary: { ...v4Summary, sources: { ...v4Summary.sources, unexpected_source: null } },
+  }), { code: "RESPONSE_SCHEMA_INVALID" });
+  assert.throws(() => normalizeNgvCoreOperationalSummary({
+    ok: true,
+    summary: { ...v4Summary, freshness: { ...freshness, sources_total: 6 } },
+  }), { code: "RESPONSE_SCHEMA_INVALID" });
+  assert.throws(() => normalizeNgvCoreOperationalSummary({
+    ok: true,
+    summary: { ...v4Summary, freshness: { ...freshness, stale_sources: ["unknown"] } },
+  }), { code: "RESPONSE_SCHEMA_INVALID" });
+  assert.throws(() => normalizeNgvCoreOperationalSummary({
+    ok: true,
+    summary: { ...v4Summary, freshness: { ...freshness, sources_stale: 0, all_fresh: true } },
+  }), { code: "RESPONSE_SCHEMA_INVALID" });
+  assert.throws(() => normalizeNgvCoreOperationalSummary({
+    ok: true,
+    summary: { ...v4Summary, freshness: { ...freshness, by_source: { ...freshness.by_source, monitoramento_ngv: { ...freshness.by_source.monitoramento_ngv, is_stale: true } } } },
+  }), { code: "RESPONSE_SCHEMA_INVALID" });
+  assert.throws(() => normalizeNgvCoreOperationalSummary({
+    ok: true,
+    summary: { ...v4Summary, freshness: { ...freshness, sources_stale: 2, stale_sources: ["spy", "spy"] } },
   }), { code: "RESPONSE_SCHEMA_INVALID" });
 });
 

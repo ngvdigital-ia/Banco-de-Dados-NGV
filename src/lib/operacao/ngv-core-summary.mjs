@@ -19,6 +19,8 @@ const isIso = (value) => typeof value === "string" && value.length <= 64
   && !Number.isNaN(Date.parse(value));
 const isCount = (value) => Number.isInteger(value) && value >= 0 && value <= 1_000_000_000;
 const isAgeHours = (value) => typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1_000_000_000;
+const LEGACY_SOURCE_KEYS = Object.freeze(["spy", "nexfy", "banco_ngv", "quiz_analytics", "apps_ofertas", "plataforma_cursos"]);
+const V4_SOURCE_KEYS = Object.freeze([...LEGACY_SOURCE_KEYS, "monitoramento_ngv"]);
 
 function configFrom(options = {}) {
   const timeout = Number(options.timeoutMs ?? NGV_CORE_OPERATIONAL_SUMMARY_TIMEOUT_MS);
@@ -68,14 +70,17 @@ function source(value, keys, expectedSource) {
 export function normalizeNgvCoreOperationalSummary(body) {
   if (!isObject(body) || Object.keys(body).length !== 2 || body.ok !== true || !isObject(body.summary)) fail("RESPONSE_SCHEMA_INVALID");
   const summary = body.summary;
-  const hasRollingMigration = [2, 3].includes(summary.schema_version);
-  const hasFreshness = summary.schema_version === 3 && Object.hasOwn(summary, "freshness");
-  const hasGeneratedAtMeaning = summary.schema_version === 3 && Object.hasOwn(summary, "generated_at_meaning");
-  const summaryKeyCount = hasFreshness ? (hasGeneratedAtMeaning ? 6 : 5) : hasRollingMigration ? 4 : 3;
-  if (Object.keys(summary).length !== summaryKeyCount || ![1, 2, 3].includes(summary.schema_version) || !isIso(summary.generated_at) || !isObject(summary.sources)
-    || (hasGeneratedAtMeaning && typeof summary.generated_at_meaning !== "string")) fail("RESPONSE_SCHEMA_INVALID");
+  const schemaVersion = summary.schema_version;
+  const isV4 = schemaVersion === 4;
+  const hasRollingMigration = [2, 3, 4].includes(schemaVersion);
+  const hasFreshness = [3, 4].includes(schemaVersion) && Object.hasOwn(summary, "freshness");
+  const hasGeneratedAtMeaning = [3, 4].includes(schemaVersion) && Object.hasOwn(summary, "generated_at_meaning");
+  const summaryKeyCount = isV4 ? 6 : hasFreshness ? (hasGeneratedAtMeaning ? 6 : 5) : hasRollingMigration ? 4 : 3;
+  if (Object.keys(summary).length !== summaryKeyCount || ![1, 2, 3, 4].includes(schemaVersion) || !isIso(summary.generated_at) || !isObject(summary.sources)
+    || (hasGeneratedAtMeaning && typeof summary.generated_at_meaning !== "string")
+    || (isV4 && (!hasFreshness || !hasGeneratedAtMeaning))) fail("RESPONSE_SCHEMA_INVALID");
   const sources = summary.sources;
-  const sourceKeys = ["spy", "nexfy", "banco_ngv", "quiz_analytics", "apps_ofertas", "plataforma_cursos"];
+  const sourceKeys = isV4 ? V4_SOURCE_KEYS : LEGACY_SOURCE_KEYS;
   if (Object.keys(sources).length !== sourceKeys.length || !sourceKeys.every((key) => Object.hasOwn(sources, key))) fail("RESPONSE_SCHEMA_INVALID");
 
   const spy = source(sources.spy, ["schema_version", "source", "status", "generated_at", "window_days", "offers_observed", "readings_observed", "distinct_reading_days", "ready_to_model"], "spy-analytics");
@@ -84,6 +89,9 @@ export function normalizeNgvCoreOperationalSummary(body) {
   const quizAnalytics = source(sources.quiz_analytics, ["schema_version", "source", "status", "generated_at", "project_count", "awaiting_deploy_count", "installed_count", "receiving_events_count", "projects_with_offer_id_count"], "quiz-analytics");
   const appsOfertas = source(sources.apps_ofertas, ["schema_version", "source", "status", "generated_at", "offers_configured", "modules_configured", "lessons_configured", "purchases_total", "access_active", "access_revoked", "access_refunded", "access_chargeback", "product_grants_active", "latest_purchase_at"], "apps-ofertas");
   const plataformaCursos = source(sources.plataforma_cursos, ["schema_version", "source", "status", "generated_at", "courses_total", "entitlements_total", "entitlements_active", "entitlements_refunded", "entitlements_cancelled", "progress_total", "progress_completed", "latest_entitlement_at", "latest_progress_at"], "plataforma-cursos");
+  const monitoramentoNgv = isV4
+    ? source(sources.monitoramento_ngv, ["schema_version", "source", "status", "generated_at", "projects_total", "projects_active", "projects_attention", "domains_total", "domains_expiring_30d", "domains_pending_decision", "subscriptions_active", "infra_resources_total", "infra_resources_attention"], "monitoramento-ngv")
+    : null;
 
   const invalidSpy = spy && (spy.window_days !== 30 || !isCount(spy.offers_observed) || !isCount(spy.readings_observed) || !isCount(spy.distinct_reading_days) || !isCount(spy.ready_to_model));
   const invalidNexfy = nexfy && ![nexfy.active_projects, nexfy.inactive_projects, nexfy.active_products, nexfy.inactive_products, nexfy.project_product_links].every(isCount);
@@ -96,8 +104,9 @@ export function normalizeNgvCoreOperationalSummary(body) {
   const invalidPlataformaCursos = plataformaCursos && (![plataformaCursos.courses_total, plataformaCursos.entitlements_total, plataformaCursos.entitlements_active, plataformaCursos.entitlements_refunded, plataformaCursos.entitlements_cancelled, plataformaCursos.progress_total, plataformaCursos.progress_completed].every(isCount)
     || !(plataformaCursos.latest_entitlement_at === null || isIso(plataformaCursos.latest_entitlement_at))
     || !(plataformaCursos.latest_progress_at === null || isIso(plataformaCursos.latest_progress_at)));
+  const invalidMonitoramentoNgv = monitoramentoNgv && ![monitoramentoNgv.projects_total, monitoramentoNgv.projects_active, monitoramentoNgv.projects_attention, monitoramentoNgv.domains_total, monitoramentoNgv.domains_expiring_30d, monitoramentoNgv.domains_pending_decision, monitoramentoNgv.subscriptions_active, monitoramentoNgv.infra_resources_total, monitoramentoNgv.infra_resources_attention].every(isCount);
   const rolling = hasRollingMigration ? summary.rolling_migration : null;
-  const rollingKeys = summary.schema_version === 3
+  const rollingKeys = [3, 4].includes(schemaVersion)
     ? ["apps_ofertas_linked_identities", "apps_ofertas_active_accesses", "plataforma_cursos_linked_identities", "plataforma_cursos_active_accesses", "nexfy_linked_identities", "nexfy_active_entitlements", "nexfy_entitlement_exceptions"]
     : ["apps_ofertas_linked_identities", "apps_ofertas_active_accesses", "plataforma_cursos_linked_identities", "plataforma_cursos_active_accesses", "nexfy_linked_identities", "nexfy_active_accesses"];
   if (hasRollingMigration && (!isObject(rolling) || Object.keys(rolling).length !== rollingKeys.length || !rollingKeys.every((key) => Object.hasOwn(rolling, key)) || !rollingKeys.every((key) => isCount(rolling[key])))) fail("RESPONSE_SCHEMA_INVALID");
@@ -111,22 +120,27 @@ export function normalizeNgvCoreOperationalSummary(body) {
       return isObject(sourceFreshness) && Object.keys(sourceFreshness).length === sourceFreshnessKeys.length && sourceFreshnessKeys.every((sourceKey) => Object.hasOwn(sourceFreshness, sourceKey))
         && typeof sourceFreshness.is_stale === "boolean" && isAgeHours(sourceFreshness.age_hours) && isIso(sourceFreshness.generated_at);
     })
-    || !isIso(freshness.queried_at) || !isCount(freshness.sources_stale) || !isCount(freshness.sources_total) || !Array.isArray(freshness.stale_sources) || !freshness.stale_sources.every((sourceName) => typeof sourceName === "string")
+    || !isIso(freshness.queried_at) || !isCount(freshness.sources_stale) || !isCount(freshness.sources_total) || !Array.isArray(freshness.stale_sources) || !freshness.stale_sources.every((sourceName) => typeof sourceName === "string" && (!isV4 || sourceKeys.includes(sourceName)))
     || !isCount(freshness.stale_threshold_hours) || !isAgeHours(freshness.oldest_source_age_hours))) fail("RESPONSE_SCHEMA_INVALID");
-  if (invalidSpy || invalidNexfy || invalidBanco || invalidQuiz || invalidAppsOfertas || invalidPlataformaCursos) fail("RESPONSE_SCHEMA_INVALID");
+  if (isV4 && (freshness.sources_total !== sourceKeys.length
+    || new Set(freshness.stale_sources).size !== freshness.stale_sources.length
+    || freshness.sources_stale !== freshness.stale_sources.length
+    || freshness.all_fresh !== (freshness.sources_stale === 0)
+    || !sourceKeys.every((key) => freshness.stale_sources.includes(key) === freshness.by_source[key].is_stale))) fail("RESPONSE_SCHEMA_INVALID");
+  if (invalidSpy || invalidNexfy || invalidBanco || invalidQuiz || invalidAppsOfertas || invalidPlataformaCursos || invalidMonitoramentoNgv) fail("RESPONSE_SCHEMA_INVALID");
 
   const normalizedRolling = summary.schema_version === 2 && rolling
     ? { ...rolling, nexfy_active_entitlements: rolling.nexfy_active_accesses, nexfy_entitlement_exceptions: 0 }
     : rolling;
-  return { kind: "success", generated_at: summary.generated_at, rolling_migration: normalizedRolling, freshness, sources: { spy, nexfy, banco_ngv: bancoNgv, quiz_analytics: quizAnalytics, apps_ofertas: appsOfertas, plataforma_cursos: plataformaCursos } };
+  return { kind: "success", generated_at: summary.generated_at, rolling_migration: normalizedRolling, freshness, sources: { spy, nexfy, banco_ngv: bancoNgv, quiz_analytics: quizAnalytics, apps_ofertas: appsOfertas, plataforma_cursos: plataformaCursos, monitoramento_ngv: monitoramentoNgv } };
 }
 
 function unavailable(code = "SUMMARY_UNAVAILABLE") {
-  return { kind: "unavailable", code, generated_at: null, rolling_migration: null, freshness: null, sources: { spy: null, nexfy: null, banco_ngv: null, quiz_analytics: null, apps_ofertas: null, plataforma_cursos: null } };
+  return { kind: "unavailable", code, generated_at: null, rolling_migration: null, freshness: null, sources: { spy: null, nexfy: null, banco_ngv: null, quiz_analytics: null, apps_ofertas: null, plataforma_cursos: null, monitoramento_ngv: null } };
 }
 
 export function emptyNgvCoreOperationalSummary() {
-  return { kind: "disabled", code: "SUMMARY_DISABLED", generated_at: null, rolling_migration: null, freshness: null, sources: { spy: null, nexfy: null, banco_ngv: null, quiz_analytics: null, apps_ofertas: null, plataforma_cursos: null } };
+  return { kind: "disabled", code: "SUMMARY_DISABLED", generated_at: null, rolling_migration: null, freshness: null, sources: { spy: null, nexfy: null, banco_ngv: null, quiz_analytics: null, apps_ofertas: null, plataforma_cursos: null, monitoramento_ngv: null } };
 }
 
 export async function fetchNgvCoreOperationalSummary(options = {}) {
