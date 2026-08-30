@@ -5,6 +5,7 @@ import { requireModuleAccess } from "@/lib/sistemas/authz";
 import { SYSTEM_DIRECTORY } from "@/lib/operacao/system-directory";
 import { fetchQuizModuleAnalytics } from "@/lib/sistemas/quiz/analytics-client.mjs";
 import { QuizAnalyticsView } from "@/components/sistemas/quiz/quiz-analytics-view";
+import { DEFAULT_QUIZ_FUNNEL, parseQuizFunnel } from "@/components/sistemas/quiz/funnel";
 import { parsePeriodKey, resolvePeriod } from "@/components/sistemas/quiz/period";
 
 // Rota estática, irmã do catch-all `[system]/page.tsx` (o Next.js App Router
@@ -43,9 +44,17 @@ export default async function QuizModulePage({
   const periodParam = typeof params.period === "string" ? params.period : undefined;
   const customFromParam = typeof params.from === "string" ? params.from : undefined;
   const customToParam = typeof params.to === "string" ? params.to : undefined;
+  const funnelParam = typeof params.funnel === "string" ? params.funnel : undefined;
+  const parsedFunnel = parseQuizFunnel(funnelParam);
+  const funnelId = parsedFunnel ?? DEFAULT_QUIZ_FUNNEL;
   const range = resolvePeriod(periodParam, customFromParam, customToParam);
 
-  const result = await fetchQuizModuleAnalytics({ from: range.from ?? undefined, to: range.to ?? undefined });
+  const result = await fetchQuizModuleAnalytics({
+    projectId: funnelId,
+    funnelId,
+    from: range.from ?? undefined,
+    to: range.to ?? undefined,
+  });
 
   return (
     <QuizAnalyticsView
@@ -53,6 +62,8 @@ export default async function QuizModulePage({
       period={parsePeriodKey(periodParam)}
       customFrom={customFromParam}
       customTo={customToParam}
+      activeFunnel={funnelId}
+      invalidFunnelRequested={parsedFunnel === null}
     />
   );
 }

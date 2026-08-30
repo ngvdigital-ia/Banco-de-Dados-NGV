@@ -19,9 +19,9 @@ export function JourneysPanel({ journeys }: { journeys: QuizModuleAnalyticsData[
 
       <div className="rounded-lg border bg-card">
         <div className="border-b p-4">
-          <h2 className="text-sm font-semibold">Jornadas entre páginas</h2>
+          <h2 className="text-sm font-semibold">Tráfego por página</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Continuidade anônima entre presell, VSL e quiz — só entra quando marcado com <code>data-nga-journey-link</code>.
+            Quantas jornadas anônimas chegaram à presell, VSL e demais páginas deste funil.
           </p>
         </div>
         {journeys.pages.length === 0 ? (

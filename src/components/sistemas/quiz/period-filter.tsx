@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { DEFAULT_PERIOD, PERIOD_PRESETS, toDateInputValue, type PeriodKey } from "./period";
+import { buildQuizPeriodHref } from "./funnel";
+import { PERIOD_PRESETS, toDateInputValue, type PeriodKey } from "./period";
 
 const dateInputClass = cn(
   "h-8 rounded-md border border-input bg-transparent px-2 text-xs text-foreground outline-none transition-colors",
@@ -16,10 +17,12 @@ export function PeriodFilter({
   current,
   customFrom,
   customTo,
+  funnelId,
 }: {
   current: PeriodKey;
   customFrom?: string;
   customTo?: string;
+  funnelId: string;
 }) {
   const today = toDateInputValue(new Date());
 
@@ -28,7 +31,7 @@ export function PeriodFilter({
       <nav className="flex flex-wrap gap-1.5" aria-label="Selecionar período">
         {PERIOD_PRESETS.map((preset) => {
           const isActive = preset.key === current;
-          const href = preset.key === DEFAULT_PERIOD ? "/sistemas/quiz" : `/sistemas/quiz?period=${preset.key}`;
+          const href = buildQuizPeriodHref(preset.key, funnelId);
           return (
             <Link
               key={preset.key}
@@ -50,6 +53,7 @@ export function PeriodFilter({
       {current === "custom" ? (
         <form method="get" action="/sistemas/quiz" className="flex flex-wrap items-end gap-2">
           <input type="hidden" name="period" value="custom" />
+          <input type="hidden" name="funnel" value={funnelId} />
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
             De
             <input type="date" name="from" defaultValue={customFrom ?? today} className={dateInputClass} />

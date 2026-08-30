@@ -8,6 +8,24 @@ import {
   resolvePeriod,
   toDateInputValue,
 } from "../src/components/sistemas/quiz/period.ts";
+import {
+  DEFAULT_QUIZ_FUNNEL,
+  buildQuizPeriodHref,
+  parseQuizFunnel,
+} from "../src/components/sistemas/quiz/funnel.ts";
+
+test("filtro de funil usa RoxyFox por padrão e rejeita valor fora do slug canônico", () => {
+  assert.equal(parseQuizFunnel(undefined), DEFAULT_QUIZ_FUNNEL);
+  assert.equal(parseQuizFunnel("roxyfox"), "roxyfox");
+  assert.equal(parseQuizFunnel("one-meal-blood-sugar-fix"), "one-meal-blood-sugar-fix");
+  assert.equal(parseQuizFunnel("Roxy Fox"), null);
+  assert.equal(parseQuizFunnel("roxyfox?project=outro"), null);
+});
+
+test("trocar período preserva o funil selecionado na URL", () => {
+  assert.equal(buildQuizPeriodHref("today", "roxyfox"), "/sistemas/quiz?funnel=roxyfox");
+  assert.equal(buildQuizPeriodHref("30", "roxyfox"), "/sistemas/quiz?funnel=roxyfox&period=30");
+});
 
 test("PERIOD_PRESETS inclui as 7 opções do original (dashboard.js), 'Personalizado' por último", () => {
   assert.equal(PERIOD_PRESETS.length, 7);

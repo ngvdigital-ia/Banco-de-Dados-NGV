@@ -66,6 +66,7 @@ export interface QuizJourneys {
 
 export interface QuizModuleAnalyticsData {
   generatedAt: string;
+  filter: { from: string | null; to: string | null; projectId: string; funnelId: string };
   summary: { totalSessions: number; started: number; checkoutClicks: number; checkoutRate: number };
   funnel: QuizFunnelStep[];
   responses: QuizResponseQuestion[];

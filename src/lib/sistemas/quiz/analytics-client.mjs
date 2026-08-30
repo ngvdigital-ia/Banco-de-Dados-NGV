@@ -138,6 +138,20 @@ function validateSummary(input) {
   return { totalSessions: total_sessions, started, checkoutClicks: checkout_clicks, checkoutRate: checkout_rate };
 }
 
+function validateFilter(input) {
+  if (!isPlainObject(input)) fail("RESPONSE_SCHEMA_INVALID");
+  const { from, to, project_id, funnel_id } = input;
+  if (
+    !(from === null || isIsoString(from)) ||
+    !(to === null || isIsoString(to)) ||
+    !isNonEmptyString(project_id) ||
+    !isNonEmptyString(funnel_id)
+  ) {
+    fail("RESPONSE_SCHEMA_INVALID");
+  }
+  return { from, to, projectId: project_id, funnelId: funnel_id };
+}
+
 function validateFunnelRow(input) {
   if (!isPlainObject(input)) fail("RESPONSE_SCHEMA_INVALID");
   const { id, label, count, overall_rate, prev_pass_rate, prev_drop_rate, prev_drop_count } = input;
@@ -254,13 +268,14 @@ function validateJourneys(input) {
 
 export function parseQuizModuleAnalyticsPayload(body) {
   if (!isPlainObject(body)) fail("RESPONSE_SCHEMA_INVALID");
-  const { generated_at, summary, funnel, responses, utm_campaigns, recent_events, journeys } = body;
+  const { generated_at, filter, summary, funnel, responses, utm_campaigns, recent_events, journeys } = body;
   if (!isIsoString(generated_at)) fail("RESPONSE_SCHEMA_INVALID");
   if (!Array.isArray(funnel) || !Array.isArray(responses) || !Array.isArray(utm_campaigns) || !Array.isArray(recent_events)) {
     fail("RESPONSE_SCHEMA_INVALID");
   }
   return {
     generatedAt: generated_at,
+    filter: validateFilter(filter),
     summary: validateSummary(summary),
     funnel: funnel.map(validateFunnelRow),
     responses: responses.map(validateResponseQuestion),
@@ -314,6 +329,12 @@ export async function fetchQuizModuleAnalytics(filters = {}, options = {}) {
         fail("RESPONSE_JSON_INVALID");
       }
       const data = parseQuizModuleAnalyticsPayload(body);
+      if (
+        (isNonEmptyString(filters.projectId) && data.filter.projectId !== filters.projectId) ||
+        (isNonEmptyString(filters.funnelId) && data.filter.funnelId !== filters.funnelId)
+      ) {
+        return errorResult("RESPONSE_FILTER_MISMATCH");
+      }
       return { kind: "success", generatedAt: data.generatedAt, data };
     } finally {
       clearTimeout(timer);

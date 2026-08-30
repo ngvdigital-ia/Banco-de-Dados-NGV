@@ -4,6 +4,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CampaignsPanel } from "./campaigns-panel";
 import { EventsPanel } from "./events-panel";
+import { FunnelFilter } from "./funnel-filter";
 import { FunnelPanel } from "./funnel-panel";
 import { formatTimestamp } from "./format";
 import { InstallerPanel } from "./installer-panel";
@@ -41,6 +42,8 @@ function errorMessage(code: string | undefined) {
       return "O Quiz retornou um erro interno.";
     case "REQUEST_INVALID":
       return "O Quiz recusou a requisição.";
+    case "RESPONSE_FILTER_MISMATCH":
+      return "O Quiz respondeu com dados de outro funil; a leitura foi bloqueada para não misturar resultados.";
     case "NETWORK_ERROR":
       return "Não foi possível alcançar o Quiz nesta leitura.";
     default:
@@ -53,11 +56,15 @@ export function QuizAnalyticsView({
   period,
   customFrom,
   customTo,
+  activeFunnel,
+  invalidFunnelRequested,
 }: {
   result: QuizModuleAnalyticsResult;
   period: PeriodKey;
   customFrom?: string;
   customTo?: string;
+  activeFunnel: string;
+  invalidFunnelRequested?: boolean;
 }) {
   if (result.kind === "not_configured") {
     return (
@@ -103,12 +110,20 @@ export function QuizAnalyticsView({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <PageHeader title="Quiz" description="Funil, respostas, eventos e jornadas — leitura direta do módulo Quiz." />
+        <PageHeader title="Quiz" description="Tráfego por página, funil, respostas e jornadas — leitura direta do módulo Quiz." />
         <StatusBadge variant="success">Leitura ao vivo</StatusBadge>
       </div>
 
+      <FunnelFilter
+        activeFunnel={activeFunnel}
+        period={period}
+        customFrom={customFrom}
+        customTo={customTo}
+        invalidRequested={invalidFunnelRequested}
+      />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PeriodFilter current={period} customFrom={customFrom} customTo={customTo} />
+        <PeriodFilter current={period} customFrom={customFrom} customTo={customTo} funnelId={activeFunnel} />
         <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
           <Clock3 className="size-3.5" aria-hidden="true" /> Gerado em {formatTimestamp(data.generatedAt)}
         </span>
@@ -116,7 +131,7 @@ export function QuizAnalyticsView({
 
       <SummaryCards summary={data.summary} />
 
-      <Tabs defaultValue="funnel">
+      <Tabs defaultValue="journeys">
         <TabsList>
           <TabsTrigger value="funnel">Funil</TabsTrigger>
           <TabsTrigger value="answers">Respostas</TabsTrigger>

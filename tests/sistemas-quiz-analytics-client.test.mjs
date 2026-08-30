@@ -76,6 +76,30 @@ test("payload válido: GET com Basic Auth, redirect manual, path correto, e resu
   assert.equal(result.data.responses[0].answers[0].pct, 75);
   assert.equal(result.data.recentEvents[0].sessionShort, "abcd1234");
   assert.equal(result.data.journeys.summary.crossPageJourneys, 3);
+  assert.deepEqual(result.data.filter, {
+    from: null,
+    to: null,
+    projectId: "p-1",
+    funnelId: "f-1",
+  });
+});
+
+test("resposta de outro projeto/funil falha fechado em vez de misturar dados", async () => {
+  const wrongProject = await fetchQuizModuleAnalytics(
+    { projectId: "roxyfox", funnelId: "roxyfox" },
+    { ...config, fetchImpl: async () => response(validBody) },
+  );
+  assert.deepEqual(wrongProject, { kind: "error", code: "RESPONSE_FILTER_MISMATCH", generatedAt: null, data: null });
+
+  const matching = {
+    ...validBody,
+    filter: { ...validBody.filter, project_id: "roxyfox", funnel_id: "roxyfox" },
+  };
+  const correctProject = await fetchQuizModuleAnalytics(
+    { projectId: "roxyfox", funnelId: "roxyfox" },
+    { ...config, fetchImpl: async () => response(matching) },
+  );
+  assert.equal(correctProject.kind, "success");
 });
 
 test("payload malformado (campo com tipo errado) falha fechado com RESPONSE_SCHEMA_INVALID", async () => {
@@ -85,6 +109,7 @@ test("payload malformado (campo com tipo errado) falha fechado com RESPONSE_SCHE
   );
   assert.throws(() => parseQuizModuleAnalyticsPayload({ ...validBody, funnel: "not-an-array" }), { code: "RESPONSE_SCHEMA_INVALID" });
   assert.throws(() => parseQuizModuleAnalyticsPayload({ ...validBody, generated_at: "not-a-date" }), { code: "RESPONSE_SCHEMA_INVALID" });
+  assert.throws(() => parseQuizModuleAnalyticsPayload({ ...validBody, filter: { ...validBody.filter, funnel_id: null } }), { code: "RESPONSE_SCHEMA_INVALID" });
 
   const result = await fetchQuizModuleAnalytics(
     {},
