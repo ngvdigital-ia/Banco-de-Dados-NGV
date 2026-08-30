@@ -104,25 +104,42 @@ test("publicação projeta endereço local sem declarar deploy externo", async (
   );
 });
 
-test("sidebar recebe flags serializadas pelo layout, sem ler env no browser", async () => {
+test("sidebar recebe somente flags transversais autorizadas pelo servidor", async () => {
   const [layout, sidebar] = await Promise.all([
     source("src/app/(dashboard)/layout.tsx"),
     source("src/components/app-sidebar.tsx"),
   ]);
+  assert.match(layout, /import \{ getCurrentUser \} from "@\/lib\/admin-auth"/);
+  assert.match(layout, /import \{ isOperationOperator \} from "@\/lib\/operacao\/authz"/);
+  assert.match(layout, /export default async function DashboardLayout/);
   assert.match(
     layout,
-    /isExecutionModuleEnabled=\{isOperationExecutionModuleEnabled\}/,
+    /const hasEnabledTransversalModule\s*=\s*\n?\s*isOperationExecutionModuleEnabled \|\| isOperationDeploymentDomainsModuleEnabled;/,
   );
   assert.match(
     layout,
-    /isPublicationModuleEnabled=\{isOperationDeploymentDomainsModuleEnabled\}/,
+    /const currentUser = hasEnabledTransversalModule \? await getCurrentUser\(\) : null;/,
   );
+  assert.match(
+    layout,
+    /const canDiscoverTransversalModules = isOperationOperator\(currentUser\?\.email\);/,
+  );
+  assert.match(
+    layout,
+    /isExecutionModuleEnabled=\{\s*isOperationExecutionModuleEnabled && canDiscoverTransversalModules\s*\}/,
+  );
+  assert.match(
+    layout,
+    /isPublicationModuleEnabled=\{\s*isOperationDeploymentDomainsModuleEnabled && canDiscoverTransversalModules\s*\}/,
+  );
+  assert.doesNotMatch(layout, /email=\{|email:/);
   assert.match(sidebar, /isExecutionModuleEnabled\?: boolean/);
   assert.match(sidebar, /isPublicationModuleEnabled\?: boolean/);
   assert.match(sidebar, /href: "\/sistemas\/execucao"/);
   assert.match(sidebar, /href: "\/sistemas\/publicacao"/);
   assert.doesNotMatch(sidebar, /OPERATION_EXECUTION_MODULE_ENABLED/);
   assert.doesNotMatch(sidebar, /OPERATION_DEPLOYMENT_DOMAINS_MODULE_ENABLED/);
+  assert.doesNotMatch(sidebar, /isOperationOperator|OPERATION_OPERATOR_EMAILS/);
 });
 
 test("views de leitura são Server Components sem busca no navegador", async () => {

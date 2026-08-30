@@ -2,6 +2,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CommandPalette, CommandPaletteTrigger } from "@/components/command-palette";
+import { getCurrentUser } from "@/lib/admin-auth";
+import { isOperationOperator } from "@/lib/operacao/authz";
 import {
   isOperationDeploymentDomainsModuleEnabled,
   isOperationExecutionModuleEnabled,
@@ -10,16 +12,27 @@ import {
 // O painel é autenticado e consulta fontes operacionais por request.
 export const dynamic = "force-dynamic";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const hasEnabledTransversalModule =
+    isOperationExecutionModuleEnabled || isOperationDeploymentDomainsModuleEnabled;
+  // Só consulta Clerk quando há um módulo transversal em rollout. O email nunca
+  // atravessa a fronteira do Server Component: a sidebar recebe flags já autorizadas.
+  const currentUser = hasEnabledTransversalModule ? await getCurrentUser() : null;
+  const canDiscoverTransversalModules = isOperationOperator(currentUser?.email);
+
   return (
     <SidebarProvider>
       <AppSidebar
-        isExecutionModuleEnabled={isOperationExecutionModuleEnabled}
-        isPublicationModuleEnabled={isOperationDeploymentDomainsModuleEnabled}
+        isExecutionModuleEnabled={
+          isOperationExecutionModuleEnabled && canDiscoverTransversalModules
+        }
+        isPublicationModuleEnabled={
+          isOperationDeploymentDomainsModuleEnabled && canDiscoverTransversalModules
+        }
       />
       <main className="flex-1 overflow-auto">
         {/* Topbar: altura consistente h-12, borda sutil, indigo-tinted no dark */}
