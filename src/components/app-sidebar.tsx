@@ -22,6 +22,7 @@ import {
   Tags,
   Upload,
   Users,
+  Workflow,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -75,10 +76,26 @@ const systemNavItems: NavItem[] = [
   { title: "Monitoramento", href: "/sistemas/monitoramento", icon: ServerCog },
 ];
 
-export function AppSidebar() {
+type AppSidebarProps = {
+  isExecutionModuleEnabled?: boolean;
+  isPublicationModuleEnabled?: boolean;
+};
+
+export function AppSidebar({
+  isExecutionModuleEnabled = false,
+  isPublicationModuleEnabled = false,
+}: AppSidebarProps) {
   const pathname = usePathname();
   const { user } = useUser();
   const isAdmin = isAdminEmail(user?.primaryEmailAddress?.emailAddress);
+  const transversalSystemNavItems: NavItem[] = [
+    ...(isExecutionModuleEnabled
+      ? [{ title: "Execução", href: "/sistemas/execucao", icon: Workflow }]
+      : []),
+    ...(isPublicationModuleEnabled
+      ? [{ title: "Publicação", href: "/sistemas/publicacao", icon: Rocket }]
+      : []),
+  ];
 
   return (
     <Sidebar>
@@ -118,6 +135,18 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5 px-2">
                 {systemNavItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      render={<Link href={item.href} />}
+                      isActive={pathname === item.href}
+                      className="group/item h-11 rounded-md px-3 transition-all duration-150 ease-in-out md:h-9"
+                    >
+                      <item.icon className="h-4 w-4 shrink-0 transition-transform duration-150 group-hover/item:scale-110" />
+                      <span className="text-sm">{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+                {transversalSystemNavItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       render={<Link href={item.href} />}

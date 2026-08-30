@@ -78,6 +78,20 @@
       "when": 1786879149491,
       "tag": "0010_stormy_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787853169678,
+      "tag": "0011_add_canonical_offer_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1787882134083,
+      "tag": "0012_operation_offer_build_jobs",
+      "breakpoints": true
     }
   ]
 }

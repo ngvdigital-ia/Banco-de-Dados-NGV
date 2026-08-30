@@ -2,6 +2,13 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { CommandPalette, CommandPaletteTrigger } from "@/components/command-palette";
+import {
+  isOperationDeploymentDomainsModuleEnabled,
+  isOperationExecutionModuleEnabled,
+} from "@/lib/operacao/feature";
+
+// O painel é autenticado e consulta fontes operacionais por request.
+export const dynamic = "force-dynamic";
 
 export default function DashboardLayout({
   children,
@@ -10,7 +17,10 @@ export default function DashboardLayout({
 }) {
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar
+        isExecutionModuleEnabled={isOperationExecutionModuleEnabled}
+        isPublicationModuleEnabled={isOperationDeploymentDomainsModuleEnabled}
+      />
       <main className="flex-1 overflow-auto">
         {/* Topbar: altura consistente h-12, borda sutil, indigo-tinted no dark */}
         <header className="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-border/60 bg-background/95 px-4 backdrop-blur-sm supports-[backdrop-filter]:bg-background/80">

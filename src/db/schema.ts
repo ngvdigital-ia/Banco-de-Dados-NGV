@@ -106,6 +106,28 @@ export const operationCommandStatusEnum = pgEnum("operation_command_status", [
   "failed",
 ]);
 
+// Recibos sanitizados do outbox de construção/publicação. O Banco observa o
+// ciclo de vida; n8n/Core continua sendo a fonte executora do job.
+export const operationOfferBuildOutboxStateEnum = pgEnum("operation_offer_build_outbox_state", [
+  "queued",
+  "leased",
+  "running",
+  "ready_for_review",
+  "waiting_human",
+  "failed",
+  "completed",
+]);
+
+export const operationOfferBuildFailureCodeEnum = pgEnum("operation_offer_build_failure_code", [
+  "INVALID_LEASE",
+  "INVALID_PAYLOAD",
+  "HEARTBEAT_STALE",
+  "EXECUTION_REJECTED",
+  "RESULT_TOO_LARGE",
+  "TRANSPORT_ERROR",
+  "INTERNAL_ERROR",
+]);
+
 // ============================================================
 // 1. TEAM MEMBERS
 // ============================================================
@@ -541,6 +563,9 @@ export const alertHistory = pgTable("alert_history", {
 
 export const offerTracking = pgTable("offer_tracking", {
   id: serial("id").primaryKey(),
+  // Identidade textual canônica cross-sistema. NULL até reconciliação humana;
+  // nunca é derivada do nome de exibição da oferta.
+  canonicalOfferId: text("canonical_offer_id"),
   name: text("name").notNull(),
   copyVsl: text("copy_vsl"),
   copyAds: text("copy_ads"),
@@ -573,7 +598,12 @@ export const offerTracking = pgTable("offer_tracking", {
   observations: text("observations"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  check("offer_tracking_canonical_offer_id_ngv_slug", sql`${t.canonicalOfferId} ~ '^ngv:[a-z0-9]+(-[a-z0-9]+)*$'`),
+  uniqueIndex("offer_tracking_canonical_offer_id_uniq")
+    .on(t.canonicalOfferId)
+    .where(sql`${t.canonicalOfferId} IS NOT NULL`),
+]);
 
 // ============================================================
 // 18. AGENT APPROVALS (aba Agentes — decisões dos agentes Black/White)
@@ -667,7 +697,109 @@ export const operationCommands = pgTable(
 );
 
 // ============================================================
-// 21. MODULE ACTION LOG (audit trail dos módulos internos — Fase 1 fundação)
+// 21. OPERATION OFFER BUILD JOBS (recibo sanitizado do outbox)
+// ============================================================
+// O Banco não executa nem armazena payloads do n8n. Esta tabela recebe apenas
+// a projeção pública de estado, identificada pelo hash SHA-256 do job. URLs,
+// IDs de pixels/players, PII e mensagens de erro brutas ficam fora dela.
+// Atualizações concorrentes são filtradas pelo accessor puro de projeção antes
+// da persistência; lease_generation é a cerca monotônica contra lease antigo.
+// ============================================================
+
+export const operationOfferBuildJobs = pgTable(
+  "operation_offer_build_jobs",
+  {
+    id: serial("id").primaryKey(),
+    jobIdHash: text("job_id_hash").notNull().unique(),
+    offerId: text("offer_id").notNull(),
+    offerTrackingId: integer("offer_tracking_id").references(() => offerTracking.id, { onDelete: "restrict" }),
+    kind: text("kind").notNull(),
+    targetKey: text("target_key").notNull(),
+    outboxState: operationOfferBuildOutboxStateEnum("outbox_state").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(5),
+    leaseGeneration: integer("lease_generation").notNull().default(0),
+    leaseUntil: timestamp("lease_until", { withTimezone: true }),
+    result: jsonb("result"),
+    failureCode: operationOfferBuildFailureCodeEnum("failure_code"),
+    // NULL no recibo inicial do intake: ele só confirma job_id/state. Este
+    // campo passa a existir exclusivamente depois de uma leitura de status.
+    remoteUpdatedAt: timestamp("remote_updated_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    lastReadAt: timestamp("last_read_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("operation_offer_build_jobs_job_id_hash_sha256", sql`${t.jobIdHash} ~ '^[0-9a-f]{64}$'`),
+    check("operation_offer_build_jobs_offer_id_ngv_slug", sql`${t.offerId} ~ '^ngv:[a-z0-9]+(-[a-z0-9]+)*$'`),
+    check("operation_offer_build_jobs_kind", sql`${t.kind} IN ('tracking', 'embed')`),
+    check("operation_offer_build_jobs_target_key", sql`length(${t.targetKey}) between 1 and 80 AND ${t.targetKey} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
+    check("operation_offer_build_jobs_attempts", sql`${t.attempts} >= 0 AND ${t.attempts} <= ${t.maxAttempts} AND ${t.maxAttempts} >= 1`),
+    check("operation_offer_build_jobs_lease_generation", sql`${t.leaseGeneration} >= 0`),
+    check("operation_offer_build_jobs_initial_remote_state", sql`${t.remoteUpdatedAt} IS NOT NULL OR ${t.outboxState} = 'queued'`),
+    check("operation_offer_build_jobs_result_object", sql`${t.result} IS NULL OR jsonb_typeof(${t.result}) = 'object'`),
+    check("operation_offer_build_jobs_result_contract", sql`${t.result} IS NULL OR (
+      ${t.result} ?& ARRAY['schema_version', 'job_id_sha256', 'offer_id', 'state', 'files_changed_count', 'commit', 'gates', 'completed_at']::text[]
+      AND ${t.result} - ARRAY['schema_version', 'job_id_sha256', 'offer_id', 'state', 'files_changed_count', 'commit', 'gates', 'completed_at']::text[] = '{}'::jsonb
+      AND jsonb_typeof(${t.result}->'schema_version') = 'number'
+      AND ${t.result}->>'schema_version' = '1'
+      AND jsonb_typeof(${t.result}->'job_id_sha256') = 'string'
+      AND ${t.result}->>'job_id_sha256' = ${t.jobIdHash}
+      AND jsonb_typeof(${t.result}->'offer_id') = 'string'
+      AND ${t.result}->>'offer_id' = ${t.offerId}
+      AND jsonb_typeof(${t.result}->'state') = 'string'
+      AND ${t.result}->>'state' IN ('structure-ready', 'waiting-video', 'waiting-tracking', 'ready-for-deploy')
+      AND jsonb_typeof(${t.result}->'files_changed_count') = 'number'
+      AND ${t.result}->>'files_changed_count' IN ('0', '1')
+      AND jsonb_typeof(${t.result}->'commit') = 'string'
+      AND ${t.result}->>'commit' = 'PENDING'
+      AND jsonb_typeof(${t.result}->'gates') = 'object'
+      AND (${t.result}->'gates') ?& ARRAY['scope', 'local', 'tracking', 'visual', 'production']::text[]
+      AND (${t.result}->'gates') - ARRAY['scope', 'local', 'tracking', 'visual', 'production']::text[] = '{}'::jsonb
+      AND jsonb_typeof(${t.result}->'gates'->'scope') = 'string'
+      AND ${t.result}->'gates'->>'scope' = 'PASS'
+      AND jsonb_typeof(${t.result}->'gates'->'local') = 'string'
+      AND ${t.result}->'gates'->>'local' = 'PASS'
+      AND jsonb_typeof(${t.result}->'gates'->'tracking') = 'string'
+      AND ${t.result}->'gates'->>'tracking' IN ('PASS', 'NOT_APPLICABLE')
+      AND jsonb_typeof(${t.result}->'gates'->'visual') = 'string'
+      AND ${t.result}->'gates'->>'visual' = 'PENDING'
+      AND jsonb_typeof(${t.result}->'gates'->'production') = 'string'
+      AND ${t.result}->'gates'->>'production' = 'PENDING'
+      AND jsonb_typeof(${t.result}->'completed_at') = 'string'
+      AND ${t.result}->>'completed_at' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$'
+    )`),
+    check("operation_offer_build_jobs_failure_state", sql`(${t.outboxState} = 'failed' AND ${t.failureCode} IS NOT NULL) OR (${t.outboxState} <> 'failed' AND ${t.failureCode} IS NULL)`),
+    check("operation_offer_build_jobs_result_state", sql`(${t.outboxState} IN ('ready_for_review', 'completed') AND ${t.result} IS NOT NULL) OR (${t.outboxState} NOT IN ('ready_for_review', 'completed') AND ${t.result} IS NULL)`),
+    index("operation_offer_build_jobs_offer_id_idx").on(t.offerId),
+    index("operation_offer_build_jobs_offer_tracking_id_idx").on(t.offerTrackingId),
+    index("operation_offer_build_jobs_outbox_state_idx").on(t.outboxState),
+    index("operation_offer_build_jobs_remote_updated_at_idx").on(t.remoteUpdatedAt),
+  ],
+);
+
+export const offerTrackingRelations = relations(offerTracking, ({ many }) => ({
+  operationCommands: many(operationCommands),
+  operationOfferBuildJobs: many(operationOfferBuildJobs),
+}));
+
+export const operationCommandsRelations = relations(operationCommands, ({ one }) => ({
+  offerTracking: one(offerTracking, {
+    fields: [operationCommands.offerTrackingId],
+    references: [offerTracking.id],
+  }),
+}));
+
+export const operationOfferBuildJobsRelations = relations(operationOfferBuildJobs, ({ one }) => ({
+  offerTracking: one(offerTracking, {
+    fields: [operationOfferBuildJobs.offerTrackingId],
+    references: [offerTracking.id],
+  }),
+}));
+
+// ============================================================
+// 22. MODULE ACTION LOG (audit trail dos módulos internos — Fase 1 fundação)
 // Auditoria central dos módulos que ganham identidade própria em /sistemas/<modulo>
 // (Quiz, Spy, Apps Ofertas, Cursos). Nunca grava payload bruto — só payload_hash
 // (sha256 via command-ledger.mjs). target_ref chega JÁ sanitizado (sem token/segredo,
