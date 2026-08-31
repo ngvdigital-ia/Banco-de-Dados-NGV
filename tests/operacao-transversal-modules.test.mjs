@@ -67,6 +67,34 @@ test("rotas transversais fecham antes de autenticar ou consultar", async () => {
   }
 });
 
+test("middleware retorna 404 real para módulos transversais desligados", async () => {
+  const middleware = await source("src/middleware.ts");
+
+  assert.match(middleware, /import \{ NextResponse \} from "next\/server"/);
+  assert.match(
+    middleware,
+    /isOperationDeploymentDomainsModuleEnabled[\s\S]*isOperationExecutionModuleEnabled[\s\S]*from "@\/lib\/operacao\/feature"/,
+  );
+  assert.match(middleware, /const pathname = req\.nextUrl\.pathname;/);
+  assert.match(
+    middleware,
+    /pathname === "\/sistemas\/execucao" && !isOperationExecutionModuleEnabled/,
+  );
+  assert.match(
+    middleware,
+    /pathname === "\/sistemas\/publicacao" && !isOperationDeploymentDomainsModuleEnabled/,
+  );
+  assert.match(
+    middleware,
+    /return new NextResponse\(null, \{\s*status: 404,\s*headers: \{ "Cache-Control": "no-store" \},\s*\}\);/s,
+  );
+
+  const responseOffset = middleware.indexOf("return new NextResponse(null");
+  const authOffset = middleware.indexOf("await auth.protect()");
+  assert.ok(responseOffset >= 0 && responseOffset < authOffset);
+  assert.doesNotMatch(middleware, /pathname\.startsWith\("\/sistemas\/(?:execucao|publicacao)"\)/);
+});
+
 test("leitura de execução só seleciona recibos sanitizados", async () => {
   const execution = await source("src/lib/operacao/execution-module.ts");
   assert.match(execution, /import "server-only"/);
