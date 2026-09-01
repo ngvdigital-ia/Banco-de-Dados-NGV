@@ -16,8 +16,10 @@
 // actor confiável nesse ponto (é exatamente o motivo do reject), e "acesso negado" não é uma
 // mutação que aconteceu.
 //
-// `requireAccessImpl`, `logActionImpl` e `mutationImpl` são OBRIGATÓRIOS (sem default) de
-// propósito — só o wrapper server-only tem acesso às dependências reais; testes injetam stubs.
+// `requireMutationEnabledImpl`, `requireAccessImpl`, `logActionImpl` e `mutationImpl` são
+// OBRIGATÓRIOS (sem default) de propósito — só o wrapper server-only tem acesso às dependências
+// reais; testes injetam stubs. A flag vem ANTES do RBAC para falhar fechado sem tocar a auditoria
+// ou a API externa quando a escrita ainda não foi explicitamente liberada.
 
 const MODULE_ID = "spy";
 
@@ -43,17 +45,30 @@ function requireFn(value, name, action) {
  * @param {unknown} [params.payload] - payload original da operação, só o hash entra no log.
  */
 export async function dispatchSpyMutationWithAudit(params) {
-  const { action, mutationImpl, requireAccessImpl, logActionImpl, targetRefOf, payload } = params ?? {};
+  const {
+    action,
+    mutationImpl,
+    requireMutationEnabledImpl,
+    requireAccessImpl,
+    logActionImpl,
+    targetRefOf,
+    payload,
+  } = params ?? {};
 
   if (typeof action !== "string" || action.length === 0) {
     throw new TypeError("dispatchSpyMutationWithAudit: action é obrigatório");
   }
+  requireFn(requireMutationEnabledImpl, "requireMutationEnabledImpl", action);
   requireFn(requireAccessImpl, "requireAccessImpl", action);
   requireFn(logActionImpl, "logActionImpl", action);
   requireFn(mutationImpl, "mutationImpl", action);
 
-  // Autorização primeiro — sem operador com "mutate" no módulo spy, a mutação real nunca roda.
+  // Flag primeiro: habilitar leitura do painel nunca pode habilitar escrita por acidente.
   // Propositalmente FORA do try/log abaixo: uma rejeição aqui não é uma mutação que aconteceu.
+  await requireMutationEnabledImpl();
+
+  // Autorização depois da flag — sem operador com "mutate" no módulo spy, a mutação real nunca
+  // roda. Também fica fora do try/log: rejeição de autorização não é mutação acontecida.
   const actor = await requireAccessImpl(MODULE_ID, "mutate");
 
   const result = await mutationImpl(actor);

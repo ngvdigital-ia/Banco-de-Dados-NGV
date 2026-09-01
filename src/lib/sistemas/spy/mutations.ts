@@ -24,6 +24,7 @@ import type {
 } from "./mutations-client.d.mts";
 import { requireModuleAccess } from "@/lib/sistemas/authz";
 import { logModuleAction } from "@/lib/sistemas/audit";
+import { requireSpyMutationsEnabled } from "./mutation-feature.mjs";
 
 // Wrapper fino "server-only" em cima do núcleo testável (mutations-dispatch.mjs) — mesmo formato
 // de cursos/push-dispatch.ts: só injeta as dependências reais (`requireModuleAccess`,
@@ -40,12 +41,19 @@ async function requireAccessImpl(moduleId: "spy", capability: "mutate") {
   return requireModuleAccess(moduleId, capability);
 }
 
+// Separada da flag de leitura da rota. Este módulo inteiro é server-only, portanto a variável
+// nunca é enviada ao navegador nem pode ser acionada pelo Client Component diretamente.
+function requireMutationEnabledImpl() {
+  requireSpyMutationsEnabled();
+}
+
 export async function createSpyOfertaWithAudit(
   input: SpyCreateOfertaInput,
   options?: SpyMutationOptions,
 ): Promise<SpyMutationResult<SpyOferta>> {
   return dispatchCore({
     action: "oferta_create",
+    requireMutationEnabledImpl,
     requireAccessImpl,
     logActionImpl: logModuleAction,
     mutationImpl: () => createSpyOferta(input, options),
@@ -61,6 +69,7 @@ export async function updateSpyOfertaWithAudit(
 ): Promise<SpyMutationResult<SpyOferta>> {
   return dispatchCore({
     action: "oferta_update",
+    requireMutationEnabledImpl,
     requireAccessImpl,
     logActionImpl: logModuleAction,
     mutationImpl: () => updateSpyOferta(id, patch, options),
@@ -75,6 +84,7 @@ export async function deleteSpyOfertaWithAudit(
 ): Promise<SpyMutationResult<SpyOk>> {
   return dispatchCore({
     action: "oferta_delete",
+    requireMutationEnabledImpl,
     requireAccessImpl,
     logActionImpl: logModuleAction,
     mutationImpl: () => deleteSpyOferta(id, options),
@@ -89,6 +99,7 @@ export async function saveSpyLeiturasBatchWithAudit(
 ): Promise<SpyMutationResult<SpyLeiturasBatchResult>> {
   return dispatchCore({
     action: "leituras_batch_save",
+    requireMutationEnabledImpl,
     requireAccessImpl,
     logActionImpl: logModuleAction,
     mutationImpl: () => saveSpyLeiturasBatch(itens, options),
@@ -107,6 +118,7 @@ export async function updateSpyLeituraWithAudit(
 ): Promise<SpyMutationResult<SpyLeitura>> {
   return dispatchCore({
     action: "leitura_update",
+    requireMutationEnabledImpl,
     requireAccessImpl,
     logActionImpl: logModuleAction,
     mutationImpl: () => updateSpyLeitura(id, ads, options),
@@ -121,6 +133,7 @@ export async function deleteSpyLeituraWithAudit(
 ): Promise<SpyMutationResult<SpyOk>> {
   return dispatchCore({
     action: "leitura_delete",
+    requireMutationEnabledImpl,
     requireAccessImpl,
     logActionImpl: logModuleAction,
     mutationImpl: () => deleteSpyLeitura(id, options),
@@ -136,6 +149,7 @@ export async function updateSpyConfigWithAudit(
 ): Promise<SpyMutationResult<SpyConfigResult>> {
   return dispatchCore({
     action: "config_update",
+    requireMutationEnabledImpl,
     requireAccessImpl,
     logActionImpl: logModuleAction,
     mutationImpl: () => updateSpyConfig(pesos, tolerancia, options),

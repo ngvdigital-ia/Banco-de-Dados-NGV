@@ -1,9 +1,9 @@
 import { OPERATION_OPERATOR_EMAILS } from "../operacao/authz-core.mjs";
 
-// Fase 1 (ADR docs/NGV-BANCO-MODULOS-FUNDACAO-ADR.md, Decisão 2): duas capacidades
-// por módulo, não uma matriz N×M especulativa. `read` reusa os mesmos operadores
-// já em produção em OPERATION_OPERATOR_EMAILS. `mutate` fica vazio até existir um
-// módulo que efetivamente mute (Spy Fase 3 / Apps Fase 4) — ninguém entra até lá.
+// Duas capacidades por módulo, não uma matriz N×M especulativa. `read` reusa os
+// mesmos operadores já em produção em OPERATION_OPERATOR_EMAILS. A capacidade
+// `mutate` identifica o operador; cada integração ainda deve ter seu próprio
+// gate server-only antes de tocar o sistema externo.
 export const MODULE_CAPABILITIES = Object.freeze(["read", "mutate"]);
 
 const READ_ALLOWLIST = Object.freeze(
@@ -17,8 +17,9 @@ const READ_ALLOWLIST = Object.freeze(
 // uma SENHA COMPARTILHADA (sem identidade e sem rastro, nos 4 sistemas) passa a agir com
 // identidade individual do Clerk e trilha em module_action_log.
 //
-// Inócua hoje: nenhuma ação de mutação está habilitada (o disparo de push dos Cursos está
-// com o botão desabilitado por decisão do operador, e Quiz/Spy são leitura pura).
+// Não basta para acionar o Spy: mutations.ts também exige
+// SISTEMAS_SPY_MUTATIONS_ENABLED=true. A separação impede que liberar a leitura do painel
+// transforme a allowlist de operadores em autorização de escrita externa.
 const MUTATE_ALLOWLIST = READ_ALLOWLIST;
 
 export function moduleAllowlist(capability) {

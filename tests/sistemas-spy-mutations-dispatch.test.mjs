@@ -18,11 +18,16 @@ function grantAccess() {
   };
 }
 
+function enableMutations() {
+  return async () => {};
+}
+
 test("mutação bem-sucedida: chama requireAccessImpl(\"spy\",\"mutate\") ANTES da mutação e loga result=success", async () => {
   const { calls, logActionImpl } = logSpy();
   let mutationCalledWithActor;
   const result = await dispatchSpyMutationWithAudit({
     action: "oferta_create",
+    requireMutationEnabledImpl: enableMutations(),
     requireAccessImpl: grantAccess(),
     logActionImpl,
     mutationImpl: async (a) => { mutationCalledWithActor = a; return { kind: "success", mutatedAt: "2026-08-16T00:00:00.000Z", data: { id: "o1" } }; },
@@ -49,6 +54,7 @@ test("mutação que falhou (kind: error) loga result=failure com resultDetail = 
   const { calls, logActionImpl } = logSpy();
   const result = await dispatchSpyMutationWithAudit({
     action: "oferta_delete",
+    requireMutationEnabledImpl: enableMutations(),
     requireAccessImpl: grantAccess(),
     logActionImpl,
     mutationImpl: async () => ({ kind: "error", code: "OFERTA_DELETE_NOT_FOUND", mutatedAt: null, data: null }),
@@ -67,6 +73,7 @@ test("mutação not_configured loga result=failure com resultDetail = reason", a
   const { calls, logActionImpl } = logSpy();
   await dispatchSpyMutationWithAudit({
     action: "config_update",
+    requireMutationEnabledImpl: enableMutations(),
     requireAccessImpl: grantAccess(),
     logActionImpl,
     mutationImpl: async () => ({ kind: "not_configured", reason: "MISSING_CREDENTIALS", mutatedAt: null, data: null }),
@@ -87,6 +94,7 @@ test("acesso negado (requireAccessImpl rejeita): propaga o erro, NUNCA chama mut
     () =>
       dispatchSpyMutationWithAudit({
         action: "oferta_create",
+        requireMutationEnabledImpl: enableMutations(),
         requireAccessImpl: async () => { throw acessoNegado; },
         logActionImpl,
         mutationImpl: async () => { mutationCalls += 1; return { kind: "success", mutatedAt: "x", data: {} }; },
@@ -102,6 +110,7 @@ test("targetRefOf omitido não quebra — vira null", async () => {
   const { calls, logActionImpl } = logSpy();
   await dispatchSpyMutationWithAudit({
     action: "leituras_batch_save",
+    requireMutationEnabledImpl: enableMutations(),
     requireAccessImpl: grantAccess(),
     logActionImpl,
     mutationImpl: async () => ({ kind: "success", mutatedAt: "x", data: { leituras: [] } }),
@@ -111,19 +120,42 @@ test("targetRefOf omitido não quebra — vira null", async () => {
 
 test("dependências obrigatórias ausentes lançam TypeError descritivo, nunca silenciam", async () => {
   await assert.rejects(
-    () => dispatchSpyMutationWithAudit({ action: "oferta_create", requireAccessImpl: grantAccess(), mutationImpl: async () => ({ kind: "success" }) }),
+    () => dispatchSpyMutationWithAudit({ action: "oferta_create", requireMutationEnabledImpl: enableMutations(), requireAccessImpl: grantAccess(), mutationImpl: async () => ({ kind: "success" }) }),
     { name: "TypeError", message: /logActionImpl é obrigatório/ },
   );
   await assert.rejects(
-    () => dispatchSpyMutationWithAudit({ action: "oferta_create", logActionImpl: async () => {}, mutationImpl: async () => ({ kind: "success" }) }),
+    () => dispatchSpyMutationWithAudit({ action: "oferta_create", requireMutationEnabledImpl: enableMutations(), logActionImpl: async () => {}, mutationImpl: async () => ({ kind: "success" }) }),
     { name: "TypeError", message: /requireAccessImpl é obrigatório/ },
   );
   await assert.rejects(
-    () => dispatchSpyMutationWithAudit({ action: "oferta_create", requireAccessImpl: grantAccess(), logActionImpl: async () => {} }),
+    () => dispatchSpyMutationWithAudit({ action: "oferta_create", requireMutationEnabledImpl: enableMutations(), requireAccessImpl: grantAccess(), logActionImpl: async () => {} }),
     { name: "TypeError", message: /mutationImpl é obrigatório/ },
   );
   await assert.rejects(
-    () => dispatchSpyMutationWithAudit({ requireAccessImpl: grantAccess(), logActionImpl: async () => {}, mutationImpl: async () => ({ kind: "success" }) }),
+    () => dispatchSpyMutationWithAudit({ requireMutationEnabledImpl: enableMutations(), requireAccessImpl: grantAccess(), logActionImpl: async () => {}, mutationImpl: async () => ({ kind: "success" }) }),
     { name: "TypeError", message: /action é obrigatório/ },
   );
+});
+
+test("flag de mutação desabilitada falha antes do RBAC, da API externa e da auditoria", async () => {
+  let accessCalls = 0;
+  let mutationCalls = 0;
+  const { calls, logActionImpl } = logSpy();
+  const disabled = new Error("Mutações do Spy estão desabilitadas");
+
+  await assert.rejects(
+    () =>
+      dispatchSpyMutationWithAudit({
+        action: "oferta_create",
+        requireMutationEnabledImpl: async () => { throw disabled; },
+        requireAccessImpl: async () => { accessCalls += 1; return actor; },
+        logActionImpl,
+        mutationImpl: async () => { mutationCalls += 1; return { kind: "success" }; },
+      }),
+    disabled,
+  );
+
+  assert.equal(accessCalls, 0, "flag desligada não chega ao RBAC");
+  assert.equal(mutationCalls, 0, "flag desligada nunca chama a API externa");
+  assert.equal(calls.length, 0, "flag desligada não grava auditoria de mutação inexistente");
 });

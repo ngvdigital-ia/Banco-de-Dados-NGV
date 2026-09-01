@@ -6,6 +6,7 @@ export interface SpyDispatchActor {
 export interface DispatchSpyMutationWithAuditParams<TResult extends { kind: string }> {
   action: string;
   mutationImpl: (actor: SpyDispatchActor) => Promise<TResult>;
+  requireMutationEnabledImpl: () => Promise<void> | void;
   requireAccessImpl: (moduleId: "spy", capability: "mutate") => Promise<SpyDispatchActor>;
   logActionImpl: (params: {
     actorClerkId: string;
