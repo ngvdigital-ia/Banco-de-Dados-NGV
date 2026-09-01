@@ -47,6 +47,7 @@ const GUARDED_ROUTES = [
 // mantenha o gate de segredo vazio; se alguém remover o `!expected`, quebra aqui.
 const FAIL_CLOSED_BY_EXPLICIT_GATE = new Map([
   ["src/app/api/cron/sync-ngv-core/route.ts", "if (!expected || !secureEqual("],
+  ["src/app/api/cron/sync-ngv-core-catalog/route.ts", "if (!expected || !secureEqual("],
 ]);
 
 // Rotas que delegam a guarda pro módulo puro (o módulo chama isAuthorizedBearer lá dentro).
@@ -247,8 +248,8 @@ test("toda rota que lê process.env.CRON_SECRET é fail-closed por um caminho co
     }
   }
   assert.deepEqual(semGuarda, []);
-  // Conferência de contagem: 9 convertidas + sync-ngv-core + offers/lookup + apps/lookup.
-  assert.equal(conferidas, GUARDED_ROUTES.length + 3, `rotas com CRON_SECRET: ${conferidas}`);
+  // Conferência de contagem: 9 convertidas + 2 gates explícitos + 2 rotas delegadas.
+  assert.equal(conferidas, GUARDED_ROUTES.length + 4, `rotas com CRON_SECRET: ${conferidas}`);
 });
 
 // ── 4. As 9 rotas, uma a uma ─────────────────────────────────────────────────
