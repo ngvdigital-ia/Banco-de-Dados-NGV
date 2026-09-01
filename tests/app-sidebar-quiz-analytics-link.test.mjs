@@ -11,29 +11,9 @@ const envExample = await readFile(
   "utf8",
 );
 
-test("Quiz Analytics is dormant and empty by default", () => {
-  assert.match(source, /process\.env\.NEXT_PUBLIC_QUIZ_ANALYTICS_URL/);
-  assert.match(source, /title: "Quiz Analytics"/);
+test("Funnel Analytics is an internal, touch-friendly system route", () => {
+  assert.match(source, /title: "Funnel Analytics", href: "\/sistemas\/quiz", icon: BarChart3/);
   assert.match(envExample, /^NEXT_PUBLIC_QUIZ_ANALYTICS_URL=\s*$/m);
-});
-
-test("Quiz reuses the shared safe external URL validation", () => {
-  assert.match(
-    source,
-    /getSafeExternalUrl\(process\.env\.NEXT_PUBLIC_QUIZ_ANALYTICS_URL\)/,
-  );
-  assert.match(source, /import \{ getSafeExternalUrl \} from "@\/lib\/external-dashboard-url"/);
-  assert.doesNotMatch(source, /function getSafeExternalUrl/);
-});
-
-test("Quiz and Spy are external, touch-friendly, and inactive", () => {
-  assert.match(source, /target="_blank"/);
-  assert.match(source, /rel="noopener noreferrer"/);
-  assert.match(source, /ExternalLink/);
-  assert.match(source, /aria-label=\{`\$\{item\.title\} \(abre em nova aba\)`\}/);
-  assert.match(source, /item\.external\s*\?\s*false/);
   assert.match(source, /h-11[^\"]*md:h-9/);
-  assert.doesNotMatch(source, /<iframe\b/i);
-  assert.doesNotMatch(source, /\bfetch\s*\(/);
-  assert.doesNotMatch(source, /NEXT_PUBLIC_(?:SPY|QUIZ)_ANALYTICS_URL=https?:/);
+  assert.doesNotMatch(source, /title: "Quiz Analytics"/);
 });

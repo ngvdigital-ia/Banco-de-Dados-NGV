@@ -229,3 +229,52 @@ anti-patterns:
 - [x] 0 estado comunicado apenas por cor.
 
 **Veredito anti-slop estático: PASS — 0 violações encontradas no código implementado.** Snapshot check, 8 testes específicos, ESLint, TypeScript e build de produção passaram. Uma revisão visual autenticada em mobile e desktop continua sendo um gate separado antes de produção.
+
+## 10. Extensão — dados do dashboard e monitoramento
+
+Esta extensão aplica o mesmo princípio da torre de controle aos detalhes de sistema:
+**explicar antes de contar**. Ela é somente leitura e consome exclusivamente os
+agregados já contratados pelo NGV Core.
+
+### Dados do dashboard
+
+- O sistema permanece **Banco NGV** na navegação e nas projeções. No seu
+  detalhe, o título interno é **Dados do dashboard**: ele explica o que o
+  painel guarda, em vez de repetir a tela de Ofertas.
+- `Ofertas cadastradas` é a contagem de registros de oferta; a ação secundária
+  `Ver todas as ofertas` leva para `/offers?month=all`, que é a lista detalhada
+  já existente.
+- `Registros históricos de métricas` é a contagem de leituras datadas. O texto
+  torna explícito que não são ofertas e mostra a última leitura de métrica
+  apenas quando o contrato a fornece.
+- Cada contagem traz origem, período ou observação factual. Ausência de data é
+  mostrada como `Sem leitura`, nunca como uma janela inferida.
+
+### Monitoramento
+
+- Os cinco indicadores têm nomes orientados a decisão: `Projetos cadastrados`,
+  `Domínios monitorados`, `Vencem em 30 dias`, `Serviços com cobrança ativa` e
+  `Recursos que pedem revisão`.
+- `Projetos cadastrados` declara no próprio módulo que não existe relação 1:1
+  com domínios. As métricas não prometem listas, URLs, custos ou nomes que o
+  contrato agregado não entrega.
+- A faixa de evidência informa fonte (`monitoramento-ngv` no resumo do Core),
+  horário da leitura e idade calculada pelo Core. Ela também explica que a
+  idade não é diagnóstico da saúde externa.
+
+### Funnel Analytics
+
+- A navegação e a projeção do Core usam o nome **Funnel Analytics**. O nome
+  descreve a leitura de funis, instalações e eventos sem sugerir que este
+  dashboard cria ou publica funis.
+
+### Rubrica desta extensão
+
+| Dimensão | Nota | Evidência objetiva |
+|---|---:|---|
+| Conceito/Intenção | 9 | Contagem sempre vem acompanhada de definição, fonte ou janela real. |
+| Tipografia/Hierarquia | 8 | Números e horários seguem mono/tabular; explicação tem peso secundário. |
+| Restrição/Whitespace | 9 | Reutiliza a faixa agregada e células existentes, sem painel decorativo novo. |
+| Craft/Detalhe | 9 | CTA usa rota interna existente; dados ausentes permanecem explícitos. |
+| Anti-genérico | 9 | Evita cards de KPI mudos e nomes técnicos sem contexto. |
+| **Média** | **8,8** | **PASS: média ≥7 e nenhuma dimensão <5.** |

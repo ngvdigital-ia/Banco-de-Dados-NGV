@@ -34,7 +34,7 @@ export default async function QuizModulePage({
         <EmptyState
           icon={BarChart3}
           title="Módulo em construção"
-          description="A identidade própria do Quiz Analytics dentro do Banco NGV está desligada neste ambiente — leitura de funis, respostas, campanhas UTM e eventos recentes direto do módulo, sem depender do painel externo."
+          description="A leitura de funis, respostas, campanhas UTM e eventos recentes está desligada neste ambiente. Este painel não cria nem publica funis."
         />
       </div>
     );

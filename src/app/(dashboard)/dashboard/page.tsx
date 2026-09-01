@@ -161,8 +161,8 @@ async function NgvCoreSystemsSection() {
           <div className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-4">
             <CoreSystemMetric label="Spy Analytics" value={sources.spy?.offers_observed ?? "—"} detail={`${sources.spy?.readings_observed ?? "—"} leituras em 30 dias`} />
             <CoreSystemMetric label="Nexfy" value={sources.nexfy?.active_projects ?? "—"} detail={`${sources.nexfy?.active_products ?? "—"} produtos ativos`} />
-            <CoreSystemMetric label="Banco NGV" value={sources.banco_ngv?.offer_tracking_count ?? "—"} detail={`${sources.banco_ngv?.metrics_snapshot_count ?? "—"} snapshots de métricas`} />
-            <CoreSystemMetric label="Quiz Analytics" value={sources.quiz_analytics?.project_count ?? "—"} detail={`${sources.quiz_analytics?.receiving_events_count ?? "—"} projeto(s) recebendo eventos`} />
+            <CoreSystemMetric label="Banco NGV" value={sources.banco_ngv?.offer_tracking_count ?? "—"} detail={`${sources.banco_ngv?.metrics_snapshot_count ?? "—"} registros históricos de métricas`} />
+            <CoreSystemMetric label="Funnel Analytics" value={sources.quiz_analytics?.project_count ?? "—"} detail={`${sources.quiz_analytics?.receiving_events_count ?? "—"} funis com eventos recebidos`} />
             <CoreSystemMetric label="Apps Ofertas" value={sources.apps_ofertas?.offers_configured ?? "—"} detail={`${sources.apps_ofertas?.access_active ?? "—"} acessos ativos`} />
             <CoreSystemMetric label="Plataforma de Cursos" value={sources.plataforma_cursos?.courses_total ?? "—"} detail={`${sources.plataforma_cursos?.entitlements_active ?? "—"} acessos ativos`} />
             <CoreSystemMetric label="Monitoramento" value={sources.monitoramento_ngv?.projects_total ?? "—"} detail={`${sources.monitoramento_ngv?.domains_total ?? "—"} domínios · ${sources.monitoramento_ngv?.infra_resources_attention ?? "—"} infra em atenção`} />

@@ -252,7 +252,7 @@ export default async function SettingsPage() {
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <ExternalToolCard icon={ScanSearch} title="Spy Analytics" url={spyAnalyticsUrl} />
-          <ExternalToolCard icon={BarChart3} title="Quiz Analytics" url={quizAnalyticsUrl} />
+          <ExternalToolCard icon={BarChart3} title="Funnel Analytics" url={quizAnalyticsUrl} />
         </div>
       </section>
     </div>

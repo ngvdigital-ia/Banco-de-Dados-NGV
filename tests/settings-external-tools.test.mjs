@@ -10,7 +10,7 @@ const source = await readFile(
 test("settings presents both approved tools as external operational tools", () => {
   assert.match(source, /Ferramentas operacionais/);
   assert.match(source, /title="Spy Analytics"/);
-  assert.match(source, /title="Quiz Analytics"/);
+  assert.match(source, /title="Funnel Analytics"/);
   assert.match(source, /Ferramenta externa/);
   assert.match(source, /Disponível para abrir/);
   assert.match(source, /Não configurado/);

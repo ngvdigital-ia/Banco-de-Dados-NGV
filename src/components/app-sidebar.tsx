@@ -71,7 +71,7 @@ const systemNavItems: NavItem[] = [
   { title: "Apps Ofertas", href: "/sistemas/apps-ofertas", icon: Rocket },
   { title: "Cursos", href: "/sistemas/cursos", icon: GraduationCap },
   { title: "Spy Analytics", href: "/sistemas/spy", icon: ScanSearch },
-  { title: "Quiz Analytics", href: "/sistemas/quiz", icon: BarChart3 },
+  { title: "Funnel Analytics", href: "/sistemas/quiz", icon: BarChart3 },
   { title: "Nexfy", href: "/sistemas/nexfy", icon: PieChart },
   { title: "Monitoramento", href: "/sistemas/monitoramento", icon: ServerCog },
 ];

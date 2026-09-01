@@ -28,7 +28,7 @@ export const SYSTEM_DIRECTORY: Record<SystemId, {
   "banco-ngv": {
     title: "Banco NGV",
     eyebrow: "Operação central",
-    description: "Ofertas e métricas operacionais consolidadas no Core.",
+    description: "Dados do dashboard: ofertas cadastradas e leituras históricas de métricas consolidadas no Core.",
   },
   "apps-ofertas": {
     title: "Apps Ofertas",
@@ -46,9 +46,9 @@ export const SYSTEM_DIRECTORY: Record<SystemId, {
     description: "Leituras agregadas de anúncios e ofertas observadas.",
   },
   quiz: {
-    title: "Quiz Analytics",
+    title: "Funnel Analytics",
     eyebrow: "Funis e eventos",
-    description: "Projetos de quiz, instalação e recebimento de eventos.",
+    description: "Leitura de funis, instalação e recebimento de eventos.",
   },
   nexfy: {
     title: "Nexfy",
