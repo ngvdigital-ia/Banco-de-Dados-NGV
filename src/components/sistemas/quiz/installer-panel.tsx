@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   ANALYTICS_ALLOWED_PROJECT_IDS_VAR,
   normalizeFunnelOrigin,
 } from "@/lib/sistemas/quiz/testar-tracker-core.mjs";
+import type { QuizTrackerInstallation } from "@/lib/sistemas/quiz/projects-client.mjs";
 
 // Aba "Instalar tracker" (index (1).html:17,82-95 + dashboard.js:122-149 do dashboard
 // vanilla original). Origin do Quiz vem de QUIZ_ANALYTICS_ORIGIN (mesmo adapter que já serve
@@ -54,7 +55,7 @@ type TestarTrackerResponse = {
   funnelId: AllowlistFieldResult;
 };
 
-function buildTrackerSnippet(projectId: string, funnelId: string, pageId: string): string | null {
+function buildTrackerSnippet(projectId: string, funnelId: string, pageId: string, installation?: QuizTrackerInstallation): string | null {
   const trimmedProject = projectId.trim();
   const trimmedFunnel = funnelId.trim();
   const trimmedPage = pageId.trim();
@@ -63,11 +64,12 @@ function buildTrackerSnippet(projectId: string, funnelId: string, pageId: string
   return [
     "<script",
     "  defer",
-    `  src="${QUIZ_ANALYTICS_ORIGIN}/assets/tracker.js"`,
+    `  src="${installation?.trackerUrl ?? `${QUIZ_ANALYTICS_ORIGIN}/assets/tracker.js`}"`,
     `  data-nga-project-id="${trimmedProject}"`,
     `  data-nga-funnel-id="${trimmedFunnel}"`,
     `  data-nga-page-id="${trimmedPage}"`,
-    `  data-nga-endpoint="${QUIZ_ANALYTICS_ORIGIN}/api/track"`,
+    `  data-nga-endpoint="${installation?.attributes.endpoint ?? `${QUIZ_ANALYTICS_ORIGIN}/api/track`}"`,
+    ...(installation ? [`  data-nga-public-key="${installation.attributes.publicKey}"`] : []),
     "></script>",
   ].join("\n");
 }
@@ -87,11 +89,11 @@ function buildAllowlistValues(projectId: string, funnelId: string, domain: strin
  * dá pra ler o status, só distinguir "domínio respondeu" de "falha de rede". Timeout próprio
  * pra não deixar o botão girando pra sempre.
  */
-async function pingTrackerScript(): Promise<boolean> {
+async function pingTrackerScript(trackerUrl: string): Promise<boolean> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 6000);
   try {
-    await fetch(`${QUIZ_ANALYTICS_ORIGIN}/assets/tracker.js`, {
+    await fetch(trackerUrl, {
       method: "HEAD",
       mode: "no-cors",
       cache: "no-store",
@@ -105,18 +107,26 @@ async function pingTrackerScript(): Promise<boolean> {
   }
 }
 
-export function InstallerPanel() {
-  const [projectId, setProjectId] = useState("");
-  const [funnelId, setFunnelId] = useState("");
-  const [pageId, setPageId] = useState("");
-  const [domain, setDomain] = useState("");
+export function InstallerPanel({ installation, initialDomain }: { installation?: QuizTrackerInstallation; initialDomain?: string }) {
+  const [projectId, setProjectId] = useState(installation?.attributes.projectId ?? "");
+  const [funnelId, setFunnelId] = useState(installation?.attributes.funnelId ?? "");
+  const [pageId, setPageId] = useState(installation?.attributes.pageId ?? "");
+  const [domain, setDomain] = useState(initialDomain ?? "");
 
   const [testAStatus, setTestAStatus] = useState<"idle" | "running" | "ok" | "fail">("idle");
   const [testBRunning, setTestBRunning] = useState(false);
   const [testBResult, setTestBResult] = useState<TestarTrackerResponse | null>(null);
   const [testBError, setTestBError] = useState<string | null>(null);
 
-  const snippet = useMemo(() => buildTrackerSnippet(projectId, funnelId, pageId), [projectId, funnelId, pageId]);
+  useEffect(() => {
+    if (!installation) return;
+    setProjectId(installation.attributes.projectId);
+    setFunnelId(installation.attributes.funnelId);
+    setPageId(installation.attributes.pageId);
+    if (initialDomain) setDomain(initialDomain);
+  }, [initialDomain, installation]);
+
+  const snippet = useMemo(() => buildTrackerSnippet(projectId, funnelId, pageId, installation), [installation, projectId, funnelId, pageId]);
   const allowlist = useMemo(() => buildAllowlistValues(projectId, funnelId, domain), [projectId, funnelId, domain]);
   const podeTestarB = Boolean(snippet) && Boolean(allowlist);
 
@@ -131,7 +141,7 @@ export function InstallerPanel() {
 
   const runTestA = async () => {
     setTestAStatus("running");
-    const ok = await pingTrackerScript();
+    const ok = await pingTrackerScript(installation?.trackerUrl ?? `${QUIZ_ANALYTICS_ORIGIN}/assets/tracker.js`);
     setTestAStatus(ok ? "ok" : "fail");
   };
 
@@ -164,8 +174,7 @@ export function InstallerPanel() {
       <div>
         <h2 className="text-sm font-semibold">Instalar tracker</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          O mesmo <code className="rounded bg-muted px-1 py-0.5">tracker.js</code> serve todas as páginas. Informe os
-          identificadores desta página e cole o trecho antes de{" "}
+          O mesmo <code className="rounded bg-muted px-1 py-0.5">tracker.js</code> serve todas as páginas. {installation ? "Os identificadores gerados já estão preenchidos." : "Use os identificadores gerados pelo Funnel Analytics."} Cole o trecho antes de{" "}
           <code className="rounded bg-muted px-1 py-0.5">&lt;/head&gt;</code>.
         </p>
       </div>
@@ -179,6 +188,7 @@ export function InstallerPanel() {
             onChange={(e) => setProjectId(e.target.value)}
             placeholder="ex.: oferta-verao"
             autoComplete="off"
+            readOnly={Boolean(installation)}
           />
         </div>
         <div className="space-y-2">
@@ -189,6 +199,7 @@ export function InstallerPanel() {
             onChange={(e) => setFunnelId(e.target.value)}
             placeholder="ex.: vsl-principal"
             autoComplete="off"
+            readOnly={Boolean(installation)}
           />
         </div>
         <div className="space-y-2">
@@ -199,6 +210,7 @@ export function InstallerPanel() {
             onChange={(e) => setPageId(e.target.value)}
             placeholder="ex.: presell"
             autoComplete="off"
+            readOnly={Boolean(installation)}
           />
         </div>
         <div className="space-y-2">
@@ -207,7 +219,7 @@ export function InstallerPanel() {
             id="quiz-installer-domain"
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
-            placeholder="https://roxyfox.online"
+            placeholder="https://sua-pagina.com"
             autoComplete="off"
           />
         </div>

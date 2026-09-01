@@ -264,9 +264,22 @@ agregados já contratados pelo NGV Core.
 
 ### Funnel Analytics
 
-- A navegação e a projeção do Core usam o nome **Funnel Analytics**. O nome
-  descreve a leitura de funis, instalações e eventos sem sugerir que este
-  dashboard cria ou publica funis.
+- A navegação e a projeção do Core usam o nome **Funnel Analytics**. A primeira
+  decisão é humana e legível: escolher um **Funil em foco** por nome, estado e
+  origem, nunca digitar um identificador ou cair em uma oferta de exemplo.
+- `Criar funil` abre um formulário compacto: nome, URL HTTPS, formato
+  `Quiz | VSL | Presell` e vínculo Banco opcional. Formato é claramente
+  orientação da sessão, não dado persistido; project/funnel/page IDs são
+  gerados upstream e jamais campos de entrada.
+- Depois da criação, a confirmação vem antes da métrica: receipt com os três
+  IDs recolhidos por padrão, tracker preenchido e sequência fixa `1 Copiar →
+  2 Colar antes de </head> → 3 Publicar → 4 Testar`.
+- Abas seguem o objeto funil: `Visão geral`, `Jornada`, `Perguntas e respostas`
+  somente quando há evidência de Quiz, `Eventos` como diagnóstico secundário e
+  `Instalação`. Em vazio, erro ou credencial ausente, a página explica a causa
+  e preserva a criação apenas quando o upstream a declara habilitada.
+- Mobile 375/390: seletor, CTA e abas quebram em linhas próprias; controles têm
+  mínimo de 44px e o tracker fica em bloco copiável, sem tabela espremida.
 
 ### Rubrica desta extensão
 

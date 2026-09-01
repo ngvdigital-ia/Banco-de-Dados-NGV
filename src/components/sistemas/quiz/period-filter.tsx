@@ -17,12 +17,12 @@ export function PeriodFilter({
   current,
   customFrom,
   customTo,
-  funnelId,
+  projectId,
 }: {
   current: PeriodKey;
   customFrom?: string;
   customTo?: string;
-  funnelId: string;
+  projectId: string;
 }) {
   const today = toDateInputValue(new Date());
 
@@ -31,7 +31,7 @@ export function PeriodFilter({
       <nav className="flex flex-wrap gap-1.5" aria-label="Selecionar período">
         {PERIOD_PRESETS.map((preset) => {
           const isActive = preset.key === current;
-          const href = buildQuizPeriodHref(preset.key, funnelId);
+          const href = buildQuizPeriodHref(preset.key, projectId);
           return (
             <Link
               key={preset.key}
@@ -53,7 +53,7 @@ export function PeriodFilter({
       {current === "custom" ? (
         <form method="get" action="/sistemas/quiz" className="flex flex-wrap items-end gap-2">
           <input type="hidden" name="period" value="custom" />
-          <input type="hidden" name="funnel" value={funnelId} />
+          <input type="hidden" name="project" value={projectId} />
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
             De
             <input type="date" name="from" defaultValue={customFrom ?? today} className={dateInputClass} />
