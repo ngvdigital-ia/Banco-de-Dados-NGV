@@ -2,10 +2,10 @@ import type { QuizAnalyticsMetadata } from "@/lib/sistemas/quiz/analytics-client
 
 /**
  * Respostas não são inferidas pelo tamanho da lista: o upstream pode retornar
- * definições de perguntas antes de existir um Quiz publicável. A única exceção
- * é o receipt local de um Quiz criado nesta sessão, que ainda precisa expor a
- * aba para orientar a primeira instalação.
+ * definições de perguntas antes de existir um Quiz publicável. Um receipt local
+ * nunca muda a identidade do funil selecionado e, por isso, não entra nesta
+ * decisão.
  */
-export function shouldShowAnswersTab(metadata: QuizAnalyticsMetadata, createdFormat?: "quiz" | "vsl" | "presell") {
-  return metadata.hasQuizAnswers === true || createdFormat === "quiz";
+export function shouldShowAnswersTab(metadata: QuizAnalyticsMetadata) {
+  return metadata.hasQuizAnswers === true;
 }

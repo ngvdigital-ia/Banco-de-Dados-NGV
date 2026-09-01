@@ -116,7 +116,7 @@ export function QuizAnalyticsView({ result, projectsResult, selectedProject, per
 function AnalyticsContent({ result, project, period, customFrom, customTo, created }: { result: QuizModuleAnalyticsResult; project: QuizDashboardProject; period: PeriodKey; customFrom?: string; customTo?: string; created: CreatedFunnel | null }) {
   if (result.kind !== "success") return <Unavailable result={result} title="Não foi possível ler o funil selecionado" />;
   const { data } = result;
-  const hasQuizAnswers = shouldShowAnswersTab(data.metadata, created?.format);
+  const hasQuizAnswers = shouldShowAnswersTab(data.metadata);
   return <>
     <div className="flex flex-wrap items-center justify-between gap-3"><PeriodFilter current={period} customFrom={customFrom} customTo={customTo} projectId={project.projectId} /><span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Clock3 className="size-3.5" aria-hidden="true" /> Gerado em {formatTimestamp(data.generatedAt)}</span></div>
     <SummaryCards summary={data.summary} />
