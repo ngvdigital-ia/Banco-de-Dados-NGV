@@ -57,7 +57,12 @@ function valoresIniciais(
   return valores;
 }
 
-export function LeituraDoDiaPanel({ data }: { data: SpyModuleEstadoData }) {
+export function LeituraDoDiaPanel({ data, mutationsEnabled }: { data: SpyModuleEstadoData; mutationsEnabled: boolean }) {
+  if (!mutationsEnabled) return null;
+  return <LeituraDoDiaMutablePanel data={data} />;
+}
+
+function LeituraDoDiaMutablePanel({ data }: { data: SpyModuleEstadoData }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [dataLeitura, setDataLeitura] = useState(hojeISO());

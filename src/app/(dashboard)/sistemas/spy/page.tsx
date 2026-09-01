@@ -16,6 +16,10 @@ import { SpyEstadoView } from "@/components/sistemas/spy/spy-estado-view";
 export const dynamic = "force-dynamic";
 
 const isSpyModuleEnabled = () => process.env.SISTEMAS_SPY_MODULE_ENABLED === "true";
+// Esta rota é Server Component; só o booleano derivado segue para a UI. A variável
+// continua server-only e nunca é usada para autorizar a mutation (o backend tem seu
+// próprio gate em mutations.ts).
+const isSpyMutationsEnabled = () => process.env.SISTEMAS_SPY_MUTATIONS_ENABLED === "true";
 
 export default async function SpyModulePage() {
   await requireModuleAccess("spy", "read");
@@ -37,5 +41,5 @@ export default async function SpyModulePage() {
 
   const result = await fetchSpyModuleEstado();
 
-  return <SpyEstadoView result={result} />;
+  return <SpyEstadoView result={result} mutationsEnabled={isSpyMutationsEnabled()} />;
 }

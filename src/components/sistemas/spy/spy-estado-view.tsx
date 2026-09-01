@@ -11,7 +11,22 @@ import { OfertasPanel } from "./ofertas-panel";
 import { PainelPanel } from "./painel-panel";
 import { ProntasPanel } from "./prontas-panel";
 import { SummaryCards } from "./summary-cards";
-import type { SpyModuleEstadoResult } from "./types";
+import type { SpyModuleEstadoData, SpyModuleEstadoResult } from "./types";
+
+function CriteriosSomenteLeitura({ data }: { data: SpyModuleEstadoData }) {
+  return (
+    <section className="rounded-lg border bg-card p-4" aria-labelledby="spy-criterios-somente-leitura">
+      <h2 id="spy-criterios-somente-leitura" className="text-sm font-semibold">Critérios atuais</h2>
+      <p className="mt-1 text-xs text-muted-foreground">Os valores continuam visíveis; alterações estão indisponíveis.</p>
+      <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-4">
+        <div><dt className="text-xs text-muted-foreground">Estabilidade</dt><dd className="font-mono">{data.pesos.estab}</dd></div>
+        <div><dt className="text-xs text-muted-foreground">Quantidade de ads</dt><dd className="font-mono">{data.pesos.vol}</dd></div>
+        <div><dt className="text-xs text-muted-foreground">Tempo em análise</dt><dd className="font-mono">{data.pesos.tempo}</dd></div>
+        <div><dt className="text-xs text-muted-foreground">Tolerância de queda</dt><dd className="font-mono">−{data.tolerancia}%</dd></div>
+      </dl>
+    </section>
+  );
+}
 
 function notConfiguredMessage(reason: string | undefined) {
   switch (reason) {
@@ -51,7 +66,7 @@ function errorMessage(code: string | undefined) {
   }
 }
 
-export function SpyEstadoView({ result }: { result: SpyModuleEstadoResult }) {
+export function SpyEstadoView({ result, mutationsEnabled }: { result: SpyModuleEstadoResult; mutationsEnabled: boolean }) {
   if (result.kind === "not_configured") {
     return (
       <div className="space-y-6">
@@ -102,6 +117,13 @@ export function SpyEstadoView({ result }: { result: SpyModuleEstadoResult }) {
         <StatusBadge variant="success">Leitura ao vivo</StatusBadge>
       </div>
 
+      {!mutationsEnabled ? (
+        <section className="rounded-lg border border-warning/50 bg-warning-muted p-3 text-sm text-warning-muted-foreground" role="status">
+          <span className="font-semibold">Somente leitura</span>
+          <span className="ml-1">Alterações de ofertas, leituras e critérios estão indisponíveis nesta etapa.</span>
+        </section>
+      ) : null}
+
       <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
         <Clock3 className="size-3.5" aria-hidden="true" /> Consultado em {formatTimestamp(result.fetchedAt)}
       </span>
@@ -117,35 +139,43 @@ export function SpyEstadoView({ result }: { result: SpyModuleEstadoResult }) {
       <Tabs defaultValue="painel">
         <TabsList>
           <TabsTrigger value="painel">Painel</TabsTrigger>
-          <TabsTrigger value="leitura">Leitura do dia</TabsTrigger>
-          <TabsTrigger value="ofertas">Ofertas</TabsTrigger>
+          {mutationsEnabled ? <TabsTrigger value="leitura">Leitura do dia</TabsTrigger> : null}
+          {mutationsEnabled ? <TabsTrigger value="ofertas">Ofertas</TabsTrigger> : null}
           <TabsTrigger value="grafico">Gráfico</TabsTrigger>
           <TabsTrigger value="prontas">Prontas pra modelar</TabsTrigger>
-          <TabsTrigger value="dados">Dados e critérios</TabsTrigger>
+          {mutationsEnabled ? <TabsTrigger value="dados">Dados e critérios</TabsTrigger> : null}
           <TabsTrigger value="leituras">Histórico de leituras</TabsTrigger>
         </TabsList>
         <TabsContent value="painel" className="mt-4">
           <PainelPanel data={data} />
         </TabsContent>
-        <TabsContent value="leitura" className="mt-4">
-          <LeituraDoDiaPanel data={data} />
-        </TabsContent>
-        <TabsContent value="ofertas" className="mt-4">
-          <OfertasPanel data={data} />
-        </TabsContent>
+        {mutationsEnabled ? (
+          <TabsContent value="leitura" className="mt-4">
+            <LeituraDoDiaPanel data={data} mutationsEnabled={mutationsEnabled} />
+          </TabsContent>
+        ) : null}
+        {mutationsEnabled ? (
+          <TabsContent value="ofertas" className="mt-4">
+            <OfertasPanel data={data} mutationsEnabled={mutationsEnabled} />
+          </TabsContent>
+        ) : null}
         <TabsContent value="grafico" className="mt-4">
           <GraficoPanel data={data} />
         </TabsContent>
         <TabsContent value="prontas" className="mt-4">
           <ProntasPanel data={data} />
         </TabsContent>
-        <TabsContent value="dados" className="mt-4">
-          <DadosCriteriosPanel data={data} />
-        </TabsContent>
+        {mutationsEnabled ? (
+          <TabsContent value="dados" className="mt-4">
+            <DadosCriteriosPanel data={data} mutationsEnabled={mutationsEnabled} />
+          </TabsContent>
+        ) : null}
         <TabsContent value="leituras" className="mt-4">
           <LeiturasPanel data={data} />
         </TabsContent>
       </Tabs>
+
+      {!mutationsEnabled ? <CriteriosSomenteLeitura data={data} /> : null}
     </div>
   );
 }

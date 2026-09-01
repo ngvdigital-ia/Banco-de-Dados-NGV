@@ -31,7 +31,12 @@ import type { SpyModuleEstadoData, SpyOferta } from "./types";
 
 const FORMATOS = ["VSL", "Quiz", "Página de vendas", "Advertorial", "Outro"];
 
-export function OfertasPanel({ data }: { data: SpyModuleEstadoData }) {
+export function OfertasPanel({ data, mutationsEnabled }: { data: SpyModuleEstadoData; mutationsEnabled: boolean }) {
+  if (!mutationsEnabled) return null;
+  return <OfertasMutablePanel data={data} />;
+}
+
+function OfertasMutablePanel({ data }: { data: SpyModuleEstadoData }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [editandoId, setEditandoId] = useState<string | null>(null);

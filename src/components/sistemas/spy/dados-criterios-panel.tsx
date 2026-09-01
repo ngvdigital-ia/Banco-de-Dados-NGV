@@ -59,7 +59,12 @@ function hojeISO(): string {
   return `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}-${String(agora.getDate()).padStart(2, "0")}`;
 }
 
-export function DadosCriteriosPanel({ data }: { data: SpyModuleEstadoData }) {
+export function DadosCriteriosPanel({ data, mutationsEnabled }: { data: SpyModuleEstadoData; mutationsEnabled: boolean }) {
+  if (!mutationsEnabled) return null;
+  return <DadosCriteriosMutablePanel data={data} />;
+}
+
+function DadosCriteriosMutablePanel({ data }: { data: SpyModuleEstadoData }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
