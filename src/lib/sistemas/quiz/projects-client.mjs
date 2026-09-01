@@ -98,6 +98,18 @@ function buildUrl() {
   return new URL(QUIZ_DASHBOARD_PROJECTS_PATH, base.origin);
 }
 
+function canonicalTrackerUrls() {
+  // A instalação nunca pode apontar para um host enviado pelo upstream. O
+  // projeto já tem um único origin público canônico; aceitar query, fragmento,
+  // credencial ou outro host transformaria o snippet autorizado em vetor de
+  // exfiltração da public key.
+  const base = buildUrl().origin;
+  return {
+    trackerUrl: `${base}/assets/tracker.js`,
+    trackUrl: `${base}/api/track`,
+  };
+}
+
 async function readBoundedText(response) {
   if (!response.body || typeof response.body.getReader !== "function") {
     const text = await response.text();
@@ -280,7 +292,15 @@ function validateProvisionProject(input) {
 }
 
 function validateInstallation(input, project) {
-  if (!isPlainObject(input) || input.type !== "ngv.analytics.tracker" || input.version !== 1 || !isHttpsUrl(input.tracker_url) || !isHttpsUrl(input.track_url) || !isPlainObject(input.attributes)) {
+  const canonical = canonicalTrackerUrls();
+  if (
+    !isPlainObject(input)
+    || input.type !== "ngv.analytics.tracker"
+    || input.version !== 1
+    || input.tracker_url !== canonical.trackerUrl
+    || input.track_url !== canonical.trackUrl
+    || !isPlainObject(input.attributes)
+  ) {
     fail("RESPONSE_SCHEMA_INVALID");
   }
   const attributes = input.attributes;
@@ -288,19 +308,19 @@ function validateInstallation(input, project) {
     attributes["data-nga-project-id"] !== project.projectId
     || attributes["data-nga-funnel-id"] !== project.funnelId
     || attributes["data-nga-page-id"] !== project.pageId
-    || attributes["data-nga-endpoint"] !== input.track_url
+    || attributes["data-nga-endpoint"] !== canonical.trackUrl
     || attributes["data-nga-public-key"] !== project.publicKey
   ) {
     fail("RESPONSE_SCHEMA_INVALID");
   }
   return {
-    trackerUrl: input.tracker_url,
-    trackUrl: input.track_url,
+    trackerUrl: canonical.trackerUrl,
+    trackUrl: canonical.trackUrl,
     attributes: {
       projectId: project.projectId,
       funnelId: project.funnelId,
       pageId: project.pageId,
-      endpoint: input.track_url,
+      endpoint: canonical.trackUrl,
       publicKey: project.publicKey,
     },
   };

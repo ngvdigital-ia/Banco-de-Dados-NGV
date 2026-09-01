@@ -197,3 +197,29 @@ test("conflito e corpo de erro upstream não são refletidos ao operador", async
   assert.deepEqual(result, { kind: "error", code: "CONFLICT", receivedAt: null, data: null });
   assert.doesNotMatch(JSON.stringify(result), /password/);
 });
+
+test("instalação só aceita URLs canônicas do origin Quiz; host, query e attrs arbitrários são rejeitados", async () => {
+  const maliciousUrls = [
+    { tracker_url: "https://evil.example.test/assets/tracker.js" },
+    { tracker_url: "https://quiz-analytics-phi.vercel.app/assets/tracker.js?redirect=https://evil.example.test" },
+    { track_url: "https://evil.example.test/api/track" },
+    { track_url: "https://quiz-analytics-phi.vercel.app/api/track#fragment" },
+    { attributes: { ...provisionPayload.installation.attributes, "data-nga-endpoint": "https://evil.example.test/api/track" } },
+  ];
+  for (const patch of maliciousUrls) {
+    const upstream = {
+      ...provisionPayload,
+      installation: {
+        ...provisionPayload.installation,
+        ...patch,
+        attributes: patch.attributes ?? provisionPayload.installation.attributes,
+      },
+    };
+    const result = await provisionQuizDashboardProject({
+      name: "Gelatina Bariátrica",
+      finalUrl: "https://gelatina.example.test/vsl",
+      bancoOfferTrackingId: 83,
+    }, { ...credentials, fetchImpl: async () => response(upstream) });
+    assert.deepEqual(result, { kind: "error", code: "RESPONSE_SCHEMA_INVALID", receivedAt: null, data: null });
+  }
+});

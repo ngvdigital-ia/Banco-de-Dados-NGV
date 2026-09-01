@@ -2,9 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { logModuleAction } from "@/lib/sistemas/audit";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { offerTracking } from "@/db/schema";
+import { logModuleAction, recordModuleAction } from "@/lib/sistemas/audit";
 import { requireModuleAccess } from "@/lib/sistemas/authz";
 import { dispatchQuizProjectWithAudit } from "@/lib/sistemas/quiz/projects-dispatch.mjs";
+import { validateBancoOfferTrackingLink } from "@/lib/sistemas/quiz/projects-preflight.mjs";
 import {
   listQuizDashboardProjects,
   provisionQuizDashboardProjectServer,
@@ -75,6 +79,7 @@ export async function listarFunisQuizAction() {
  * `format` é orientação de sessão: o adapter não o inclui no contrato remoto.
  */
 export async function criarFunilQuizAction(formData: FormData) {
+  let provisionInput: QuizProvisionInput | null = null;
   const auditPayload = {
     name: formValue(formData, "name") ?? null,
     finalUrl: formValue(formData, "finalUrl") ?? null,
@@ -86,12 +91,25 @@ export async function criarFunilQuizAction(formData: FormData) {
     action: "funnel_provision",
     capability: "mutate",
     requireAccessImpl,
-    operationImpl: () => {
+    preflightImpl: async () => {
       const parsed = parseCreateFunnelFormData(formData);
-      return parsed.success
-        ? provisionQuizDashboardProjectServer(parsed.data)
-        : Promise.resolve({ kind: "error", code: "PROVISION_INPUT_INVALID", receivedAt: null, data: null } as const);
+      if (!parsed.success) return { kind: "error", code: "PROVISION_INPUT_INVALID", receivedAt: null, data: null } as const;
+      provisionInput = parsed.data;
+      return validateBancoOfferTrackingLink(provisionInput, async (offerTrackingId: number) => {
+        const rows = await db
+          .select({ id: offerTracking.id })
+          .from(offerTracking)
+          .where(eq(offerTracking.id, offerTrackingId))
+          .limit(1);
+        return rows[0]?.id === offerTrackingId;
+      });
     },
+    operationImpl: () =>
+      provisionInput
+        ? provisionQuizDashboardProjectServer(provisionInput)
+        : Promise.resolve({ kind: "error", code: "PROVISION_INPUT_INVALID", receivedAt: null, data: null } as const),
+    intentLogActionImpl: recordModuleAction,
+    intentTargetRefOf: () => "provision",
     logActionImpl: logModuleAction,
     targetRefOf: (
       _actor: { id: string; email: string },

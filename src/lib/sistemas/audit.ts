@@ -57,21 +57,34 @@ function hashPayload(payload: unknown): string | null {
   return commandDigest(payload);
 }
 
-// Registra uma ação administrativa de módulo interno no audit trail central do
-// Banco NGV. Best-effort, mesmo padrão de logTeamAction() (src/lib/team-audit.ts):
-// falha ao logar nunca derruba o request que já aconteceu.
+function actionLogValues(params: LogModuleActionParams) {
+  return {
+    actorClerkId: params.actorClerkId,
+    actorEmail: params.actorEmail,
+    module: params.module,
+    action: params.action,
+    targetRef: sanitizeTargetRef(params.targetRef),
+    result: params.result,
+    resultDetail: sanitizeResultDetail(params.resultDetail),
+    payloadHash: hashPayload(params.payload),
+  };
+}
+
+/**
+ * Grava uma entrada de auditoria durável e PROPAGA falha de banco. Mutações
+ * externas devem chamar esta variante para registrar a intenção ANTES de tocar
+ * o upstream; sem o receipt de intenção, a operação não pode acontecer.
+ */
+export async function recordModuleAction(params: LogModuleActionParams): Promise<void> {
+  await db.insert(moduleActionLog).values(actionLogValues(params));
+}
+
+// Recibo posterior best-effort, mesmo padrão de logTeamAction() (src/lib/team-audit.ts).
+// Só pode ser usado depois que a operação já aconteceu; não é suficiente como
+// gate de uma mutação externa.
 export async function logModuleAction(params: LogModuleActionParams): Promise<void> {
   try {
-    await db.insert(moduleActionLog).values({
-      actorClerkId: params.actorClerkId,
-      actorEmail: params.actorEmail,
-      module: params.module,
-      action: params.action,
-      targetRef: sanitizeTargetRef(params.targetRef),
-      result: params.result,
-      resultDetail: sanitizeResultDetail(params.resultDetail),
-      payloadHash: hashPayload(params.payload),
-    });
+    await recordModuleAction(params);
   } catch (err) {
     console.error("[module-audit] failed to log action:", err);
   }
