@@ -1,10 +1,10 @@
 import { requireModuleAccess } from "@/lib/sistemas/authz";
 import { fetchQuizModuleAnalytics } from "@/lib/sistemas/quiz/analytics-client.mjs";
+import { listQuizDashboardProjects } from "@/lib/sistemas/quiz/projects";
 import { QuizAnalyticsView } from "@/components/sistemas/quiz/quiz-analytics-view";
 import { parseQuizFunnel } from "@/components/sistemas/quiz/funnel";
 import { parsePeriodKey, resolvePeriod } from "@/components/sistemas/quiz/period";
 import type { QuizDashboardProject } from "@/lib/sistemas/quiz/projects-client.mjs";
-import { listarFunisQuizAction } from "./actions";
 
 // Rota estática, irmã do catch-all `[system]/page.tsx` (o Next.js App Router
 // prioriza segmento estático sobre dinâmico). A lista de projetos é a fonte de
@@ -31,7 +31,10 @@ export default async function QuizModulePage({
       : undefined;
   const parsedProject = parseQuizFunnel(projectParam);
   const range = resolvePeriod(periodParam, customFromParam, customToParam);
-  const projectsResult = await listarFunisQuizAction();
+  // Render não passa por Server Action: listarFunisQuizAction audita cada uso e
+  // portanto escreve no Banco. Esta leitura direta continua server-only e só
+  // acontece após o guard, sem registrar nem produzir efeitos colaterais.
+  const projectsResult = await listQuizDashboardProjects();
 
   const selectedProject = projectsResult.kind === "success"
     ? projectsResult.data.projects.find((project: QuizDashboardProject) => project.projectId === parsedProject) ?? projectsResult.data.projects[0]

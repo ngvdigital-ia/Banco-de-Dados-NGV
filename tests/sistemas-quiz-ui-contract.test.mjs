@@ -7,9 +7,10 @@ const VIEW = new URL("../src/components/sistemas/quiz/quiz-analytics-view.tsx", 
 const CREATE = new URL("../src/components/sistemas/quiz/funnel-create-dialog.tsx", import.meta.url);
 const RECEIPT = new URL("../src/components/sistemas/quiz/provisioned-funnel-panel.tsx", import.meta.url);
 
-test("Funnel Analytics usa a lista canônica e não mantém fallback de exemplo", async () => {
+test("Funnel Analytics usa adapter read-only no render e não mantém fallback de exemplo", async () => {
   const [page, view] = await Promise.all([readFile(PAGE, "utf8"), readFile(VIEW, "utf8")]);
-  assert.match(page, /listarFunisQuizAction\(\)/);
+  assert.match(page, /listQuizDashboardProjects\(\)/);
+  assert.doesNotMatch(page, /listarFunisQuizAction\(|criarFunilQuizAction\(/, "render não pode disparar Server Action auditável ou mutável");
   assert.doesNotMatch(page, /DEFAULT_QUIZ_FUNNEL|SISTEMAS_QUIZ_MODULE_ENABLED|Módulo em construção/);
   assert.match(view, /Funil em foco/);
   assert.match(view, /project\.name/);
