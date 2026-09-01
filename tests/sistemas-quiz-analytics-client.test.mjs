@@ -35,6 +35,7 @@ const validBody = {
     summary: { total_journeys: 10, cross_page_journeys: 3 },
     pages: [{ page_id: "quiz", count: 10 }],
   },
+  metadata: { has_quiz_answers: true, quiz_answers_count: 1 },
 };
 
 function response(body, init = {}) {
@@ -76,6 +77,7 @@ test("payload válido: GET com Basic Auth, redirect manual, path correto, e resu
   assert.equal(result.data.responses[0].answers[0].pct, 75);
   assert.equal(result.data.recentEvents[0].sessionShort, "abcd1234");
   assert.equal(result.data.journeys.summary.crossPageJourneys, 3);
+  assert.deepEqual(result.data.metadata, { hasQuizAnswers: true, quizAnswersCount: 1 });
   assert.deepEqual(result.data.filter, {
     from: null,
     to: null,
@@ -110,12 +112,36 @@ test("payload malformado (campo com tipo errado) falha fechado com RESPONSE_SCHE
   assert.throws(() => parseQuizModuleAnalyticsPayload({ ...validBody, funnel: "not-an-array" }), { code: "RESPONSE_SCHEMA_INVALID" });
   assert.throws(() => parseQuizModuleAnalyticsPayload({ ...validBody, generated_at: "not-a-date" }), { code: "RESPONSE_SCHEMA_INVALID" });
   assert.throws(() => parseQuizModuleAnalyticsPayload({ ...validBody, filter: { ...validBody.filter, funnel_id: null } }), { code: "RESPONSE_SCHEMA_INVALID" });
+  assert.throws(() => parseQuizModuleAnalyticsPayload({ ...validBody, metadata: { has_quiz_answers: "true", quiz_answers_count: 1 } }), { code: "RESPONSE_SCHEMA_INVALID" });
+  assert.throws(() => parseQuizModuleAnalyticsPayload({ ...validBody, metadata: { has_quiz_answers: false, quiz_answers_count: 1 } }), { code: "RESPONSE_SCHEMA_INVALID" });
+  const withoutMetadata = { ...validBody };
+  delete withoutMetadata.metadata;
+  assert.throws(() => parseQuizModuleAnalyticsPayload(withoutMetadata), { code: "RESPONSE_SCHEMA_INVALID" });
 
   const result = await fetchQuizModuleAnalytics(
     {},
     { ...config, fetchImpl: async () => response({ ...validBody, summary: null }) },
   );
   assert.deepEqual(result, { kind: "error", code: "RESPONSE_SCHEMA_INVALID", generatedAt: null, data: null });
+});
+
+test("definições de resposta vazias preservam metadata false/zero; respostas reais preservam true", () => {
+  const definitionsWithoutAnswers = {
+    ...validBody,
+    responses: [{
+      ...validBody.responses[0],
+      total_sessions: 0,
+      answers: [],
+    }],
+    metadata: { has_quiz_answers: false, quiz_answers_count: 0 },
+  };
+  const noAnswers = parseQuizModuleAnalyticsPayload(definitionsWithoutAnswers);
+  assert.deepEqual(noAnswers.metadata, { hasQuizAnswers: false, quizAnswersCount: 0 });
+  assert.equal(noAnswers.responses.length, 1, "definição de pergunta não é descartada por não ter resposta");
+
+  const withAnswers = parseQuizModuleAnalyticsPayload(validBody);
+  assert.deepEqual(withAnswers.metadata, { hasQuizAnswers: true, quizAnswersCount: 1 });
+  assert.equal(withAnswers.responses[0].answers.length, 1);
 });
 
 test("resposta 401 do Quiz vira erro tipado UNAUTHORIZED — nunca dado zero", async () => {

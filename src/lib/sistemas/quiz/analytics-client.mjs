@@ -266,9 +266,27 @@ function validateJourneys(input) {
   };
 }
 
+// O Quiz sempre devolve este metadado junto da projeção. Ele não é um fallback
+// visual: define se respostas representam perguntas de quiz ou apenas uma
+// estrutura de funil (VSL/presell). Ausência/incoerência precisa falhar fechado
+// para não esconder uma aba por engano nem mostrá-la com dado inventado.
+function validateMetadata(input) {
+  if (!isPlainObject(input)) fail("RESPONSE_SCHEMA_INVALID");
+  const { has_quiz_answers, quiz_answers_count } = input;
+  if (
+    typeof has_quiz_answers !== "boolean"
+    || !Number.isSafeInteger(quiz_answers_count)
+    || quiz_answers_count < 0
+    || has_quiz_answers !== (quiz_answers_count > 0)
+  ) {
+    fail("RESPONSE_SCHEMA_INVALID");
+  }
+  return { hasQuizAnswers: has_quiz_answers, quizAnswersCount: quiz_answers_count };
+}
+
 export function parseQuizModuleAnalyticsPayload(body) {
   if (!isPlainObject(body)) fail("RESPONSE_SCHEMA_INVALID");
-  const { generated_at, filter, summary, funnel, responses, utm_campaigns, recent_events, journeys } = body;
+  const { generated_at, filter, summary, funnel, responses, utm_campaigns, recent_events, journeys, metadata } = body;
   if (!isIsoString(generated_at)) fail("RESPONSE_SCHEMA_INVALID");
   if (!Array.isArray(funnel) || !Array.isArray(responses) || !Array.isArray(utm_campaigns) || !Array.isArray(recent_events)) {
     fail("RESPONSE_SCHEMA_INVALID");
@@ -282,6 +300,7 @@ export function parseQuizModuleAnalyticsPayload(body) {
     utmCampaigns: utm_campaigns.map(validateCampaign),
     recentEvents: recent_events.map(validateEvent),
     journeys: validateJourneys(journeys),
+    metadata: validateMetadata(metadata),
   };
 }
 

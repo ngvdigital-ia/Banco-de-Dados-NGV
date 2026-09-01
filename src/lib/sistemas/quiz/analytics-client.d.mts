@@ -64,6 +64,11 @@ export interface QuizJourneys {
   pages: QuizJourneyPage[];
 }
 
+export interface QuizAnalyticsMetadata {
+  hasQuizAnswers: boolean;
+  quizAnswersCount: number;
+}
+
 export interface QuizModuleAnalyticsData {
   generatedAt: string;
   filter: { from: string | null; to: string | null; projectId: string; funnelId: string };
@@ -73,6 +78,7 @@ export interface QuizModuleAnalyticsData {
   utmCampaigns: QuizUtmCampaign[];
   recentEvents: QuizRecentEvent[];
   journeys: QuizJourneys;
+  metadata: QuizAnalyticsMetadata;
 }
 
 export type QuizModuleAnalyticsResult =
