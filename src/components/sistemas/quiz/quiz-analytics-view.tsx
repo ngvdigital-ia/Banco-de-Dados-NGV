@@ -6,6 +6,7 @@ import { Clock3, ShieldAlert, Wrench } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { shouldShowAnswersTab } from "./answers-tab";
 import { CampaignsPanel } from "./campaigns-panel";
 import { EventsPanel } from "./events-panel";
 import { FunnelCreateDialog, type CreatedFunnel } from "./funnel-create-dialog";
@@ -115,8 +116,7 @@ export function QuizAnalyticsView({ result, projectsResult, selectedProject, per
 function AnalyticsContent({ result, project, period, customFrom, customTo, created }: { result: QuizModuleAnalyticsResult; project: QuizDashboardProject; period: PeriodKey; customFrom?: string; customTo?: string; created: CreatedFunnel | null }) {
   if (result.kind !== "success") return <Unavailable result={result} title="Não foi possível ler o funil selecionado" />;
   const { data } = result;
-  const metadata = project as QuizDashboardProject & { metadata?: { has_quiz_answers?: boolean; hasQuizAnswers?: boolean } };
-  const hasQuizAnswers = metadata.metadata?.has_quiz_answers === true || metadata.metadata?.hasQuizAnswers === true || data.responses.length > 0 || created?.format === "quiz";
+  const hasQuizAnswers = shouldShowAnswersTab(data.metadata, created?.format);
   return <>
     <div className="flex flex-wrap items-center justify-between gap-3"><PeriodFilter current={period} customFrom={customFrom} customTo={customTo} projectId={project.projectId} /><span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Clock3 className="size-3.5" aria-hidden="true" /> Gerado em {formatTimestamp(data.generatedAt)}</span></div>
     <SummaryCards summary={data.summary} />

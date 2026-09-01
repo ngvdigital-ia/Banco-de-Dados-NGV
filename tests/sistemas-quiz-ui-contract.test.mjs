@@ -37,3 +37,13 @@ test("criação orienta sem permitir IDs manuais e entrega tracker preenchido", 
   assert.match(receipt, /3\. Publicar/);
   assert.match(receipt, /4\. Testar/);
 });
+
+test("a aba de respostas depende da metadata do analytics, não da lista de respostas", async () => {
+  const [view, helper] = await Promise.all([
+    readFile(VIEW, "utf8"),
+    readFile(new URL("../src/components/sistemas/quiz/answers-tab.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(view, /shouldShowAnswersTab\(data\.metadata, created\?\.format\)/);
+  assert.doesNotMatch(view, /responses\.length/);
+  assert.match(helper, /metadata\.hasQuizAnswers === true/);
+});
