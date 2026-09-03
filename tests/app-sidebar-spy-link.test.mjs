@@ -6,20 +6,15 @@ const source = await readFile(
   new URL("../src/components/app-sidebar.tsx", import.meta.url),
   "utf8",
 );
-const envExample = await readFile(
-  new URL("../.env.example", import.meta.url),
-  "utf8",
-);
-
-test("Spy Analytics is opt-in and empty by default", () => {
-  assert.match(source, /process\.env\.NEXT_PUBLIC_SPY_ANALYTICS_URL/);
-  assert.match(source, /getSafeExternalUrl\(process\.env\.NEXT_PUBLIC_SPY_ANALYTICS_URL\)/);
-  assert.match(envExample, /^NEXT_PUBLIC_SPY_ANALYTICS_URL=\s*$/m);
+test("Spy Analytics is an internal route and has no external URL configuration", () => {
+  assert.match(source, /\{ title: "Spy Analytics", href: "\/sistemas\/spy", icon: ScanSearch \}/);
+  assert.doesNotMatch(source, /process\.env\.NEXT_PUBLIC_SPY_ANALYTICS_URL/);
+  assert.doesNotMatch(source, /getSafeExternalUrl/);
 });
 
-test("Spy Analytics accepts only a safe HTTPS URL", () => {
-  assert.match(source, /import \{ getSafeExternalUrl \} from "@\/lib\/external-dashboard-url"/);
-  assert.match(source, /getSafeExternalUrl\(process\.env\.NEXT_PUBLIC_SPY_ANALYTICS_URL\)/);
+test("Spy Analytics uses the internal system route", () => {
+  assert.match(source, /title: "Spy Analytics", href: "\/sistemas\/spy"/);
+  assert.doesNotMatch(source, /target="_blank"/);
 });
 
 test("shared URL helper enforces HTTPS without userinfo, query, or hash", async () => {
@@ -38,13 +33,11 @@ test("shared URL helper enforces HTTPS without userinfo, query, or hash", async 
   assert.match(helper, /catch \{/);
 });
 
-test("Spy Analytics is an explicitly external, inactive link", () => {
+test("Spy Analytics is an internal, same-tab link", () => {
   assert.match(source, /ScanSearch/);
-  assert.match(source, /target="_blank"/);
-  assert.match(source, /rel="noopener noreferrer"/);
-  assert.match(source, /aria-label=\{`\$\{item\.title\} \(abre em nova aba\)`\}/);
-  assert.match(source, /ExternalLink/);
-  assert.match(source, /item\.external\s*\?\s*false/);
+  assert.match(source, /href: "\/sistemas\/spy"/);
+  assert.doesNotMatch(source, /ExternalLink/);
+  assert.doesNotMatch(source, /rel="noopener noreferrer"/);
   assert.match(source, /h-11[^\"]*md:h-9/);
 });
 

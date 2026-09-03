@@ -372,7 +372,9 @@ test("sidebar e command palette preservam Dashboard e condicionam Operação à 
   ]);
   assert.match(sidebar, /import \{ isOperationCockpitEnabled \} from ["']@\/lib\/operacao\/feature["'];/);
   assert.match(sidebar, /\{ title: ["']Dashboard["'], href: ["']\/dashboard["']/);
-  assert.match(sidebar, /\.\.\.\(isOperationCockpitEnabled \? \[\{ title: ["']Operação["'], href: ["']\/operacao["']/);
+  assert.match(sidebar, /const systemNavItems: NavItem\[\] = \[/);
+  assert.match(sidebar, /\{ title: ["']Visão geral["'], href: ["']\/operacao["'], icon: RadioTower \}/);
+  assert.match(sidebar, /\{isOperationCockpitEnabled && \(/);
   assert.match(commandPalette, /import \{ isOperationCockpitEnabled \} from ["']@\/lib\/operacao\/feature["'];/);
   assert.match(commandPalette, /\{ label: ["']Dashboard["'], href: ["']\/dashboard["'] \}/);
   assert.match(commandPalette, /\.\.\.\(isOperationCockpitEnabled \? \[\{ label: ["']Operação["'], href: ["']\/operacao["'] \}/);

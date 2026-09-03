@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-12T01:22:39.541Z",
+  "generated_at": "2026-09-03T02:03:34.019Z",
   "source": "ngv-hub-local-projection",
   "mode": "read-only",
   "phases": [
@@ -426,8 +426,8 @@
       "offer_slug": "bumbumflix",
       "display_name": "Bumbumflix",
       "language": "en/fr",
-      "phase": 6,
-      "state": "IN_MOTION",
+      "phase": 0,
+      "state": "PENDING",
       "source_of_truth": "banco-ngv",
       "external_ids": {
         "banco_ngv": [
@@ -443,7 +443,8 @@
           "registry:bumbumflix",
           "github:ngvdigital-ia/bumbumflix",
           "vercel:bumbumflix",
-          "domain:bumbumflix-one.vercel.app"
+          "domain:bumbumflix-one.vercel.app",
+          "domain:bumbumflix.online"
         ],
         "product": [],
         "metrics": []
@@ -458,68 +459,62 @@
           "pages:registry:bumbumflix",
           "pages:github:ngvdigital-ia/bumbumflix",
           "pages:vercel:bumbumflix",
-          "pages:domain:bumbumflix-one.vercel.app"
+          "pages:domain:bumbumflix-one.vercel.app",
+          "pages:domain:bumbumflix.online"
         ]
       },
-      "source_status": "finalizado",
-      "aggregated_status": "IN_MOTION",
-      "next_owner": "Pedro Victor Da Silva Oliveira",
+      "source_status": "waiting-tracking",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
       "evidence": [
         {
           "source": "banco-ngv",
           "external_id": "253",
           "relation": "offer_tracking",
-          "state": "waiting-video",
-          "observed_at": "2026-08-11T12:43:43.000Z"
+          "state": "waiting-tracking",
+          "observed_at": "2026-08-28T19:18:00.000Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajtfhvh",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": "2026-08-28T19:18:00.000Z"
         },
         {
           "source": "registry",
           "external_id": "registry:bumbumflix",
           "relation": "page_identity",
           "state": "PENDING",
-          "observed_at": "2026-08-11T12:43:43.000Z"
+          "observed_at": "2026-08-28T19:18:00.000Z"
         },
         {
           "source": "github",
           "external_id": "github:ngvdigital-ia/bumbumflix",
           "relation": "page_identity",
           "state": "PENDING",
-          "observed_at": "2026-08-11T12:43:43.000Z"
+          "observed_at": "2026-08-28T19:18:00.000Z"
         },
         {
           "source": "vercel",
           "external_id": "vercel:bumbumflix",
           "relation": "page_identity",
           "state": "PENDING",
-          "observed_at": "2026-08-11T12:43:43.000Z"
+          "observed_at": "2026-08-28T19:18:00.000Z"
         },
         {
           "source": "domain",
           "external_id": "domain:bumbumflix-one.vercel.app",
           "relation": "page_identity",
           "state": "PENDING",
-          "observed_at": "2026-08-11T12:43:43.000Z"
+          "observed_at": "2026-08-28T19:18:00.000Z"
         },
         {
-          "source": "clickup",
-          "external_id": "86ajtfhvh",
-          "relation": "parent_task",
-          "state": "finalizado",
-          "observed_at": "2026-08-11T12:51:51.954Z"
-        },
-        {
-          "source": "clickup",
-          "external_id": "86ajtfhwv",
-          "relation": "create_tracking",
-          "state": "finalizado",
-          "observed_at": "2026-08-11T12:51:51.954Z"
-        },
-        {
-          "source": "clickup",
-          "external_id": "86ajxg9ax",
-          "relation": "apply_tracking",
-          "state": "briefing",
-          "observed_at": "2026-08-11T12:51:51.954Z"
+          "source": "domain",
+          "external_id": "domain:bumbumflix.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": "2026-08-28T19:18:00.000Z"
         }
       ],
       "metric_binding": {
@@ -533,21 +528,21 @@
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
-          "detail": "Vídeo ainda não confirmado na fonte canônica.",
+          "detail": "Tracking NGV e identidades oficiais Meta/UTMify ainda não foram reconciliados; não promover para launch-ready sem instalação única, receiving_events e readback.",
           "source": "registry",
           "severity": "PENDING",
-          "occurred_at": "2026-08-11T12:43:43.000Z"
+          "occurred_at": "2026-08-28T19:18:00.000Z"
         }
       ],
-      "last_evidence_at": "2026-08-07T12:22:14.085Z"
+      "last_evidence_at": "2026-08-28T19:18:00.000Z"
     },
     {
       "offer_id": "ngv:calistenia-21d",
       "offer_slug": "calistenia-21d",
       "display_name": "Calistenia 21D",
       "language": "es",
-      "phase": 1,
-      "state": "IN_MOTION",
+      "phase": 0,
+      "state": "PENDING",
       "source_of_truth": "banco-ngv",
       "external_ids": {
         "banco_ngv": [
@@ -604,16 +599,23 @@
           "pages:domain:calistenia21dias.online"
         ]
       },
-      "source_status": "finalizado",
-      "aggregated_status": "IN_MOTION",
+      "source_status": "waiting-tracking",
+      "aggregated_status": "PENDING",
       "next_owner": "PENDING",
       "evidence": [
         {
           "source": "banco-ngv",
           "external_id": "237",
           "relation": "offer_tracking",
-          "state": "faithful-clone-qa-passed-custom-domain-200",
-          "observed_at": "2026-08-11T12:43:43.000Z"
+          "state": "waiting-tracking",
+          "observed_at": "2026-08-28T19:43:00.000Z"
+        },
+        {
+          "source": "clickup",
+          "external_id": "86ajm207a",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": "2026-08-28T19:43:00.000Z"
         },
         {
           "source": "utmify",
@@ -690,56 +692,35 @@
           "external_id": "registry:calistenia-21d",
           "relation": "page_identity",
           "state": "PENDING",
-          "observed_at": "2026-08-11T12:43:43.000Z"
+          "observed_at": "2026-08-28T19:43:00.000Z"
         },
         {
           "source": "github",
           "external_id": "github:ngvdigital-ia/calistenia-21d",
           "relation": "page_identity",
           "state": "PENDING",
-          "observed_at": "2026-08-11T12:43:43.000Z"
+          "observed_at": "2026-08-28T19:43:00.000Z"
         },
         {
           "source": "vercel",
           "external_id": "vercel:calistenia-21d",
           "relation": "page_identity",
           "state": "PENDING",
-          "observed_at": "2026-08-11T12:43:43.000Z"
+          "observed_at": "2026-08-28T19:43:00.000Z"
         },
         {
           "source": "domain",
           "external_id": "domain:calistenia-21d-zeta.vercel.app",
           "relation": "page_identity",
           "state": "PENDING",
-          "observed_at": "2026-08-11T12:43:43.000Z"
+          "observed_at": "2026-08-28T19:43:00.000Z"
         },
         {
           "source": "domain",
           "external_id": "domain:calistenia21dias.online",
           "relation": "page_identity",
           "state": "PENDING",
-          "observed_at": "2026-08-11T12:43:43.000Z"
-        },
-        {
-          "source": "clickup",
-          "external_id": "86ajm207a",
-          "relation": "parent_task",
-          "state": "finalizado",
-          "observed_at": "2026-08-11T12:51:51.954Z"
-        },
-        {
-          "source": "clickup",
-          "external_id": "86ajubm1t",
-          "relation": "locale_variant",
-          "state": "finalizado",
-          "observed_at": "2026-08-11T12:51:51.954Z"
-        },
-        {
-          "source": "clickup",
-          "external_id": "86ajxg4hn",
-          "relation": "locale_variant",
-          "state": "produção em andamento",
-          "observed_at": "2026-08-11T12:51:51.954Z"
+          "observed_at": "2026-08-28T19:43:00.000Z"
         }
       ],
       "metric_binding": {
@@ -764,13 +745,112 @@
       "blockers": [
         {
           "code": "MANIFEST_PENDING",
-          "detail": "Meta Pixel e UTMify ainda não foram fornecidos; não promover para launch-ready sem esse gate.",
+          "detail": "Tracker NGV, Meta Pixel e UTMify ainda não foram fornecidos; não promover para launch-ready sem instalação única, receiving_events e readback.",
           "source": "registry",
           "severity": "PENDING",
-          "occurred_at": "2026-08-11T12:43:43.000Z"
+          "occurred_at": "2026-08-28T19:43:00.000Z"
+        },
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Os checkouts variam por idioma e ainda não têm product_id/external_product_id explícito; não inferir venda ou acesso por URL ou título.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": "2026-08-28T19:43:00.000Z"
         }
       ],
-      "last_evidence_at": "2026-08-10T10:17:24.206Z"
+      "last_evidence_at": "2026-08-28T19:43:00.000Z"
+    },
+    {
+      "offer_id": "ngv:calistenia-asiatica-fr",
+      "offer_slug": "calistenia-asiatica-fr",
+      "display_name": "Calistenia Asiática - FR",
+      "language": "fr",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ak099at"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:calistenia-asiatica-fr",
+          "github:ngvdigital-ia/calistenia-asiatica-fr",
+          "vercel:calistenia-asiatica-fr",
+          "domain:calisthenieasiatique.online"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ak099at",
+          "pages:registry:calistenia-asiatica-fr",
+          "pages:github:ngvdigital-ia/calistenia-asiatica-fr",
+          "pages:vercel:calistenia-asiatica-fr",
+          "pages:domain:calisthenieasiatique.online"
+        ]
+      },
+      "source_status": "structure-ready",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ak099at",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:calistenia-asiatica-fr",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/calistenia-asiatica-fr",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:calistenia-asiatica-fr",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:calisthenieasiatique.online",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
     },
     {
       "offer_id": "ngv:celestino",
@@ -1356,6 +1436,98 @@
         {
           "source": "github",
           "external_id": "github:ngvdigital-ia/el-protocolo-juventud-epigenetica",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
+      "offer_id": "ngv:exercicios-quanticos-en",
+      "offer_slug": "exercicios-quanticos-en",
+      "display_name": "Exercicios Quanticos - Traduzir INGLES",
+      "language": "en",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [
+          "86ak08kjy"
+        ],
+        "n8n": [],
+        "pages": [
+          "registry:exercicios-quanticos-en",
+          "github:ngvdigital-ia/exercicios-quanticos-en",
+          "vercel:exercicios-quanticos-en",
+          "domain:exercicios-quanticos-i0mp38e79-ngvdigitas-projects.vercel.app"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "clickup:86ak08kjy",
+          "pages:registry:exercicios-quanticos-en",
+          "pages:github:ngvdigital-ia/exercicios-quanticos-en",
+          "pages:vercel:exercicios-quanticos-en",
+          "pages:domain:exercicios-quanticos-i0mp38e79-ngvdigitas-projects.vercel.app"
+        ]
+      },
+      "source_status": "waiting-video",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "clickup",
+          "external_id": "86ak08kjy",
+          "relation": "parent_task",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "registry",
+          "external_id": "registry:exercicios-quanticos-en",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/exercicios-quanticos-en",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:exercicios-quanticos-en",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:exercicios-quanticos-i0mp38e79-ngvdigitas-projects.vercel.app",
           "relation": "page_identity",
           "state": "PENDING",
           "observed_at": null
@@ -3401,6 +3573,88 @@
       "last_evidence_at": null
     },
     {
+      "offer_id": "ngv:ultra-inteligencia-fr",
+      "offer_slug": "ultra-inteligencia-fr",
+      "display_name": "Ultra Inteligência",
+      "language": "fr",
+      "phase": 0,
+      "state": "PENDING",
+      "source_of_truth": "banco-ngv",
+      "external_ids": {
+        "banco_ngv": [],
+        "clickup": [],
+        "n8n": [],
+        "pages": [
+          "registry:ultra-inteligencia-fr",
+          "github:ngvdigital-ia/ultra-inteligencia-fr",
+          "vercel:ultra-inteligencia-fr",
+          "domain:ultra-inteligencia-fr.vercel.app"
+        ],
+        "product": [],
+        "metrics": []
+      },
+      "reconciliation": {
+        "status": "PENDING",
+        "evidence": [
+          "pages:registry:ultra-inteligencia-fr",
+          "pages:github:ngvdigital-ia/ultra-inteligencia-fr",
+          "pages:vercel:ultra-inteligencia-fr",
+          "pages:domain:ultra-inteligencia-fr.vercel.app"
+        ]
+      },
+      "source_status": "waiting-video",
+      "aggregated_status": "PENDING",
+      "next_owner": "PENDING",
+      "evidence": [
+        {
+          "source": "registry",
+          "external_id": "registry:ultra-inteligencia-fr",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "github",
+          "external_id": "github:ngvdigital-ia/ultra-inteligencia-fr",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "vercel",
+          "external_id": "vercel:ultra-inteligencia-fr",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        },
+        {
+          "source": "domain",
+          "external_id": "domain:ultra-inteligencia-fr.vercel.app",
+          "relation": "page_identity",
+          "state": "PENDING",
+          "observed_at": null
+        }
+      ],
+      "metric_binding": {
+        "status": "PENDING",
+        "entity_type": null,
+        "entity_id": null,
+        "metric_ids": [],
+        "last_observed_at": null,
+        "detail": "Vínculo de métrica não mapeado por ID; nenhuma atribuição por nome foi feita."
+      },
+      "blockers": [
+        {
+          "code": "MANIFEST_PENDING",
+          "detail": "Confirmar identidade e IDs externos nas fontes canônicas antes de ativar este manifesto.",
+          "source": "registry",
+          "severity": "PENDING",
+          "occurred_at": null
+        }
+      ],
+      "last_evidence_at": null
+    },
+    {
       "offer_id": "ngv:vigor-max",
       "offer_slug": "vigor-max",
       "display_name": "Vigor Max",
@@ -3479,9 +3733,9 @@
       "id": "registry",
       "label": "Registry",
       "state": "OPERANT",
-      "coverage": "38/38",
+      "coverage": "41/41",
       "detail": "Manifestos locais lidos e projetados.",
-      "last_read_at": "2026-08-12T01:22:39.541Z"
+      "last_read_at": "2026-09-03T02:03:34.019Z"
     },
     {
       "id": "ledger",
@@ -3489,21 +3743,21 @@
       "state": "OPERANT",
       "coverage": "7 eventos",
       "detail": "Ledger local sanitizado lido sem rede.",
-      "last_read_at": "2026-08-12T01:22:39.541Z"
+      "last_read_at": "2026-09-03T02:03:34.019Z"
     },
     {
       "id": "clickup",
       "label": "ClickUp",
-      "state": "DEGRADED",
-      "coverage": "6/6",
-      "detail": "Evidência live com mais de 12 horas.",
-      "last_read_at": "2026-08-11T12:51:51.954Z"
+      "state": "UNVERIFIED",
+      "coverage": "18/41",
+      "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
+      "last_read_at": null
     },
     {
       "id": "drive",
       "label": "Drive",
       "state": "UNVERIFIED",
-      "coverage": "2/38",
+      "coverage": "2/41",
       "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
       "last_read_at": null
     },
@@ -3511,7 +3765,7 @@
       "id": "vercel",
       "label": "Publicação",
       "state": "UNVERIFIED",
-      "coverage": "31/38",
+      "coverage": "34/41",
       "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
       "last_read_at": null
     },
@@ -3519,7 +3773,7 @@
       "id": "banco",
       "label": "Banco NGV",
       "state": "UNVERIFIED",
-      "coverage": "0/38",
+      "coverage": "0/41",
       "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
       "last_read_at": null
     },
@@ -3527,7 +3781,7 @@
       "id": "monitoramento",
       "label": "Monitoramento",
       "state": "UNVERIFIED",
-      "coverage": "0/38",
+      "coverage": "0/41",
       "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
       "last_read_at": null
     },
@@ -3535,17 +3789,17 @@
       "id": "apps",
       "label": "Apps Ofertas",
       "state": "UNVERIFIED",
-      "coverage": "0/38",
+      "coverage": "0/41",
       "detail": "Referências locais presentes; nenhuma consulta externa foi executada.",
       "last_read_at": null
     },
     {
       "id": "n8n",
       "label": "n8n",
-      "state": "DEGRADED",
-      "coverage": "0/6",
-      "detail": "Evidência live com mais de 12 horas.",
-      "last_read_at": "2026-08-11T12:51:51.954Z"
+      "state": "UNVERIFIED",
+      "coverage": "PENDING",
+      "detail": "Blueprint local não prova workflow ativo.",
+      "last_read_at": null
     },
     {
       "id": "runner",
@@ -3557,66 +3811,6 @@
     }
   ],
   "events": [
-    {
-      "event_id": "clickup:86ajubm1t:2026-08-10T10:17:24.206Z",
-      "offer_id": "ngv:calistenia-21d",
-      "phase": 1,
-      "event_type": "clickup_task_observed",
-      "occurred_at": "2026-08-10T10:17:24.206Z",
-      "source": "clickup",
-      "state": "finalizado",
-      "blocker_code": null
-    },
-    {
-      "event_id": "clickup:86ajxg9ax:2026-08-07T12:22:14.085Z",
-      "offer_id": "ngv:bumbumflix",
-      "phase": 1,
-      "event_type": "clickup_task_observed",
-      "occurred_at": "2026-08-07T12:22:14.085Z",
-      "source": "clickup",
-      "state": "briefing",
-      "blocker_code": null
-    },
-    {
-      "event_id": "clickup:86ajtfhvh:2026-08-07T12:22:06.876Z",
-      "offer_id": "ngv:bumbumflix",
-      "phase": 1,
-      "event_type": "clickup_task_observed",
-      "occurred_at": "2026-08-07T12:22:06.876Z",
-      "source": "clickup",
-      "state": "finalizado",
-      "blocker_code": null
-    },
-    {
-      "event_id": "clickup:86ajtfhwv:2026-08-07T12:22:02.105Z",
-      "offer_id": "ngv:bumbumflix",
-      "phase": 1,
-      "event_type": "clickup_task_observed",
-      "occurred_at": "2026-08-07T12:22:02.105Z",
-      "source": "clickup",
-      "state": "finalizado",
-      "blocker_code": null
-    },
-    {
-      "event_id": "clickup:86ajxg4hn:2026-08-07T12:15:28.651Z",
-      "offer_id": "ngv:calistenia-21d",
-      "phase": 1,
-      "event_type": "clickup_task_observed",
-      "occurred_at": "2026-08-07T12:15:28.651Z",
-      "source": "clickup",
-      "state": "produção em andamento",
-      "blocker_code": null
-    },
-    {
-      "event_id": "clickup:86ajm207a:2026-07-26T11:16:15.113Z",
-      "offer_id": "ngv:calistenia-21d",
-      "phase": 1,
-      "event_type": "clickup_task_observed",
-      "occurred_at": "2026-07-26T11:16:15.113Z",
-      "source": "clickup",
-      "state": "finalizado",
-      "blocker_code": null
-    },
     {
       "event_id": "evt-4a2174fa7c84401afc937369d651e2c8",
       "offer_id": "ngv:neuro-honey",
