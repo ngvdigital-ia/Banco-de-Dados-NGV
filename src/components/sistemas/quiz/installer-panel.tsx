@@ -1,348 +1,434 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Copy } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Copy, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
-import { QUIZ_ANALYTICS_ORIGIN } from "@/lib/sistemas/quiz/analytics-client.mjs";
-import {
-  ANALYTICS_ALLOWED_FUNNEL_IDS_VAR,
-  ANALYTICS_ALLOWED_ORIGINS_VAR,
-  ANALYTICS_ALLOWED_PROJECT_IDS_VAR,
-  normalizeFunnelOrigin,
-} from "@/lib/sistemas/quiz/testar-tracker-core.mjs";
 import type { QuizTrackerInstallation } from "@/lib/sistemas/quiz/projects-client.mjs";
 
-// Aba "Instalar tracker" (index (1).html:17,82-95 + dashboard.js:122-149 do dashboard
-// vanilla original). Origin do Quiz vem de QUIZ_ANALYTICS_ORIGIN (mesmo adapter que já serve
-// as outras 4 abas) — nunca hardcoded aqui de novo, pra não divergir se o painel externo mudar
-// de domínio.
-//
-// A tela SEMPRE mentiu por omissão: avisava "inclua o domínio na allowlist do tracker" como se
-// fosse UMA allowlist, mas o servidor (quiz-analytics/server.js) recusa por TRÊS motivos
-// independentes com 403 — ANALYTICS_ALLOWED_ORIGINS, ANALYTICS_ALLOWED_PROJECT_IDS,
-// ANALYTICS_ALLOWED_FUNNEL_IDS —, todas env var na Vercel (não banco), exigindo redeploy. Quem
-// seguia a tela cadastrava só o domínio, publicava e o painel ficava em zero pra sempre, sem
-// nenhum erro visível. Esta versão: (1) mostra as TRÊS, com o valor exato de cada, a partir de
-// um campo novo — o domínio da página do funil; (2) tem "testar agora" nas DUAS formas
-// diferentes, cada uma dizendo o que prova e o que NÃO prova (ver testar-tracker-core.mjs pro
-// porquê o teste do servidor só consegue provar a origin).
-//
-// kiss: não existe primitivo <Textarea> em src/components/ui hoje — mesma classe do <Input/>
-// aplicada a um <textarea> nativo (mesmo atalho já usado em push-campaign-form.tsx). Extrai um
-// ui/textarea.tsx se um 3º caller precisar.
+type FunnelFormat = "quiz" | "presell";
+
+type FunnelSummary = {
+  project_id?: string;
+  id?: string;
+  slug?: string;
+  name?: string;
+  state?: string;
+  format?: FunnelFormat;
+};
+
+type InstallationPage = {
+  label?: string;
+  url?: string;
+  role?: "quiz" | "presell" | "vsl" | string;
+  page_id?: string;
+  snippet?: string;
+};
+
+type FunnelDetails = FunnelSummary & {
+  format?: FunnelFormat;
+};
+
+type FunnelResponse = {
+  projects?: FunnelSummary[];
+  project?: FunnelDetails;
+  installation?: { pages?: InstallationPage[] };
+  error?: string;
+};
+
+// A tela pai ainda fornece a instalação recém-criada por integrações anteriores.
+// O fluxo guiado usa apenas o projectId para abrir o mesmo funil sem exigir IDs ao operador.
+type InstallerPanelProps = {
+  installation?: QuizTrackerInstallation;
+  initialDomain?: string;
+};
+
 const textareaClass = cn(
   "w-full min-w-0 resize-none rounded-lg border border-input bg-transparent px-2.5 py-2 font-mono text-xs leading-relaxed transition-colors outline-none",
   "placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
   "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30",
 );
 
-type AllowlistFieldResult = {
-  value: string;
-  checked: boolean;
-  ok?: boolean;
-  message: string;
-};
-
-type TestarTrackerResponse = {
-  origin: AllowlistFieldResult;
-  projectId: AllowlistFieldResult;
-  funnelId: AllowlistFieldResult;
-};
-
-function buildTrackerSnippet(projectId: string, funnelId: string, pageId: string, installation?: QuizTrackerInstallation): string | null {
-  const trimmedProject = projectId.trim();
-  const trimmedFunnel = funnelId.trim();
-  const trimmedPage = pageId.trim();
-  if (!trimmedProject || !trimmedFunnel || !trimmedPage) return null;
-
-  return [
-    "<script",
-    "  defer",
-    `  src="${installation?.trackerUrl ?? `${QUIZ_ANALYTICS_ORIGIN}/assets/tracker.js`}"`,
-    `  data-nga-project-id="${trimmedProject}"`,
-    `  data-nga-funnel-id="${trimmedFunnel}"`,
-    `  data-nga-page-id="${trimmedPage}"`,
-    `  data-nga-endpoint="${installation?.attributes.endpoint ?? `${QUIZ_ANALYTICS_ORIGIN}/api/track`}"`,
-    ...(installation ? [`  data-nga-public-key="${installation.attributes.publicKey}"`] : []),
-    "></script>",
-  ].join("\n");
+function projectKey(project: FunnelSummary) {
+  return project.project_id ?? project.id ?? project.slug ?? "";
 }
 
-/** As TRÊS env vars com o valor exato a colar, ou null enquanto faltar campo/domínio inválido. */
-function buildAllowlistValues(projectId: string, funnelId: string, domain: string) {
-  const trimmedProject = projectId.trim();
-  const trimmedFunnel = funnelId.trim();
-  const normalizedOrigin = normalizeFunnelOrigin(domain);
-  if (!trimmedProject || !trimmedFunnel || !normalizedOrigin) return null;
-  return { origin: normalizedOrigin, projectId: trimmedProject, funnelId: trimmedFunnel };
+function projectName(project: FunnelSummary) {
+  return project.name?.trim() || "Funil sem nome";
 }
 
-/**
- * Teste A ("o tracker está no ar?"): pinga tracker.js a partir do navegador do operador.
- * `no-cors` porque o servidor não manda Access-Control-Allow-Origin em assets estáticos — não
- * dá pra ler o status, só distinguir "domínio respondeu" de "falha de rede". Timeout próprio
- * pra não deixar o botão girando pra sempre.
- */
-async function pingTrackerScript(trackerUrl: string): Promise<boolean> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 6000);
-  try {
-    await fetch(trackerUrl, {
-      method: "HEAD",
-      mode: "no-cors",
-      cache: "no-store",
-      signal: controller.signal,
-    });
-    return true;
-  } catch {
-    return false;
-  } finally {
-    clearTimeout(timer);
+function formatLabel(format: FunnelFormat | undefined) {
+  if (format === "quiz") return "Quiz → VSL";
+  if (format === "presell") return "Presell → VSL";
+  return "Caminho não informado";
+}
+
+function stateLabel(state: string | undefined) {
+  switch (state) {
+    case "receiving_events":
+      return "Recebendo eventos";
+    case "installed":
+      return "Instalado";
+    case "awaiting_deploy":
+      return "Aguardando publicação";
+    default:
+      return state ? state.replaceAll("_", " ") : "Sem situação";
   }
 }
 
-export function InstallerPanel({ installation, initialDomain }: { installation?: QuizTrackerInstallation; initialDomain?: string }) {
-  const [projectId, setProjectId] = useState(installation?.attributes.projectId ?? "");
-  const [funnelId, setFunnelId] = useState(installation?.attributes.funnelId ?? "");
-  const [pageId, setPageId] = useState(installation?.attributes.pageId ?? "");
-  const [domain, setDomain] = useState(initialDomain ?? "");
+function stateVariant(state: string | undefined): "success" | "warning" | "neutral" {
+  if (state === "receiving_events" || state === "installed") return "success";
+  if (state === "awaiting_deploy") return "warning";
+  return "neutral";
+}
 
-  const [testAStatus, setTestAStatus] = useState<"idle" | "running" | "ok" | "fail">("idle");
-  const [testBRunning, setTestBRunning] = useState(false);
-  const [testBResult, setTestBResult] = useState<TestarTrackerResponse | null>(null);
-  const [testBError, setTestBError] = useState<string | null>(null);
+function defaultUrls() {
+  return ["", ""];
+}
+
+function projectFromLocation() {
+  const candidate = new URLSearchParams(window.location.search).get("project")?.trim() ?? "";
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(candidate) ? candidate : "";
+}
+
+export function InstallerPanel({ installation }: InstallerPanelProps) {
+  const [projects, setProjects] = useState<FunnelSummary[]>([]);
+  const [selectedKey, setSelectedKey] = useState("");
+  const [selected, setSelected] = useState<FunnelDetails | null>(null);
+  const [installationPages, setInstallationPages] = useState<InstallationPage[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [name, setName] = useState("");
+  const [format, setFormat] = useState<FunnelFormat>("quiz");
+  const [urls, setUrls] = useState<string[]>(defaultUrls);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const loadProjects = async () => {
+    setLoadingProjects(true);
+    setLoadError(null);
+    try {
+      const response = await fetch("/api/sistemas/quiz/funis", { cache: "no-store" });
+      const payload = (await response.json().catch(() => null)) as FunnelResponse | null;
+      if (!response.ok || !payload || !Array.isArray(payload.projects)) {
+        throw new Error(payload?.error || "Não foi possível carregar os funis agora.");
+      }
+      setProjects(payload.projects);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Não foi possível carregar os funis agora.");
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
 
   useEffect(() => {
-    if (!installation) return;
-    setProjectId(installation.attributes.projectId);
-    setFunnelId(installation.attributes.funnelId);
-    setPageId(installation.attributes.pageId);
-    if (initialDomain) setDomain(initialDomain);
-  }, [initialDomain, installation]);
+    void loadProjects();
+  }, []);
 
-  const snippet = useMemo(() => buildTrackerSnippet(projectId, funnelId, pageId, installation), [installation, projectId, funnelId, pageId]);
-  const allowlist = useMemo(() => buildAllowlistValues(projectId, funnelId, domain), [projectId, funnelId, domain]);
-  const podeTestarB = Boolean(snippet) && Boolean(allowlist);
+  // O link compartilhado do Banco usa ?project=<slug>. Lemos uma vez depois da hidratação
+  // para não criar diferença servidor/cliente nem sobrescrever uma seleção manual posterior.
+  useEffect(() => {
+    const project = projectFromLocation() || installation?.attributes.projectId?.trim() || "";
+    if (project) setSelectedKey(project);
+  }, [installation]);
 
-  const copyToClipboard = async (value: string, successMessage: string) => {
+  useEffect(() => {
+    if (!selectedKey) {
+      setSelected(null);
+      setInstallationPages([]);
+      return;
+    }
+
+    let cancelled = false;
+    const loadDetails = async () => {
+      setLoadingDetails(true);
+      setLoadError(null);
+      try {
+        const response = await fetch(`/api/sistemas/quiz/funis?project=${encodeURIComponent(selectedKey)}`, {
+          cache: "no-store",
+        });
+        const payload = (await response.json().catch(() => null)) as FunnelResponse | null;
+        if (!response.ok || !payload?.project) {
+          throw new Error(payload?.error || "Não foi possível abrir este funil.");
+        }
+        if (cancelled) return;
+        setSelected(payload.project);
+        setInstallationPages(Array.isArray(payload.installation?.pages) ? payload.installation.pages : []);
+      } catch (error) {
+        if (!cancelled) {
+          setSelected(null);
+          setInstallationPages([]);
+          setLoadError(error instanceof Error ? error.message : "Não foi possível abrir este funil.");
+        }
+      } finally {
+        if (!cancelled) setLoadingDetails(false);
+      }
+    };
+
+    void loadDetails();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedKey]);
+
+  const setFlowFormat = (nextFormat: FunnelFormat) => {
+    setFormat(nextFormat);
+    setUrls(defaultUrls());
+  };
+
+  const updateUrl = (index: number, value: string) => {
+    setUrls((current) => current.map((url, currentIndex) => (currentIndex === index ? value : url)));
+  };
+
+  const addQuizPage = () => {
+    setUrls((current) => [...current.slice(0, -1), "", current[current.length - 1] ?? ""]);
+  };
+
+  const removeQuizPage = (index: number) => {
+    setUrls((current) => current.filter((_, currentIndex) => currentIndex !== index));
+  };
+
+  const pageLabel = (index: number) => {
+    const isVsl = index === urls.length - 1;
+    if (isVsl) return "URL da VSL";
+    if (format === "presell") return "URL da presell";
+    return urls.length > 2 ? `URL do quiz — etapa ${index + 1}` : "URL do quiz";
+  };
+
+  const createFunnel = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCreating(true);
+    setCreateError(null);
     try {
-      await navigator.clipboard.writeText(value);
-      toast.success(successMessage);
+      const response = await fetch("/api/sistemas/quiz/funis", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name,
+          format,
+          pages: urls.map((url) => ({ url })),
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as FunnelResponse | null;
+      if (!response.ok || !payload?.project) {
+        throw new Error(payload?.error || "Não foi possível criar o funil.");
+      }
+
+      setSelected(payload.project);
+      setInstallationPages(Array.isArray(payload.installation?.pages) ? payload.installation.pages : []);
+      setSelectedKey(projectKey(payload.project));
+      setName("");
+      setUrls(defaultUrls());
+      setProjects((current) => {
+        const key = projectKey(payload.project!);
+        const withoutCurrent = current.filter((project) => projectKey(project) !== key);
+        return [payload.project!, ...withoutCurrent];
+      });
+      toast.success("Funil criado. Copie um trecho para cada página abaixo.");
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : "Não foi possível criar o funil.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const copySnippet = async (snippet: string) => {
+    try {
+      await navigator.clipboard.writeText(snippet);
+      toast.success("Trecho copiado.");
     } catch {
       toast.error("Não foi possível copiar. Selecione e copie manualmente.");
     }
   };
 
-  const runTestA = async () => {
-    setTestAStatus("running");
-    const ok = await pingTrackerScript(installation?.trackerUrl ?? `${QUIZ_ANALYTICS_ORIGIN}/assets/tracker.js`);
-    setTestAStatus(ok ? "ok" : "fail");
-  };
-
-  const runTestB = async () => {
-    if (!podeTestarB) return;
-    setTestBRunning(true);
-    setTestBResult(null);
-    setTestBError(null);
-    try {
-      const response = await fetch("/api/sistemas/quiz/testar-tracker", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ projectId, funnelId, pageId, origin: domain }),
-      });
-      const data = await response.json().catch(() => null);
-      if (!response.ok || !data) {
-        setTestBError(typeof data?.error === "string" ? data.error : "Não foi possível testar. Tente de novo.");
-        return;
-      }
-      setTestBResult(data as TestarTrackerResponse);
-    } catch {
-      setTestBError("Não foi possível falar com o painel. Confira sua conexão e tente de novo.");
-    } finally {
-      setTestBRunning(false);
-    }
-  };
-
   return (
-    <Card className="gap-4 p-5">
-      <div>
-        <h2 className="text-sm font-semibold">Instalar tracker</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          O mesmo <code className="rounded bg-muted px-1 py-0.5">tracker.js</code> serve todas as páginas. {installation ? "Os identificadores gerados já estão preenchidos." : "Use os identificadores gerados pelo Funnel Analytics."} Cole o trecho antes de{" "}
-          <code className="rounded bg-muted px-1 py-0.5">&lt;/head&gt;</code>.
-        </p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="space-y-2">
-          <Label htmlFor="quiz-installer-project">Project ID</Label>
-          <Input
-            id="quiz-installer-project"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            placeholder="ex.: oferta-verao"
-            autoComplete="off"
-            readOnly={Boolean(installation)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="quiz-installer-funnel">Funnel ID</Label>
-          <Input
-            id="quiz-installer-funnel"
-            value={funnelId}
-            onChange={(e) => setFunnelId(e.target.value)}
-            placeholder="ex.: vsl-principal"
-            autoComplete="off"
-            readOnly={Boolean(installation)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="quiz-installer-page">Page ID</Label>
-          <Input
-            id="quiz-installer-page"
-            value={pageId}
-            onChange={(e) => setPageId(e.target.value)}
-            placeholder="ex.: presell"
-            autoComplete="off"
-            readOnly={Boolean(installation)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="quiz-installer-domain">Domínio da página</Label>
-          <Input
-            id="quiz-installer-domain"
-            value={domain}
-            onChange={(e) => setDomain(e.target.value)}
-            placeholder="https://sua-pagina.com"
-            autoComplete="off"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="quiz-installer-snippet">Trecho de integração</Label>
-        <textarea
-          id="quiz-installer-snippet"
-          className={cn(textareaClass, "h-32")}
-          readOnly
-          spellCheck={false}
-          value={snippet ?? "Preencha Project ID, Funnel ID e Page ID para gerar o trecho."}
-        />
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-xs text-muted-foreground">
-          CTA e jornada são opcionais: use <code className="rounded bg-muted px-1 py-0.5">data-nga-cta</code> nos CTAs
-          e <code className="rounded bg-muted px-1 py-0.5">data-nga-journey-link</code> nos links entre domínios.
-        </span>
-        <Button type="button" onClick={() => snippet && copyToClipboard(snippet, "Trecho copiado")} disabled={!snippet}>
-          <Copy /> Copiar trecho
-        </Button>
-      </div>
-
-      {/* Peça 1: as TRÊS allowlists, nunca uma só — env var na Vercel, esta tela não cadastra. */}
-      <div className="space-y-3 rounded-md border border-border bg-muted/30 p-3">
+    <div className="space-y-5">
+      <Card className="gap-5 p-5">
         <div>
-          <p className="text-xs font-semibold text-foreground">Antes de publicar: 3 variáveis de ambiente na Vercel</p>
+          <h2 className="text-sm font-semibold">Criar funil</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            O tracker recusa o evento com 403 por qualquer uma das três allowlists abaixo estar sem o valor desta
-            página. São <strong>env var na Vercel</strong>, não banco — esta tela só orienta e verifica, nunca
-            cadastra. <strong>Adicione</strong> (sem apagar o que já existe, separado por vírgula) cada valor na
-            variável correspondente e faça <strong>redeploy</strong> pra valer.
-          </p>
-        </div>
-        {allowlist ? (
-          <div className="space-y-2">
-            {[
-              { envVar: ANALYTICS_ALLOWED_ORIGINS_VAR, value: allowlist.origin },
-              { envVar: ANALYTICS_ALLOWED_PROJECT_IDS_VAR, value: allowlist.projectId },
-              { envVar: ANALYTICS_ALLOWED_FUNNEL_IDS_VAR, value: allowlist.funnelId },
-            ].map((row) => (
-              <div key={row.envVar} className="space-y-1">
-                <Label className="font-mono text-[11px] text-muted-foreground">{row.envVar}</Label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 truncate rounded border border-input bg-background px-2 py-1.5 text-xs">
-                    {row.value}
-                  </code>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => copyToClipboard(row.value, `${row.envVar} copiado`)}
-                    aria-label={`Copiar valor de ${row.envVar}`}
-                  >
-                    <Copy />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            Preencha Project ID, Funnel ID e o domínio da página pra ver o valor exato de cada variável.
-          </p>
-        )}
-      </div>
-
-      {/* Peça 2: "testar agora" nas DUAS formas — cada uma dizendo o que prova e o que NÃO prova. */}
-      <div className="space-y-4 rounded-md border border-border p-3">
-        <p className="text-xs font-semibold text-foreground">Testar agora</p>
-
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={runTestA} disabled={testAStatus === "running"}>
-              {testAStatus === "running" ? "Testando…" : "Testar tracker.js (navegador)"}
-            </Button>
-            {testAStatus === "ok" ? <StatusBadge variant="success">Tracker no ar</StatusBadge> : null}
-            {testAStatus === "fail" ? <StatusBadge variant="danger">Sem resposta</StatusBadge> : null}
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            Prova que o script existe e o domínio do tracker responde, a partir do seu navegador. Não prova que o
-            funil está autorizado — a origem aqui é a do painel, não a da página do funil.
+            Dê um nome, informe as páginas e o Banco gera os trechos certos. Você não precisa preencher IDs técnicos.
           </p>
         </div>
 
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={runTestB} disabled={!podeTestarB || testBRunning}>
-              {testBRunning ? "Testando…" : "Testar allowlist do funil (servidor)"}
-            </Button>
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            Faz o painel disparar uma checagem real contra o tracker usando o domínio digitado acima como origem —
-            não a do painel. Só consegue confirmar ANALYTICS_ALLOWED_ORIGINS: ANALYTICS_ALLOWED_PROJECT_IDS e
-            ANALYTICS_ALLOWED_FUNNEL_IDS não têm como ser verificados sem gravar um evento de verdade (o tracker não
-            tem modo de teste), então continuam como pendência manual abaixo.
-          </p>
-
-          {testBError ? <p className="text-xs text-danger">{testBError}</p> : null}
-
-          {testBResult ? (
-            <div className="space-y-2 pt-1 text-xs">
-              <div className="flex items-start gap-2">
-                <StatusBadge variant={testBResult.origin.ok ? "success" : "danger"}>
-                  {testBResult.origin.ok ? "Origin liberada" : "Origin bloqueada"}
-                </StatusBadge>
-                <span className="text-muted-foreground">{testBResult.origin.message}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <StatusBadge variant="neutral">Project ID — confirme manualmente</StatusBadge>
-                <span className="text-muted-foreground">{testBResult.projectId.message}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <StatusBadge variant="neutral">Funnel ID — confirme manualmente</StatusBadge>
-                <span className="text-muted-foreground">{testBResult.funnelId.message}</span>
-              </div>
+        <form className="space-y-4" onSubmit={createFunnel}>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="quiz-funnel-name">Nome do funil</Label>
+              <Input
+                id="quiz-funnel-name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="ex.: Round Popcorn"
+                autoComplete="off"
+                required
+                disabled={creating}
+              />
             </div>
-          ) : null}
+            <div className="space-y-2">
+              <Label htmlFor="quiz-funnel-format">Caminho do funil</Label>
+              <Select value={format} onValueChange={(value) => setFlowFormat(value as FunnelFormat)} disabled={creating}>
+                <SelectTrigger id="quiz-funnel-format" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="quiz">Quiz → VSL</SelectItem>
+                  <SelectItem value="presell">Presell → VSL</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+            <div>
+              <p className="text-xs font-semibold">Páginas do caminho</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {format === "quiz"
+                  ? "Um quiz pode ter uma ou várias etapas. Cada URL recebe seu próprio trecho; perguntas dentro da mesma URL continuam usando um único trecho."
+                  : "Informe a página de presell e a página da VSL."}
+              </p>
+            </div>
+
+            {urls.map((url, index) => {
+              const canRemove = format === "quiz" && index < urls.length - 1 && urls.length > 2;
+              return (
+                <div className="flex items-end gap-2" key={`${format}-${index}`}>
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <Label htmlFor={`quiz-funnel-url-${index}`}>{pageLabel(index)}</Label>
+                    <Input
+                      id={`quiz-funnel-url-${index}`}
+                      type="url"
+                      value={url}
+                      onChange={(event) => updateUrl(index, event.target.value)}
+                      placeholder="https://sua-pagina.com"
+                      autoComplete="url"
+                      required
+                      disabled={creating}
+                    />
+                  </div>
+                  {canRemove ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removeQuizPage(index)}
+                      aria-label={`Remover etapa ${index + 1} do quiz`}
+                      disabled={creating}
+                    >
+                      <Trash2 />
+                    </Button>
+                  ) : null}
+                </div>
+              );
+            })}
+
+            {format === "quiz" ? (
+              <Button type="button" variant="outline" size="sm" onClick={addQuizPage} disabled={creating}>
+                <Plus /> Adicionar etapa do quiz
+              </Button>
+            ) : null}
+          </div>
+
+          {createError ? <p className="text-xs text-danger" role="alert">{createError}</p> : null}
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={creating}>
+              {creating ? "Criando…" : "Criar funil e gerar trechos"}
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      <Card className="gap-4 p-5">
+        <div>
+          <h2 className="text-sm font-semibold">Funil em foco</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Selecione um funil registrado. Nome e situação vêm da lista canônica; nenhum ID precisa ser digitado.
+          </p>
         </div>
-      </div>
-    </Card>
+
+        <div className="max-w-xl space-y-2">
+          <Label htmlFor="quiz-existing-funnel">Funil</Label>
+          <Select value={selectedKey} onValueChange={(value) => setSelectedKey(value ?? "")} disabled={loadingProjects || projects.length === 0}>
+            <SelectTrigger id="quiz-existing-funnel" className="w-full">
+              <SelectValue placeholder={loadingProjects ? "Carregando funis…" : "Selecione um funil"} />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map((project) => {
+                const key = projectKey(project);
+                return (
+                  <SelectItem key={key} value={key}>
+                    {projectName(project)} · {stateLabel(project.state)}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+          {loadingProjects ? <p className="text-xs text-muted-foreground">Carregando os funis registrados…</p> : null}
+          {!loadingProjects && projects.length === 0 && !loadError ? <p className="text-xs text-muted-foreground">Ainda não há funis cadastrados.</p> : null}
+          {loadError ? <p className="text-xs text-danger" role="alert">{loadError}</p> : null}
+        </div>
+
+        {loadingDetails ? <p className="text-xs text-muted-foreground">Carregando trechos deste funil…</p> : null}
+
+        {selected && !loadingDetails ? (
+          <div className="space-y-4 rounded-lg border border-border bg-muted/20 p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-medium">{projectName(selected)}</p>
+              <StatusBadge variant={stateVariant(selected.state)}>{stateLabel(selected.state)}</StatusBadge>
+              <StatusBadge variant="neutral">{formatLabel(selected.format)}</StatusBadge>
+            </div>
+
+            {installationPages.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Este funil ainda não devolveu trechos de instalação.</p>
+            ) : (
+              <div className="grid gap-3">
+                {installationPages.map((page, index) => {
+                  const label = page.label?.trim() || `Página ${index + 1}`;
+                  const snippet = page.snippet?.trim() || "";
+                  return (
+                    <section className="space-y-3 rounded-md border border-border bg-background p-3" key={`${page.url ?? label}-${index}`}>
+                      <div>
+                        <p className="text-sm font-medium">{label}</p>
+                        <p className="mt-1 break-all text-xs text-muted-foreground">{page.url || "URL não informada"}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`quiz-page-snippet-${index}`}>Trecho desta página</Label>
+                        <textarea
+                          id={`quiz-page-snippet-${index}`}
+                          className={cn(textareaClass, "h-36")}
+                          readOnly
+                          spellCheck={false}
+                          value={snippet || "Trecho indisponível para esta página."}
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button type="button" onClick={() => copySnippet(snippet)} disabled={!snippet}>
+                          <Copy /> Copiar trecho desta página
+                        </Button>
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Card>
+    </div>
   );
 }
