@@ -68,6 +68,18 @@ test("criação usa o fluxo V2 por páginas, sem IDs técnicos ou ação V1 expo
   assert.doesNotMatch(view, /ProvisionedFunnelPanel|type CreatedFunnel|onCreated=\{setCreated\}/);
 });
 
+test("editar o formulário limpa o erro anterior de criação", async () => {
+  const installer = await readFile(INSTALLER, "utf8");
+  const creationForm = installer.slice(installer.indexOf("export function FunnelCreationForm"), installer.indexOf("export function FunnelInstallationSnippets"));
+
+  assert.match(creationForm, /const clearCreateError = \(\) => setCreateError\(null\);/);
+  assert.match(creationForm, /onChange=\{\(event\) => \{\s*clearCreateError\(\);\s*setName\(event\.target\.value\);/s);
+  assert.match(creationForm, /const setFlowFormat = \(nextFormat: FunnelFormat\) => \{\s*clearCreateError\(\);/s);
+  assert.match(creationForm, /const updateUrl = \(index: number, value: string\) => \{\s*clearCreateError\(\);/s);
+  assert.match(creationForm, /const addQuizPage = \(\) => \{\s*clearCreateError\(\);/s);
+  assert.match(creationForm, /const removeQuizPage = \(index: number\) => \{\s*clearCreateError\(\);/s);
+});
+
 test("confirmação de publicação aparece apenas em awaiting_deploy e tem payload, loading, sucesso e erro explícitos", async () => {
   const installer = await readFile(INSTALLER, "utf8");
   const confirmationPanel = installer.slice(

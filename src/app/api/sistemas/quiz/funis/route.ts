@@ -43,7 +43,29 @@ function response(body: unknown, status = 200) {
   return NextResponse.json(body, { status, headers: { "cache-control": "no-store" } });
 }
 
-function errorFor(code: string) {
+export function upstreamErrorMessageFor(code: string, method: "GET" | "POST" | "PATCH") {
+  if (code === "UPSTREAM_CONFLICT") {
+    return method === "POST"
+      ? "Já existe um funil com esse nome ou com uma dessas páginas. Altere o nome ou as URLs e tente novamente."
+      : "A confirmação não corresponde ao funil aguardando publicação. Atualize a página e confira a URL registrada.";
+  }
+
+  const messageByCode: Record<string, string> = {
+    MISSING_CREDENTIALS: "As credenciais do Funnel Analytics não estão configuradas neste ambiente.",
+    TIMEOUT: "O Funnel Analytics demorou demais para responder. Tente novamente.",
+    NETWORK_ERROR: "Não foi possível falar com o Funnel Analytics. Tente novamente.",
+    UPSTREAM_ERROR: "O Funnel Analytics está indisponível no momento. Tente novamente.",
+    UPSTREAM_UNAVAILABLE: "O Funnel Analytics não respondeu como esperado. Tente novamente.",
+    UPSTREAM_UNAUTHORIZED: "O Banco não conseguiu autenticar no Funnel Analytics. Avise um administrador.",
+    UPSTREAM_RATE_LIMITED: "O Funnel Analytics recebeu muitas solicitações. Aguarde um instante e tente novamente.",
+    UPSTREAM_REQUEST_REJECTED: "O Funnel Analytics recusou o funil. Revise nome, formato e páginas.",
+    REQUEST_INVALID: "O funil solicitado é inválido.",
+    METHOD_NOT_ALLOWED: "Método não permitido.",
+  };
+  return messageByCode[code] ?? "O Funnel Analytics respondeu com um formato não reconhecido.";
+}
+
+function errorFor(code: string, method: "GET" | "POST" | "PATCH") {
   const statusByCode: Record<string, number> = {
     MISSING_CREDENTIALS: 503,
     TIMEOUT: 504,
@@ -57,20 +79,7 @@ function errorFor(code: string) {
     REQUEST_INVALID: 400,
     METHOD_NOT_ALLOWED: 405,
   };
-  const messageByCode: Record<string, string> = {
-    MISSING_CREDENTIALS: "As credenciais do Funnel Analytics não estão configuradas neste ambiente.",
-    TIMEOUT: "O Funnel Analytics demorou demais para responder. Tente novamente.",
-    NETWORK_ERROR: "Não foi possível falar com o Funnel Analytics. Tente novamente.",
-    UPSTREAM_ERROR: "O Funnel Analytics está indisponível no momento. Tente novamente.",
-    UPSTREAM_UNAVAILABLE: "O Funnel Analytics não respondeu como esperado. Tente novamente.",
-    UPSTREAM_UNAUTHORIZED: "O Banco não conseguiu autenticar no Funnel Analytics. Avise um administrador.",
-    UPSTREAM_RATE_LIMITED: "O Funnel Analytics recebeu muitas solicitações. Aguarde um instante e tente novamente.",
-    UPSTREAM_REQUEST_REJECTED: "O Funnel Analytics recusou o funil. Revise nome, formato e páginas.",
-    UPSTREAM_CONFLICT: "A confirmação não corresponde ao funil aguardando publicação. Atualize a página e confira a URL registrada.",
-    REQUEST_INVALID: "O funil solicitado é inválido.",
-    METHOD_NOT_ALLOWED: "Método não permitido.",
-  };
-  return response({ ok: false, code, error: messageByCode[code] ?? "O Funnel Analytics respondeu com um formato não reconhecido." }, statusByCode[code] ?? 502);
+  return response({ ok: false, code, error: upstreamErrorMessageFor(code, method) }, statusByCode[code] ?? 502);
 }
 
 async function authorize() {
@@ -103,7 +112,7 @@ export async function GET(request: Request) {
     method: "GET",
     projectId: parsedProjectId === null ? null : parsedProjectId.data,
   });
-  return result.ok ? response({ ok: true, ...result.data }) : errorFor(result.code);
+  return result.ok ? response({ ok: true, ...result.data }) : errorFor(result.code, "GET");
 }
 
 export async function POST(request: Request) {
@@ -130,7 +139,7 @@ export async function POST(request: Request) {
   }
 
   const result = await proxyQuizDashboardProjects({ method: "POST", payload: parsed.data });
-  return result.ok ? response({ ok: true, ...result.data }) : errorFor(result.code);
+  return result.ok ? response({ ok: true, ...result.data }) : errorFor(result.code, "POST");
 }
 
 export async function PATCH(request: Request) {
@@ -159,5 +168,5 @@ export async function PATCH(request: Request) {
   // Não buscamos finalUrl: o upstream aplica compare-and-set contra o registro
   // provisionado e devolve 409 se alguém tentar confirmar uma URL diferente.
   const result = await proxyQuizDashboardProjects({ method: "PATCH", payload: parsed.data });
-  return result.ok ? response({ ok: true, ...result.data }) : errorFor(result.code);
+  return result.ok ? response({ ok: true, ...result.data }) : errorFor(result.code, "PATCH");
 }

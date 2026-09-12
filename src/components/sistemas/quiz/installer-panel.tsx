@@ -112,21 +112,26 @@ export function FunnelCreationForm({
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const fieldId = (field: string) => `${idPrefix}-${field}`;
+  const clearCreateError = () => setCreateError(null);
 
   const setFlowFormat = (nextFormat: FunnelFormat) => {
+    clearCreateError();
     setFormat(nextFormat);
     setUrls(defaultUrls());
   };
 
   const updateUrl = (index: number, value: string) => {
+    clearCreateError();
     setUrls((current) => current.map((url, currentIndex) => (currentIndex === index ? value : url)));
   };
 
   const addQuizPage = () => {
+    clearCreateError();
     setUrls((current) => [...current.slice(0, -1), "", current[current.length - 1] ?? ""]);
   };
 
   const removeQuizPage = (index: number) => {
+    clearCreateError();
     setUrls((current) => current.filter((_, currentIndex) => currentIndex !== index));
   };
 
@@ -179,7 +184,10 @@ export function FunnelCreationForm({
           <Input
             id={fieldId("name")}
             value={name}
-            onChange={(event) => setName(event.target.value)}
+            onChange={(event) => {
+              clearCreateError();
+              setName(event.target.value);
+            }}
             placeholder="ex.: Round Popcorn"
             autoComplete="off"
             required
