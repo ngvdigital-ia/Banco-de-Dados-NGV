@@ -170,6 +170,78 @@ test("quiz com três URLs gera e preserva um trecho canônico para cada página"
   }
 });
 
+test("detalhe V2 com duas páginas no mesmo origin reconstrói URLs de tracker canônicos", async () => {
+  const upstreamAlias = "https://analytics-alias.example.test";
+  const maliciousHost = "https://evil.example.test";
+  const result = await proxyQuizDashboardProjects({ method: "POST", payload: {
+    name: "Presell com VSL",
+    format: "presell",
+    pages: [
+      { url: "https://round-popcorn.example.test/presell" },
+      { url: "https://round-popcorn.example.test/vsl" },
+    ],
+  } }, {
+    ...CONFIG,
+    fetchImpl: async () => {
+      const detail = safeDetail();
+      detail.installation.tracker_url = `${upstreamAlias}/assets/tracker.js`;
+      detail.installation.track_url = `${maliciousHost}/api/track`;
+      detail.installation.pages = [
+        {
+          label: "Presell",
+          url: "https://round-popcorn.example.test/presell",
+          role: "presell",
+          page_id: "presell",
+          snippet: `<script src="${upstreamAlias}/assets/tracker.js"></script>`,
+        },
+        {
+          label: "VSL",
+          url: "https://round-popcorn.example.test/vsl",
+          role: "vsl",
+          page_id: "vsl",
+          snippet: `<script src="${maliciousHost}/api/track"></script>`,
+        },
+      ];
+      return json(detail);
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.installation.tracker_url, `${ORIGIN}/assets/tracker.js`);
+  assert.equal(result.data.installation.track_url, `${ORIGIN}/api/track`);
+  assert.equal(result.data.installation.pages.length, 2);
+  for (const page of result.data.installation.pages) {
+    assert.match(page.snippet, new RegExp(`src="${ORIGIN}/assets/tracker\\.js"`));
+    assert.match(page.snippet, new RegExp(`data-nga-endpoint="${ORIGIN}/api/track"`));
+    assert.doesNotMatch(page.snippet, /analytics-alias|evil/);
+  }
+});
+
+test("páginas de instalação inválidas continuam falhando fechadas", async () => {
+  for (const invalidPage of [
+    { label: "Presell", url: "http://round-popcorn.example.test/", role: "presell", page_id: "presell" },
+    { label: "Presell", url: "https://round-popcorn.example.test/", role: "checkout", page_id: "presell" },
+    { label: "Presell", url: "https://round-popcorn.example.test/", role: "presell", page_id: "invalid page id" },
+  ]) {
+    const result = await proxyQuizDashboardProjects({ method: "POST", payload: {
+      name: "Round Popcorn",
+      format: "presell",
+      pages: [
+        { url: "https://round-popcorn.example.test/" },
+        { url: "https://round-popcorn.example.test/vsl" },
+      ],
+    } }, {
+      ...CONFIG,
+      fetchImpl: async () => {
+        const detail = safeDetail();
+        detail.installation.pages = [invalidPage];
+        return json(detail);
+      },
+    });
+    assert.deepEqual(result, { ok: false, code: "RESPONSE_SCHEMA_INVALID" });
+  }
+});
+
 test("corpo declarado ou transmitido acima do limite é rejeitado antes do JSON.parse", async () => {
   const declared = new Request("https://banco.example.test/api/sistemas/quiz/funis", {
     method: "POST",

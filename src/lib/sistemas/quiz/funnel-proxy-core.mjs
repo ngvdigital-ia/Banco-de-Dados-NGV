@@ -293,13 +293,14 @@ function validateProjectDetail(value, expectedOrigin) {
     fail("RESPONSE_SCHEMA_INVALID");
   }
   const installation = value.installation;
-  if (!isHttpsUrl(installation.tracker_url) || !isHttpsUrl(installation.track_url) || !Array.isArray(installation.pages)) {
+  // O alias público do upstream pode diferir da origem canônica configurada no
+  // Banco. Os URLs de instalação nunca atravessam esse proxy: só precisamos da
+  // lista de páginas, e reconstruímos os dois endpoints a partir da origem já
+  // validada do próprio Banco.
+  if (!Array.isArray(installation.pages)) {
     fail("RESPONSE_SCHEMA_INVALID");
   }
   if (installation.pages.length < 1 || installation.pages.length > 100) fail("RESPONSE_SCHEMA_INVALID");
-  if (installation.tracker_url !== `${expectedOrigin}/assets/tracker.js` || installation.track_url !== `${expectedOrigin}/api/track`) {
-    fail("RESPONSE_SCHEMA_INVALID");
-  }
   return {
     project: {
       project_id: project.project_id,
@@ -316,8 +317,8 @@ function validateProjectDetail(value, expectedOrigin) {
       public_key: project.public_key,
     },
     installation: {
-      tracker_url: installation.tracker_url,
-      track_url: installation.track_url,
+      tracker_url: `${expectedOrigin}/assets/tracker.js`,
+      track_url: `${expectedOrigin}/api/track`,
       pages: installation.pages.map((page) => validateInstallationPage(page, expectedOrigin, project.public_key)),
     },
   };
