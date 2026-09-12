@@ -79,13 +79,13 @@ test("confirmação de publicação aparece apenas em awaiting_deploy e tem payl
   assert.match(installer, /method: "PATCH"/);
   assert.match(installer, /JSON\.stringify\(\{ projectId: confirmationProjectId, finalUrl \}\)/);
   assert.match(installer, /setConfirmingDeployment\(true\)/);
-  assert.match(installer, /Confirmando páginas…/);
-  assert.match(installer, /Confirmar páginas publicadas/);
+  assert.match(installer, /Ativando rastreamento…/);
+  assert.match(installer, /Ativar rastreamento/);
   assert.match(installer, /toast\.success\("Páginas confirmadas\. O funil agora está instalado\."\)/);
   assert.match(installer, /setDeploymentError\(/);
   assert.match(installer, /role="alert"/);
   assert.match(confirmationPanel, /selected\.state === "awaiting_deploy"/);
-  assert.match(confirmationPanel, /Confirmar páginas publicadas/);
+  assert.match(confirmationPanel, /Ativar rastreamento/);
   assert.doesNotMatch(confirmationPanel, /receiving_events|selected\.state === "installed"/);
   assert.match(confirmationPanel, /Situação atual: \{stateLabel\(selected\.state\)\}/);
 });

@@ -489,7 +489,7 @@ export function InstallerPanel({ projectId }: { projectId: string }) {
       <div>
         <h2 className="text-sm font-semibold">Instalação</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Copie o trecho de cada página deste funil. Depois de publicar as páginas, confirme aqui para liberar o acompanhamento.
+          Com o loader já presente nas páginas, ative o rastreamento aqui. Manual e Claude / Codex ficam disponíveis como fallback.
         </p>
       </div>
 
@@ -507,11 +507,11 @@ export function InstallerPanel({ projectId }: { projectId: string }) {
           {selected.state === "awaiting_deploy" ? (
             <div className="space-y-3 rounded-md border border-warning/40 bg-warning-muted p-3">
               <p className="text-sm text-muted-foreground">
-                Publique os trechos copiados nas páginas abaixo. Quando as páginas estiverem no ar, confirme aqui para liberar o acompanhamento do funil.
+                Quando as páginas estiverem no ar e com o loader instalado, clique em Ativar rastreamento para liberar o acompanhamento do funil.
               </p>
               {deploymentError ? <p className="text-xs text-danger" role="alert">{deploymentError}</p> : null}
               <Button type="button" onClick={confirmDeployment} disabled={confirmingDeployment}>
-                {confirmingDeployment ? "Confirmando páginas…" : "Confirmar páginas publicadas"}
+                {confirmingDeployment ? "Ativando rastreamento…" : "Ativar rastreamento"}
               </Button>
             </div>
           ) : (
