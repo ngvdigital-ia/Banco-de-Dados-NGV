@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { promisify } from "node:util";
 
 const PAGE = new URL("../src/app/(dashboard)/sistemas/quiz/page.tsx", import.meta.url);
 const VIEW = new URL("../src/components/sistemas/quiz/quiz-analytics-view.tsx", import.meta.url);
 const CREATE = new URL("../src/components/sistemas/quiz/funnel-create-dialog.tsx", import.meta.url);
 const INSTALLER = new URL("../src/components/sistemas/quiz/installer-panel.tsx", import.meta.url);
+const execFileAsync = promisify(execFile);
 
 test("Funnel Analytics usa adapter read-only no render e não mantém fallback de exemplo", async () => {
   const [page, view] = await Promise.all([readFile(PAGE, "utf8"), readFile(VIEW, "utf8")]);
@@ -114,6 +117,48 @@ test("sucesso mostra um trecho por página e abre o funil criado na instalação
   assert.match(create, /query\.set\("tab", "installer"\)/);
   assert.match(create, /query\.delete\("funnel"\)/);
   assert.match(create, /router\.push\(`\$\{pathname\}\?\$\{query\.toString\(\)\}`\)/);
+});
+
+test("instalação oferece prompt único para Claude ou Codex sem remover a cópia manual", async () => {
+  const installer = await readFile(INSTALLER, "utf8");
+
+  assert.match(installer, /<TabsList aria-label="Modo de instalação do tracker">/);
+  assert.match(installer, /<TabsTrigger value="manual">Manual<\/TabsTrigger>/);
+  assert.match(installer, /<TabsTrigger value="claude-codex">Claude \/ Codex<\/TabsTrigger>/);
+  assert.match(installer, /<FunnelInstallationSnippets pages=\{installationPages\} \/>/);
+  assert.match(installer, /<ClaudeCodexInstallPrompt funnelName=\{projectName\(selected\)\} pages=\{installationPages\} \/>/);
+  assert.match(installer, /export function buildClaudeCodexPrompt/);
+  assert.match(installer, /export function canCopyClaudeCodexPrompt/);
+  assert.match(installer, /Localize no repositório o arquivo que publica exatamente a URL informada/);
+  assert.match(installer, /imediatamente antes de <\/head>/);
+  assert.match(installer, /exatamente uma vez naquela página/);
+  assert.match(installer, /Preserve todos os scripts, links, metatags e comportamentos já existentes/);
+  assert.match(installer, /execute os testes e o build aplicáveis, publique a alteração/);
+  assert.match(installer, /Copiar prompt para Claude \/ Codex/);
+  assert.match(installer, /aria-live="polite"/);
+});
+
+test("prompt do agente bloqueia cópia parcial e não instrui instalar placeholder", async () => {
+  const script = `
+    import { buildClaudeCodexPrompt, canCopyClaudeCodexPrompt } from ${JSON.stringify(INSTALLER.pathname)};
+    const partial = [{ label: "Quiz", url: "https://exemplo.test/quiz", snippet: "<script>ok</script>" }, { label: "VSL", url: "https://exemplo.test/vsl" }];
+    const complete = [{ label: "Quiz", url: "https://exemplo.test/quiz", snippet: "<script>ok</script>" }];
+    console.log(JSON.stringify({
+      partialCanCopy: canCopyClaudeCodexPrompt(partial),
+      emptyCanCopy: canCopyClaudeCodexPrompt([]),
+      completeCanCopy: canCopyClaudeCodexPrompt(complete),
+      partialPrompt: buildClaudeCodexPrompt({ funnelName: "Teste", pages: partial }),
+    }));
+  `;
+  const { stdout } = await execFileAsync("./node_modules/.bin/tsx", ["-e", script], { cwd: process.cwd() });
+  const result = JSON.parse(stdout);
+
+  assert.equal(result.partialCanCopy, false);
+  assert.equal(result.emptyCanCopy, false);
+  assert.equal(result.completeCanCopy, true);
+  assert.match(result.partialPrompt, /Não instale nem publique um placeholder/);
+  assert.match(result.partialPrompt, /VSL: https:\/\/exemplo\.test\/vsl/);
+  assert.doesNotMatch(result.partialPrompt, /Insira o snippet correspondente/);
 });
 
 test("leitura selecionada mantém project e funnel canônicos; período preserva o project", async () => {

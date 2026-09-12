@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 export type FunnelFormat = "quiz" | "presell";
 
@@ -307,6 +308,85 @@ export function FunnelInstallationSnippets({ pages, idPrefix = "quiz-page-snippe
   );
 }
 
+export function buildClaudeCodexPrompt({
+  funnelName,
+  pages,
+}: {
+  funnelName: string;
+  pages: InstallationPage[];
+}) {
+  const pagesWithoutSnippet = pages.filter((page) => !page.snippet?.trim());
+  if (pagesWithoutSnippet.length > 0) {
+    const unavailablePages = pagesWithoutSnippet.map((page, index) => {
+      const label = page.label?.trim() || `Página ${index + 1}`;
+      const url = page.url?.trim() || "URL não informada";
+      return `- ${label}: ${url}`;
+    }).join("\n");
+    return `O trecho de instalação do Funnel Analytics ainda está indisponível para o funil \"${funnelName}\". Não instale nem publique um placeholder. Volte ao Banco NGV quando os trechos forem gerados para todas as páginas.\n\nPáginas sem trecho:\n${unavailablePages}`;
+  }
+
+  const pageInstructions = pages.length > 0
+    ? pages.map((page, index) => {
+      const label = page.label?.trim() || `Página ${index + 1}`;
+      const url = page.url?.trim() || "URL não informada";
+      const snippet = page.snippet?.trim() || "";
+      return `PÁGINA ${index + 1}: ${label}\nURL: ${url}\nSNIPPET:\n${snippet}`;
+    }).join("\n\n")
+    : "Nenhuma página de instalação foi devolvida para este funil.";
+
+  return `Instale o tracker do Funnel Analytics no funil \"${funnelName}\".\n\nPara CADA página abaixo:\n1. Localize no repositório o arquivo que publica exatamente a URL informada.\n2. Insira o snippet correspondente imediatamente antes de </head>, exatamente uma vez naquela página.\n3. Preserve todos os scripts, links, metatags e comportamentos já existentes.\n4. Não reutilize o snippet de uma página em outra e não altere os identificadores do trecho.\n\n${pageInstructions}\n\nDepois, execute os testes e o build aplicáveis, publique a alteração e me devolva: arquivos alterados, resultado dos testes/build e as URLs públicas verificadas.`;
+}
+
+export function canCopyClaudeCodexPrompt(pages: InstallationPage[]) {
+  return pages.length > 0 && pages.every((page) => Boolean(page.snippet?.trim()));
+}
+
+function ClaudeCodexInstallPrompt({ funnelName, pages }: { funnelName: string; pages: InstallationPage[] }) {
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+  const prompt = buildClaudeCodexPrompt({ funnelName, pages });
+  const canCopy = canCopyClaudeCodexPrompt(pages);
+
+  const copyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopyFeedback("Prompt copiado. Cole no Claude ou Codex junto do repositório da página.");
+      toast.success("Prompt copiado para Claude / Codex.");
+    } catch {
+      setCopyFeedback("Não foi possível copiar automaticamente. Selecione o prompt e copie manualmente.");
+      toast.error("Não foi possível copiar. Selecione e copie manualmente.");
+    }
+  };
+
+  return (
+    <div className="space-y-3 rounded-md border border-border bg-background p-3">
+      <div>
+        <p className="text-sm font-medium">Prompt para Claude / Codex</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Um único prompt com as URLs e os trechos corretos de cada página deste funil.
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="quiz-claude-codex-prompt">Prompt pronto para colar</Label>
+        <textarea
+          id="quiz-claude-codex-prompt"
+          className={cn(textareaClass, "h-80")}
+          readOnly
+          spellCheck={false}
+          value={prompt}
+        />
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          {copyFeedback}
+        </p>
+        <Button type="button" onClick={copyPrompt} disabled={!canCopy}>
+          <Copy /> Copiar prompt para Claude / Codex
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function InstallerPanel({ projectId }: { projectId: string }) {
   const [selected, setSelected] = useState<FunnelDetails | null>(null);
   const [installationPages, setInstallationPages] = useState<InstallationPage[]>([]);
@@ -440,7 +520,18 @@ export function InstallerPanel({ projectId }: { projectId: string }) {
             </p>
           )}
 
-          <FunnelInstallationSnippets pages={installationPages} />
+          <Tabs key={projectId} defaultValue="manual">
+            <TabsList aria-label="Modo de instalação do tracker">
+              <TabsTrigger value="manual">Manual</TabsTrigger>
+              <TabsTrigger value="claude-codex">Claude / Codex</TabsTrigger>
+            </TabsList>
+            <TabsContent value="manual" className="mt-3">
+              <FunnelInstallationSnippets pages={installationPages} />
+            </TabsContent>
+            <TabsContent value="claude-codex" className="mt-3">
+              <ClaudeCodexInstallPrompt funnelName={projectName(selected)} pages={installationPages} />
+            </TabsContent>
+          </Tabs>
         </div>
       ) : null}
     </Card>
