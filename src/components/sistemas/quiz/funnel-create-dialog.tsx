@@ -1,74 +1,73 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Plus } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, Plus } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { criarFunilQuizAction } from "@/app/(dashboard)/sistemas/quiz/actions";
-import type { QuizProvisionedProject, QuizTrackerInstallation } from "@/lib/sistemas/quiz/projects-client.mjs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  FunnelCreationForm,
+  FunnelInstallationSnippets,
+  projectKey,
+  type GuidedCreatedFunnel,
+} from "./installer-panel";
 
-export type CreatedFunnel = {
-  format: "quiz" | "vsl" | "presell";
-  data: { project: QuizProvisionedProject; installation: QuizTrackerInstallation };
-};
-
-function createErrorMessage(result: { kind: string; reason?: string; code?: string }) {
-  if (result.kind === "not_configured") return "O Funnel Analytics não está configurado neste ambiente. Nenhuma criação foi enviada.";
-  switch (result.code) {
-    case "CONFLICT": return "Já existe um funil com esse identificador gerado. Ajuste o nome e tente novamente.";
-    case "UNAUTHORIZED": return "A credencial server-only foi recusada pelo Funnel Analytics.";
-    case "PROVISION_INPUT_INVALID": return "Revise o nome, a URL HTTPS e o vínculo opcional com o Banco.";
-    case "TIMEOUT": return "O Funnel Analytics excedeu o tempo seguro; confirme a lista antes de tentar novamente.";
-    default: return "Não foi possível criar o funil. Nenhum ID foi assumido como criado.";
-  }
-}
-
-export function FunnelCreateDialog({ provisioningEnabled, onCreated }: { provisioningEnabled: boolean; onCreated: (created: CreatedFunnel) => void }) {
+export function FunnelCreateDialog({ provisioningEnabled }: { provisioningEnabled: boolean }) {
   const [open, setOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [created, setCreated] = useState<GuidedCreatedFunnel | null>(null);
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-    const format = formData.get("format");
-    if (format !== "quiz" && format !== "vsl" && format !== "presell") return;
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen) setCreated(null);
+  }
 
-    setError(null);
-    startTransition(async () => {
-      const result = await criarFunilQuizAction(formData);
-      if (result.kind !== "success") {
-        setError(createErrorMessage(result));
-        return;
-      }
-      onCreated({ format, data: result.data });
-      form.reset();
-      setOpen(false);
-    });
+  function openCreatedFunnel() {
+    if (!created) return;
+    const projectId = projectKey(created.project);
+    if (!projectId) return;
+    const query = new URLSearchParams(searchParams.toString());
+    query.set("project", projectId);
+    query.set("tab", "installer");
+    query.delete("funnel");
+    setOpen(false);
+    setCreated(null);
+    router.push(`${pathname}?${query.toString()}`);
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button type="button" disabled={!provisioningEnabled} className="min-h-11 md:min-h-9" />}>
         <Plus className="size-4" aria-hidden="true" /> Criar funil
       </DialogTrigger>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Criar funil</DialogTitle>
-          <DialogDescription>O Banco envia somente nome, URL HTTPS e o vínculo opcional. Project, funnel e page IDs são gerados pelo Funnel Analytics.</DialogDescription>
-        </DialogHeader>
-        {!provisioningEnabled ? <p className="rounded-md border border-warning/40 bg-warning-muted p-3 text-sm text-muted-foreground">A criação está indisponível no Funnel Analytics. A lista continua apenas para leitura.</p> : null}
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-2"><Label htmlFor="quiz-funnel-name">Nome do funil</Label><Input id="quiz-funnel-name" name="name" required maxLength={120} placeholder="Ex.: Gelatina bariátrica" disabled={isPending || !provisioningEnabled} /></div>
-          <div className="space-y-2"><Label htmlFor="quiz-funnel-url">URL HTTPS da página</Label><Input id="quiz-funnel-url" name="finalUrl" type="url" required inputMode="url" placeholder="https://exemplo.com/quiz" disabled={isPending || !provisioningEnabled} /><p className="text-xs text-muted-foreground">Use a URL pública da VSL, presell ou quiz. O domínio é vinculado pelo upstream.</p></div>
-          <fieldset className="space-y-2"><legend className="text-sm font-medium">Formato</legend><div className="grid gap-2 sm:grid-cols-3">{(["quiz", "vsl", "presell"] as const).map((format) => <label key={format} className="flex min-h-11 items-center gap-2 rounded-md border px-3 text-sm"><input type="radio" name="format" value={format} defaultChecked={format === "quiz"} disabled={isPending || !provisioningEnabled} />{format === "quiz" ? "Quiz" : format === "vsl" ? "VSL" : "Presell"}</label>)}</div><p className="text-xs text-muted-foreground">Orientação desta sessão, não é salva nem enviada ao Funnel Analytics.</p></fieldset>
-          <div className="space-y-2"><Label htmlFor="quiz-banco-offer-id">Vínculo Banco NGV (opcional)</Label><Input id="quiz-banco-offer-id" name="bancoOfferTrackingId" type="number" min="1" step="1" inputMode="numeric" placeholder="ID da oferta no Banco" disabled={isPending || !provisioningEnabled} /><p className="text-xs text-muted-foreground">Informe apenas se já existir uma oferta no Banco. Deixe vazio para piloto sem vínculo.</p></div>
-          {error ? <p className="text-sm text-danger" role="alert">{error}</p> : null}
-          <DialogFooter><Button type="submit" disabled={isPending || !provisioningEnabled}>{isPending ? "Criando…" : "Criar funil"}</Button></DialogFooter>
-        </form>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl">
+        {created ? (
+          <div className="space-y-5">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><CheckCircle2 className="size-5 text-success" aria-hidden="true" /> Funil criado</DialogTitle>
+              <DialogDescription>
+                Os identificadores foram gerados automaticamente. Copie o trecho correspondente para cada página e abra o funil para acompanhar a instalação.
+              </DialogDescription>
+            </DialogHeader>
+            <FunnelInstallationSnippets idPrefix="quiz-dialog-page-snippet" pages={created.installationPages} />
+            <div className="flex justify-end">
+              <Button type="button" onClick={openCreatedFunnel}>Abrir funil criado</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <DialogHeader>
+              <DialogTitle>Criar funil</DialogTitle>
+              <DialogDescription>
+                Informe o nome e o caminho das páginas. O Banco gera automaticamente os IDs e um trecho próprio para cada página.
+              </DialogDescription>
+            </DialogHeader>
+            {!provisioningEnabled ? <p className="rounded-md border border-warning/40 bg-warning-muted p-3 text-sm text-muted-foreground">A criação está indisponível no Funnel Analytics. A lista continua apenas para leitura.</p> : null}
+            <FunnelCreationForm idPrefix="quiz-funnel-dialog" disabled={!provisioningEnabled} onCreated={setCreated} />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

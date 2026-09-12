@@ -22,6 +22,7 @@ export default async function QuizModulePage({
   const periodParam = typeof params.period === "string" ? params.period : undefined;
   const customFromParam = typeof params.from === "string" ? params.from : undefined;
   const customToParam = typeof params.to === "string" ? params.to : undefined;
+  const initialTab = params.tab === "installer" ? "installer" : "overview";
   // `funnel` é lido apenas como compatibilidade para bookmarks antigos; novas
   // navegações escrevem `project`, que é o identificador canônico da lista.
   const projectParam = typeof params.project === "string"
@@ -59,6 +60,7 @@ export default async function QuizModulePage({
       customFrom={customFromParam}
       customTo={customToParam}
       projectNotFound={projectNotFound}
+      initialTab={initialTab}
     />
   );
 }

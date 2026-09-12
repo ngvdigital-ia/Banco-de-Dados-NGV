@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Clock3, ShieldAlert, Wrench } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -9,14 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { shouldShowAnswersTab } from "./answers-tab";
 import { CampaignsPanel } from "./campaigns-panel";
 import { EventsPanel } from "./events-panel";
-import { FunnelCreateDialog, type CreatedFunnel } from "./funnel-create-dialog";
+import { FunnelCreateDialog } from "./funnel-create-dialog";
 import { FunnelPanel } from "./funnel-panel";
 import { formatTimestamp } from "./format";
 import { InstallerPanel } from "./installer-panel";
 import { JourneysPanel } from "./journeys-panel";
 import type { PeriodKey } from "./period";
 import { PeriodFilter } from "./period-filter";
-import { ProvisionedFunnelPanel } from "./provisioned-funnel-panel";
 import { ResponsesPanel } from "./responses-panel";
 import { SummaryCards } from "./summary-cards";
 import type { QuizModuleAnalyticsResult } from "./types";
@@ -92,36 +90,34 @@ function Unavailable({ result, title }: { result: Exclude<QuizDashboardProjectsR
   );
 }
 
-function EmptyProjects({ provisioningEnabled, onCreated }: { provisioningEnabled: boolean; onCreated: (created: CreatedFunnel) => void }) {
-  return <section className="rounded-lg border bg-card p-6" aria-labelledby="quiz-projects-empty-title"><h2 id="quiz-projects-empty-title" className="text-base font-semibold">Nenhum funil disponível</h2><p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">A lista canônica do Funnel Analytics não retornou projetos para este operador. O Banco não cria uma seleção de exemplo e não envia você ao painel externo.</p><div className="mt-4"><FunnelCreateDialog provisioningEnabled={provisioningEnabled} onCreated={onCreated} /></div></section>;
+function EmptyProjects({ provisioningEnabled }: { provisioningEnabled: boolean }) {
+  return <section className="rounded-lg border bg-card p-6" aria-labelledby="quiz-projects-empty-title"><h2 id="quiz-projects-empty-title" className="text-base font-semibold">Nenhum funil disponível</h2><p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">A lista canônica do Funnel Analytics não retornou projetos para este operador. O Banco não cria uma seleção de exemplo e não envia você ao painel externo.</p><div className="mt-4"><FunnelCreateDialog provisioningEnabled={provisioningEnabled} /></div></section>;
 }
 
-export function QuizAnalyticsView({ result, projectsResult, selectedProject, period, customFrom, customTo, projectNotFound }: { result: QuizModuleAnalyticsResult | null; projectsResult: QuizDashboardProjectsResult<{ provisioningEnabled: boolean; projects: QuizDashboardProject[] }>; selectedProject?: QuizDashboardProject; period: PeriodKey; customFrom?: string; customTo?: string; projectNotFound?: boolean }) {
-  const [created, setCreated] = useState<CreatedFunnel | null>(null);
+export function QuizAnalyticsView({ result, projectsResult, selectedProject, period, customFrom, customTo, projectNotFound, initialTab }: { result: QuizModuleAnalyticsResult | null; projectsResult: QuizDashboardProjectsResult<{ provisioningEnabled: boolean; projects: QuizDashboardProject[] }>; selectedProject?: QuizDashboardProject; period: PeriodKey; customFrom?: string; customTo?: string; projectNotFound?: boolean; initialTab?: "overview" | "installer" }) {
   if (projectsResult.kind !== "success") return <div className="space-y-6"><PageHeader title="Funnel Analytics" description="Crie, instale e acompanhe o caminho de cada funil sem sair do Banco NGV." /><Unavailable result={projectsResult} title={projectsResult.kind === "not_configured" ? "Funnel Analytics não configurado" : "Lista de funis indisponível"} /></div>;
 
   const { projects, provisioningEnabled } = projectsResult.data;
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4"><PageHeader title="Funnel Analytics" description="Crie, instale e acompanhe o caminho de cada funil sem sair do Banco NGV." /><div className="flex min-h-11 items-center gap-2"><StatusBadge variant="success">Lista ao vivo</StatusBadge><FunnelCreateDialog provisioningEnabled={provisioningEnabled} onCreated={setCreated} /></div></div>
-      {created ? <ProvisionedFunnelPanel created={created} /> : null}
-      {projects.length === 0 ? <EmptyProjects provisioningEnabled={provisioningEnabled} onCreated={setCreated} /> : <>
+      <div className="flex flex-wrap items-start justify-between gap-4"><PageHeader title="Funnel Analytics" description="Crie, instale e acompanhe o caminho de cada funil sem sair do Banco NGV." /><div className="flex min-h-11 items-center gap-2"><StatusBadge variant="success">Lista ao vivo</StatusBadge><FunnelCreateDialog provisioningEnabled={provisioningEnabled} /></div></div>
+      {projects.length === 0 ? <EmptyProjects provisioningEnabled={provisioningEnabled} /> : <>
         <ProjectSelector projects={projects} selectedProject={selectedProject} projectNotFound={projectNotFound} />
-        {selectedProject && result ? <AnalyticsContent result={result} project={selectedProject} period={period} customFrom={customFrom} customTo={customTo} created={created} /> : <section className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">Escolha um funil da lista para carregar a leitura correspondente.</section>}
+        {selectedProject && result ? <AnalyticsContent result={result} project={selectedProject} period={period} customFrom={customFrom} customTo={customTo} initialTab={initialTab} /> : <section className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">Escolha um funil da lista para carregar a leitura correspondente.</section>}
       </>}
     </div>
   );
 }
 
-function AnalyticsContent({ result, project, period, customFrom, customTo, created }: { result: QuizModuleAnalyticsResult; project: QuizDashboardProject; period: PeriodKey; customFrom?: string; customTo?: string; created: CreatedFunnel | null }) {
+function AnalyticsContent({ result, project, period, customFrom, customTo, initialTab }: { result: QuizModuleAnalyticsResult; project: QuizDashboardProject; period: PeriodKey; customFrom?: string; customTo?: string; initialTab?: "overview" | "installer" }) {
   if (result.kind !== "success") return <Unavailable result={result} title="Não foi possível ler o funil selecionado" />;
   const { data } = result;
   const hasQuizAnswers = shouldShowAnswersTab(data.metadata);
   return <>
     <div className="flex flex-wrap items-center justify-between gap-3"><PeriodFilter current={period} customFrom={customFrom} customTo={customTo} projectId={project.projectId} /><span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Clock3 className="size-3.5" aria-hidden="true" /> Gerado em {formatTimestamp(data.generatedAt)}</span></div>
     <SummaryCards summary={data.summary} />
-    <Tabs defaultValue="overview"><TabsList className="h-auto max-w-full flex-wrap" aria-label="Seções do funil"><TabsTrigger value="overview">Visão geral</TabsTrigger><TabsTrigger value="journeys">Jornada</TabsTrigger>{hasQuizAnswers ? <TabsTrigger value="answers">Perguntas e respostas</TabsTrigger> : null}<TabsTrigger value="events">Eventos</TabsTrigger><TabsTrigger value="installer">Instalação</TabsTrigger></TabsList>
-      <TabsContent value="overview" className="mt-4"><FunnelPanel funnel={data.funnel} /></TabsContent><TabsContent value="journeys" className="mt-4"><JourneysPanel journeys={data.journeys} /></TabsContent>{hasQuizAnswers ? <TabsContent value="answers" className="mt-4"><ResponsesPanel responses={data.responses} /></TabsContent> : null}<TabsContent value="events" className="mt-4"><EventsPanel events={data.recentEvents} /></TabsContent><TabsContent value="installer" className="mt-4"><InstallerPanel installation={created?.data.installation} initialDomain={created?.data.project.finalUrl ?? project.finalUrl ?? undefined} /></TabsContent>
+    <Tabs key={`${project.projectId}-${initialTab ?? "overview"}`} defaultValue={initialTab ?? "overview"}><TabsList className="h-auto max-w-full flex-wrap" aria-label="Seções do funil"><TabsTrigger value="overview">Visão geral</TabsTrigger><TabsTrigger value="journeys">Jornada</TabsTrigger>{hasQuizAnswers ? <TabsTrigger value="answers">Perguntas e respostas</TabsTrigger> : null}<TabsTrigger value="events">Eventos</TabsTrigger><TabsTrigger value="installer">Instalação</TabsTrigger></TabsList>
+      <TabsContent value="overview" className="mt-4"><FunnelPanel funnel={data.funnel} /></TabsContent><TabsContent value="journeys" className="mt-4"><JourneysPanel journeys={data.journeys} /></TabsContent>{hasQuizAnswers ? <TabsContent value="answers" className="mt-4"><ResponsesPanel responses={data.responses} /></TabsContent> : null}<TabsContent value="events" className="mt-4"><EventsPanel events={data.recentEvents} /></TabsContent><TabsContent value="installer" className="mt-4"><InstallerPanel /></TabsContent>
     </Tabs><CampaignsPanel campaigns={data.utmCampaigns} />
   </>;
 }

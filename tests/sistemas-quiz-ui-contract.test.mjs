@@ -5,7 +5,7 @@ import test from "node:test";
 const PAGE = new URL("../src/app/(dashboard)/sistemas/quiz/page.tsx", import.meta.url);
 const VIEW = new URL("../src/components/sistemas/quiz/quiz-analytics-view.tsx", import.meta.url);
 const CREATE = new URL("../src/components/sistemas/quiz/funnel-create-dialog.tsx", import.meta.url);
-const RECEIPT = new URL("../src/components/sistemas/quiz/provisioned-funnel-panel.tsx", import.meta.url);
+const INSTALLER = new URL("../src/components/sistemas/quiz/installer-panel.tsx", import.meta.url);
 
 test("Funnel Analytics usa adapter read-only no render e não mantém fallback de exemplo", async () => {
   const [page, view] = await Promise.all([readFile(PAGE, "utf8"), readFile(VIEW, "utf8")]);
@@ -19,23 +19,49 @@ test("Funnel Analytics usa adapter read-only no render e não mantém fallback d
   assert.match(view, /Nenhum funil disponível/);
 });
 
-test("criação orienta sem permitir IDs manuais e entrega tracker preenchido", async () => {
-  const [create, receipt] = await Promise.all([readFile(CREATE, "utf8"), readFile(RECEIPT, "utf8")]);
-  assert.match(create, /criarFunilQuizAction/);
-  assert.match(create, /name="name"/);
-  assert.match(create, /name="finalUrl"/);
-  assert.match(create, /name="format"/);
-  assert.match(create, /name="bancoOfferTrackingId"/);
-  assert.match(create, /Orientação desta sessão, não é salva/);
-  assert.doesNotMatch(create, /name="projectId"|name="funnelId"|name="pageId"/);
-  assert.match(receipt, /Project ID/);
-  assert.match(receipt, /Funnel ID/);
-  assert.match(receipt, /Page ID/);
-  assert.match(receipt, /data-nga-public-key/);
-  assert.match(receipt, /1\. Copiar/);
-  assert.match(receipt, /2\. Colar/);
-  assert.match(receipt, /3\. Publicar/);
-  assert.match(receipt, /4\. Testar/);
+test("criação usa o fluxo V2 por páginas, sem IDs técnicos ou ação V1 expostos", async () => {
+  const [create, installer, view] = await Promise.all([
+    readFile(CREATE, "utf8"),
+    readFile(INSTALLER, "utf8"),
+    readFile(VIEW, "utf8"),
+  ]);
+
+  assert.match(create, /FunnelCreationForm/);
+  assert.match(installer, /fetch\("\/api\/sistemas\/quiz\/funis"/);
+  assert.match(installer, /method: "POST"/);
+  assert.match(installer, /name,\s*format,\s*pages:/s);
+  assert.match(installer, /SelectItem value="quiz">Quiz → VSL/);
+  assert.match(installer, /SelectItem value="presell">Presell → VSL/);
+  assert.match(installer, /Adicionar etapa do quiz/);
+  assert.doesNotMatch(installer, /name="projectId"|name="funnelId"|name="pageId"|name="finalUrl"|name="bancoOfferTrackingId"/);
+
+  assert.doesNotMatch(create, /criarFunilQuizAction/);
+  assert.doesNotMatch(create, /ProvisionedFunnelPanel/);
+  assert.doesNotMatch(view, /ProvisionedFunnelPanel|type CreatedFunnel|onCreated=\{setCreated\}/);
+});
+
+test("sucesso mostra um trecho por página e abre o funil criado na instalação", async () => {
+  const [create, installer] = await Promise.all([readFile(CREATE, "utf8"), readFile(INSTALLER, "utf8")]);
+
+  assert.match(create, /FunnelInstallationSnippets/);
+  assert.match(create, /pages=\{created\.installationPages\}/);
+  assert.match(installer, /pages\.map\(\(page, index\)/);
+  assert.match(installer, /Trecho desta página/);
+  assert.match(installer, /Copiar trecho desta página/);
+  assert.match(create, /query\.set\("project", projectId\)/);
+  assert.match(create, /query\.set\("tab", "installer"\)/);
+  assert.match(create, /query\.delete\("funnel"\)/);
+  assert.match(create, /router\.push\(`\$\{pathname\}\?\$\{query\.toString\(\)\}`\)/);
+});
+
+test("leitura selecionada mantém project e funnel canônicos; período preserva o project", async () => {
+  const [page, view] = await Promise.all([readFile(PAGE, "utf8"), readFile(VIEW, "utf8")]);
+
+  assert.match(page, /projectId: selectedProject\.projectId/);
+  assert.match(page, /funnelId: selectedProject\.funnelId/);
+  assert.match(view, /<PeriodFilter current=\{period\}[^>]*projectId=\{project\.projectId\}/);
+  assert.match(view, /query\.set\("project", projectId\)/);
+  assert.doesNotMatch(view, /query\.set\("funnel", projectId\)/);
 });
 
 test("a aba de respostas depende da metadata do analytics, não da lista de respostas", async () => {

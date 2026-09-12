@@ -2,28 +2,18 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const ACTIONS_PATH = new URL("../src/app/(dashboard)/sistemas/quiz/actions.ts", import.meta.url);
-const SERVER_WRAPPER_PATH = new URL("../src/lib/sistemas/quiz/projects.ts", import.meta.url);
-const AUDIT_PATH = new URL("../src/lib/sistemas/audit.ts", import.meta.url);
+const FUNIS_ROUTE_PATH = new URL("../src/app/api/sistemas/quiz/funis/route.ts", import.meta.url);
 
-test("Server Actions usam FormData, Zod, capability mutate e wrapper server-only", async () => {
-  const [actions, wrapper, audit] = await Promise.all([readFile(ACTIONS_PATH, "utf8"), readFile(SERVER_WRAPPER_PATH, "utf8"), readFile(AUDIT_PATH, "utf8")]);
-  assert.match(actions, /^"use server";/);
-  assert.match(actions, /formData: FormData/);
-  assert.match(actions, /createFunnelSchema\.safeParse/);
-  assert.match(actions, /capability: "mutate"/);
-  assert.match(actions, /capability: "read"/);
-  assert.match(actions, /logModuleAction/);
-  assert.match(actions, /recordModuleAction/);
-  assert.match(actions, /intentLogActionImpl: recordModuleAction/);
-  assert.match(actions, /validateBancoOfferTrackingLink/);
-  assert.match(actions, /\.select\(\{ id: offerTracking\.id \}\)/);
-  assert.match(actions, /\.from\(offerTracking\)/);
-  assert.match(actions, /\.limit\(1\)/);
-  assert.match(actions, /revalidatePath\(QUIZ_PATH\)/);
-  assert.match(wrapper, /import "server-only"/);
-  assert.match(wrapper, /process\.env\.QUIZ_DASHBOARD_USERNAME/);
-  assert.match(wrapper, /process\.env\.QUIZ_DASHBOARD_PASSWORD/);
-  assert.match(audit, /export async function recordModuleAction/);
-  assert.match(audit, /await db\.insert\(moduleActionLog\)\.values/);
+test("criação V2 é uma rota autenticada, limitada e com contrato multi-página", async () => {
+  const route = await readFile(FUNIS_ROUTE_PATH, "utf8");
+
+  assert.match(route, /await requireAdmin\(\)/);
+  assert.match(route, /readBoundedJsonRequest\(request\)/);
+  assert.match(route, /format: z\.enum\(\["quiz", "presell"\]\)/);
+  assert.match(route, /pages: z\.array\(pageSchema\)\.min\(2\)\.max\(100\)/);
+  assert.match(route, /method: "POST", payload: parsed\.data/);
+  assert.match(route, /url\.protocol === "https:"/);
+  assert.match(route, /!url\.username && !url\.password && !url\.hash/);
+  assert.match(route, /PAYLOAD_TOO_LARGE/);
+  assert.doesNotMatch(route, /offerTracking|bancoOfferTrackingId|finalUrl/);
 });
