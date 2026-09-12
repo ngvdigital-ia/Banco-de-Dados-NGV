@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Copy, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -94,11 +94,6 @@ function stateVariant(state: string | undefined): "success" | "warning" | "neutr
 
 function defaultUrls() {
   return ["", ""];
-}
-
-function projectFromLocation() {
-  const candidate = new URLSearchParams(window.location.search).get("project")?.trim() ?? "";
-  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(candidate) ? candidate : "";
 }
 
 export function FunnelCreationForm({
@@ -312,48 +307,20 @@ export function FunnelInstallationSnippets({ pages, idPrefix = "quiz-page-snippe
   );
 }
 
-export function InstallerPanel() {
-  const [projects, setProjects] = useState<FunnelSummary[]>([]);
-  const [selectedKey, setSelectedKey] = useState("");
+export function InstallerPanel({ projectId }: { projectId: string }) {
   const [selected, setSelected] = useState<FunnelDetails | null>(null);
   const [installationPages, setInstallationPages] = useState<InstallationPage[]>([]);
-  const [loadingProjects, setLoadingProjects] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [confirmingDeployment, setConfirmingDeployment] = useState(false);
   const [deploymentError, setDeploymentError] = useState<string | null>(null);
-
-
-  const loadProjects = async () => {
-    setLoadingProjects(true);
-    setLoadError(null);
-    try {
-      const response = await fetch("/api/sistemas/quiz/funis", { cache: "no-store" });
-      const payload = (await response.json().catch(() => null)) as FunnelResponse | null;
-      if (!response.ok || !payload || !Array.isArray(payload.projects)) {
-        throw new Error(payload?.error || "Não foi possível carregar os funis agora.");
-      }
-      setProjects(payload.projects);
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "Não foi possível carregar os funis agora.");
-    } finally {
-      setLoadingProjects(false);
-    }
-  };
+  const activeProjectIdRef = useRef(projectId);
+  activeProjectIdRef.current = projectId;
 
   useEffect(() => {
-    void loadProjects();
-  }, []);
-
-  // O link compartilhado do Banco usa ?project=<slug>. Lemos uma vez depois da hidratação
-  // para não criar diferença servidor/cliente nem sobrescrever uma seleção manual posterior.
-  useEffect(() => {
-    const project = projectFromLocation();
-    if (project) setSelectedKey(project);
-  }, []);
-
-  useEffect(() => {
-    if (!selectedKey) {
+    setConfirmingDeployment(false);
+    setDeploymentError(null);
+    if (!projectId) {
       setSelected(null);
       setInstallationPages([]);
       return;
@@ -363,8 +330,10 @@ export function InstallerPanel() {
     const loadDetails = async () => {
       setLoadingDetails(true);
       setLoadError(null);
+      setSelected(null);
+      setInstallationPages([]);
       try {
-        const response = await fetch(`/api/sistemas/quiz/funis?project=${encodeURIComponent(selectedKey)}`, {
+        const response = await fetch(`/api/sistemas/quiz/funis?project=${encodeURIComponent(projectId)}`, {
           cache: "no-store",
         });
         const payload = (await response.json().catch(() => null)) as FunnelResponse | null;
@@ -389,135 +358,91 @@ export function InstallerPanel() {
     return () => {
       cancelled = true;
     };
-  }, [selectedKey]);
-
-  const selectCreatedFunnel = (created: GuidedCreatedFunnel) => {
-    const key = projectKey(created.project);
-    setSelected(created.project);
-    setInstallationPages(created.installationPages);
-    setSelectedKey(key);
-    setProjects((current) => {
-      const withoutCurrent = current.filter((project) => projectKey(project) !== key);
-      return [created.project, ...withoutCurrent];
-    });
-  };
+  }, [projectId]);
 
   const confirmDeployment = async () => {
     if (!selected || selected.state !== "awaiting_deploy" || confirmingDeployment) return;
 
-    const projectId = projectKey(selected);
+    const confirmationProjectId = projectId;
+    const selectedProjectId = projectKey(selected);
     const finalUrl = selected.final_url?.trim() ?? "";
-    if (!projectId || !finalUrl) {
+    if (!confirmationProjectId || selectedProjectId !== confirmationProjectId || !finalUrl) {
       setDeploymentError("Não foi possível confirmar este funil porque a URL registrada não está disponível. Atualize a página e tente novamente.");
       return;
     }
 
+    const confirmationIsCurrent = () => activeProjectIdRef.current === confirmationProjectId;
     setConfirmingDeployment(true);
     setDeploymentError(null);
     try {
       const response = await fetch("/api/sistemas/quiz/funis", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ projectId, finalUrl }),
+        body: JSON.stringify({ projectId: confirmationProjectId, finalUrl }),
       });
       const payload = (await response.json().catch(() => null)) as FunnelResponse | null;
       if (!response.ok || !payload?.project) {
         throw new Error(payload?.error || "Não foi possível confirmar a publicação.");
       }
+      if (!confirmationIsCurrent()) return;
 
       const confirmed = {
         ...selected,
         ...payload.project,
       } satisfies FunnelDetails;
       setSelected(confirmed);
-      setProjects((current) => current.map((project) => (
-        projectKey(project) === projectId ? { ...project, ...payload.project } : project
-      )));
       toast.success("Páginas confirmadas. O funil agora está instalado.");
     } catch (error) {
+      if (!confirmationIsCurrent()) return;
       setDeploymentError(
         error instanceof Error
           ? error.message
           : "Não foi possível confirmar a publicação. Confira se os trechos já estão publicados e tente novamente.",
       );
     } finally {
-      setConfirmingDeployment(false);
+      if (confirmationIsCurrent()) setConfirmingDeployment(false);
     }
   };
 
   return (
-    <div className="space-y-5">
-      <Card className="gap-5 p-5">
-        <div>
-          <h2 className="text-sm font-semibold">Criar funil</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Dê um nome, informe as páginas e o Banco gera os trechos certos. Você não precisa preencher IDs técnicos.
-          </p>
-        </div>
+    <Card className="gap-4 p-5">
+      <div>
+        <h2 className="text-sm font-semibold">Instalação</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Copie o trecho de cada página deste funil. Depois de publicar as páginas, confirme aqui para liberar o acompanhamento.
+        </p>
+      </div>
 
-        <FunnelCreationForm onCreated={selectCreatedFunnel} />
-      </Card>
+      {loadingDetails ? <p className="text-xs text-muted-foreground" aria-live="polite">Carregando trechos deste funil…</p> : null}
+      {loadError ? <p className="text-xs text-danger" role="alert">{loadError}</p> : null}
 
-      <Card className="gap-4 p-5">
-        <div>
-          <h2 className="text-sm font-semibold">Funil em foco</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Selecione um funil registrado. Nome e situação vêm da lista canônica; nenhum ID precisa ser digitado.
-          </p>
-        </div>
-
-        <div className="max-w-xl space-y-2">
-          <Label htmlFor="quiz-existing-funnel">Funil</Label>
-          <Select value={selectedKey} onValueChange={(value) => setSelectedKey(value ?? "")} disabled={loadingProjects || projects.length === 0}>
-            <SelectTrigger id="quiz-existing-funnel" className="w-full">
-              <SelectValue placeholder={loadingProjects ? "Carregando funis…" : "Selecione um funil"} />
-            </SelectTrigger>
-            <SelectContent>
-              {projects.map((project) => {
-                const key = projectKey(project);
-                return (
-                  <SelectItem key={key} value={key}>
-                    {projectName(project)} · {stateLabel(project.state)}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-          {loadingProjects ? <p className="text-xs text-muted-foreground">Carregando os funis registrados…</p> : null}
-          {!loadingProjects && projects.length === 0 && !loadError ? <p className="text-xs text-muted-foreground">Ainda não há funis cadastrados.</p> : null}
-          {loadError ? <p className="text-xs text-danger" role="alert">{loadError}</p> : null}
-        </div>
-
-        {loadingDetails ? <p className="text-xs text-muted-foreground">Carregando trechos deste funil…</p> : null}
-
-        {selected && !loadingDetails ? (
-          <div className="space-y-4 rounded-lg border border-border bg-muted/20 p-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium">{projectName(selected)}</p>
-              <StatusBadge variant={stateVariant(selected.state)}>{stateLabel(selected.state)}</StatusBadge>
-              <StatusBadge variant="neutral">{formatLabel(selected.format)}</StatusBadge>
-            </div>
-
-            {selected.state === "awaiting_deploy" ? (
-              <div className="space-y-3 rounded-md border border-warning/40 bg-warning-muted p-3">
-                <p className="text-sm text-muted-foreground">
-                  Publique os trechos copiados nas páginas abaixo. Quando as páginas estiverem no ar, confirme aqui para liberar o acompanhamento do funil.
-                </p>
-                {deploymentError ? <p className="text-xs text-danger" role="alert">{deploymentError}</p> : null}
-                <Button type="button" onClick={confirmDeployment} disabled={confirmingDeployment}>
-                  {confirmingDeployment ? "Confirmando páginas…" : "Confirmar páginas publicadas"}
-                </Button>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground" aria-live="polite">
-                Situação atual: {stateLabel(selected.state)}.
-              </p>
-            )}
-
-            <FunnelInstallationSnippets pages={installationPages} />
+      {selected && !loadingDetails ? (
+        <div className="space-y-4 rounded-lg border border-border bg-muted/20 p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-medium">{projectName(selected)}</p>
+            <StatusBadge variant={stateVariant(selected.state)}>{stateLabel(selected.state)}</StatusBadge>
+            <StatusBadge variant="neutral">{formatLabel(selected.format)}</StatusBadge>
           </div>
-        ) : null}
-      </Card>
-    </div>
+
+          {selected.state === "awaiting_deploy" ? (
+            <div className="space-y-3 rounded-md border border-warning/40 bg-warning-muted p-3">
+              <p className="text-sm text-muted-foreground">
+                Publique os trechos copiados nas páginas abaixo. Quando as páginas estiverem no ar, confirme aqui para liberar o acompanhamento do funil.
+              </p>
+              {deploymentError ? <p className="text-xs text-danger" role="alert">{deploymentError}</p> : null}
+              <Button type="button" onClick={confirmDeployment} disabled={confirmingDeployment}>
+                {confirmingDeployment ? "Confirmando páginas…" : "Confirmar páginas publicadas"}
+              </Button>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground" aria-live="polite">
+              Situação atual: {stateLabel(selected.state)}.
+            </p>
+          )}
+
+          <FunnelInstallationSnippets pages={installationPages} />
+        </div>
+      ) : null}
+    </Card>
   );
 }
