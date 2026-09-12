@@ -32,6 +32,13 @@ const provisionSchema = z
   })
   .strict();
 
+const deploymentSchema = z
+  .object({
+    projectId: projectIdSchema,
+    finalUrl: pageSchema.shape.url,
+  })
+  .strict();
+
 function response(body: unknown, status = 200) {
   return NextResponse.json(body, { status, headers: { "cache-control": "no-store" } });
 }
@@ -46,6 +53,7 @@ function errorFor(code: string) {
     UPSTREAM_UNAUTHORIZED: 502,
     UPSTREAM_RATE_LIMITED: 503,
     UPSTREAM_REQUEST_REJECTED: 422,
+    UPSTREAM_CONFLICT: 409,
     REQUEST_INVALID: 400,
     METHOD_NOT_ALLOWED: 405,
   };
@@ -58,6 +66,7 @@ function errorFor(code: string) {
     UPSTREAM_UNAUTHORIZED: "O Banco não conseguiu autenticar no Funnel Analytics. Avise um administrador.",
     UPSTREAM_RATE_LIMITED: "O Funnel Analytics recebeu muitas solicitações. Aguarde um instante e tente novamente.",
     UPSTREAM_REQUEST_REJECTED: "O Funnel Analytics recusou o funil. Revise nome, formato e páginas.",
+    UPSTREAM_CONFLICT: "A confirmação não corresponde ao funil aguardando publicação. Atualize a página e confira a URL registrada.",
     REQUEST_INVALID: "O funil solicitado é inválido.",
     METHOD_NOT_ALLOWED: "Método não permitido.",
   };
@@ -121,5 +130,34 @@ export async function POST(request: Request) {
   }
 
   const result = await proxyQuizDashboardProjects({ method: "POST", payload: parsed.data });
+  return result.ok ? response({ ok: true, ...result.data }) : errorFor(result.code);
+}
+
+export async function PATCH(request: Request) {
+  const unauthorized = await authorize();
+  if (unauthorized) return unauthorized;
+
+  const body = await readBoundedJsonRequest(request);
+  if (body.kind === "too_large") {
+    return response(
+      {
+        ok: false,
+        code: "PAYLOAD_TOO_LARGE",
+        error: `O pedido de confirmação excede o limite de ${Math.floor(MAX_PROVISION_REQUEST_BYTES / 1024)} KB.`,
+      },
+      413,
+    );
+  }
+  if (body.kind !== "ok") {
+    return response({ ok: false, code: "REQUEST_INVALID", error: "Envie um JSON válido para confirmar a publicação." }, 400);
+  }
+  const parsed = deploymentSchema.safeParse(body.value);
+  if (!parsed.success) {
+    return response({ ok: false, code: "REQUEST_INVALID", error: "Informe o projeto e a URL HTTPS registrados para confirmar a publicação." }, 400);
+  }
+
+  // Não buscamos finalUrl: o upstream aplica compare-and-set contra o registro
+  // provisionado e devolve 409 se alguém tentar confirmar uma URL diferente.
+  const result = await proxyQuizDashboardProjects({ method: "PATCH", payload: parsed.data });
   return result.ok ? response({ ok: true, ...result.data }) : errorFor(result.code);
 }

@@ -33,11 +33,34 @@ test("criação usa o fluxo V2 por páginas, sem IDs técnicos ou ação V1 expo
   assert.match(installer, /SelectItem value="quiz">Quiz → VSL/);
   assert.match(installer, /SelectItem value="presell">Presell → VSL/);
   assert.match(installer, /Adicionar etapa do quiz/);
-  assert.doesNotMatch(installer, /name="projectId"|name="funnelId"|name="pageId"|name="finalUrl"|name="bancoOfferTrackingId"/);
+  const creationForm = installer.slice(installer.indexOf("export function FunnelCreationForm"), installer.indexOf("export function FunnelInstallationSnippets"));
+  assert.doesNotMatch(creationForm, /name="projectId"|name="funnelId"|name="pageId"|name="finalUrl"|name="bancoOfferTrackingId"/);
 
   assert.doesNotMatch(create, /criarFunilQuizAction/);
   assert.doesNotMatch(create, /ProvisionedFunnelPanel/);
   assert.doesNotMatch(view, /ProvisionedFunnelPanel|type CreatedFunnel|onCreated=\{setCreated\}/);
+});
+
+test("confirmação de publicação aparece apenas em awaiting_deploy e tem payload, loading, sucesso e erro explícitos", async () => {
+  const installer = await readFile(INSTALLER, "utf8");
+  const confirmationPanel = installer.slice(
+    installer.indexOf('{selected.state === "awaiting_deploy" ?'),
+    installer.indexOf("<FunnelInstallationSnippets"),
+  );
+
+  assert.match(installer, /if \(!selected \|\| selected\.state !== "awaiting_deploy" \|\| confirmingDeployment\) return/);
+  assert.match(installer, /method: "PATCH"/);
+  assert.match(installer, /JSON\.stringify\(\{ projectId, finalUrl \}\)/);
+  assert.match(installer, /setConfirmingDeployment\(true\)/);
+  assert.match(installer, /Confirmando páginas…/);
+  assert.match(installer, /Confirmar páginas publicadas/);
+  assert.match(installer, /toast\.success\("Páginas confirmadas\. O funil agora está instalado\."\)/);
+  assert.match(installer, /setDeploymentError\(/);
+  assert.match(installer, /role="alert"/);
+  assert.match(confirmationPanel, /selected\.state === "awaiting_deploy"/);
+  assert.match(confirmationPanel, /Confirmar páginas publicadas/);
+  assert.doesNotMatch(confirmationPanel, /receiving_events|selected\.state === "installed"/);
+  assert.match(confirmationPanel, /Situação atual: \{stateLabel\(selected\.state\)\}/);
 });
 
 test("sucesso mostra um trecho por página e abre o funil criado na instalação", async () => {

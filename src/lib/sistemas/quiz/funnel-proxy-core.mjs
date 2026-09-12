@@ -71,6 +71,12 @@ function isHttpsOrigin(value) {
   }
 }
 
+function isIsoTimestamp(value) {
+  return isNonEmptyString(value, 64)
+    && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
+    && !Number.isNaN(Date.parse(value));
+}
+
 function configFrom(options = {}) {
   const requestedTimeout = Number(options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
   const defaultHost = new URL(QUIZ_ANALYTICS_ORIGIN).hostname.toLowerCase();
@@ -324,11 +330,37 @@ function validateProjectDetail(value, expectedOrigin) {
   };
 }
 
+function validateDeploymentResponse(value) {
+  if (!isPlainObject(value) || value.ok !== true || !isPlainObject(value.project)) {
+    fail("RESPONSE_SCHEMA_INVALID");
+  }
+  const project = value.project;
+  if (
+    !isProjectId(project.project_id) ||
+    !(project.state === "installed" || project.state === "receiving_events") ||
+    !isHttpsUrl(project.final_url) ||
+    (project.deployed_at !== null && !isIsoTimestamp(project.deployed_at))
+  ) {
+    fail("RESPONSE_SCHEMA_INVALID");
+  }
+  // A confirmação não precisa de public_key: ela só muda o estado do projeto já
+  // provisionado. Mantemos a projeção pequena para não ampliar o contrato da rota.
+  return {
+    project: {
+      project_id: project.project_id,
+      state: project.state,
+      final_url: project.final_url,
+      deployed_at: project.deployed_at,
+    },
+  };
+}
+
 function upstreamError(status) {
   if (status === 401 || status === 403) return "UPSTREAM_UNAUTHORIZED";
   if (status === 429) return "UPSTREAM_RATE_LIMITED";
   if (status >= 500) return "UPSTREAM_ERROR";
-  if (status === 400 || status === 409 || status === 415 || status === 422) return "UPSTREAM_REQUEST_REJECTED";
+  if (status === 409) return "UPSTREAM_CONFLICT";
+  if (status === 400 || status === 404 || status === 415 || status === 422) return "UPSTREAM_REQUEST_REJECTED";
   return "UPSTREAM_UNAVAILABLE";
 }
 
@@ -338,17 +370,21 @@ function upstreamError(status) {
  */
 
 /**
- * Faz GET/POST no painel externo e retorna somente o subconjunto seguro que a
+ * Faz GET/POST/PATCH no painel externo e retorna somente o subconjunto seguro que a
  * UI do Banco precisa. Não lança para falhas operacionais: rota recebe um código
  * tipado, sem credenciais, URL autenticada ou corpo bruto do upstream.
  *
- * @param {{ method: "GET" | "POST", projectId?: string | null, payload?: QuizFunnelProvisionInput | null }} request
+ * @typedef {{ projectId: string, finalUrl: string }} QuizFunnelDeploymentInput
+ */
+
+/**
+ * @param {{ method: "GET" | "POST" | "PATCH", projectId?: string | null, payload?: QuizFunnelProvisionInput | QuizFunnelDeploymentInput | null }} request
  * @param {{ origin?: string, hostAllowlist?: string[], username?: string, password?: string, timeoutMs?: number, fetchImpl?: typeof fetch }} options
  */
 export async function proxyQuizDashboardProjects({ method, projectId = null, payload = null } = {}, options = {}) {
   const config = configFrom(options);
   if (!config.username || !config.password) return { ok: false, code: "MISSING_CREDENTIALS" };
-  if (method !== "GET" && method !== "POST") return { ok: false, code: "METHOD_NOT_ALLOWED" };
+  if (method !== "GET" && method !== "POST" && method !== "PATCH") return { ok: false, code: "METHOD_NOT_ALLOWED" };
 
   try {
     const url = buildUrl(config, projectId);
@@ -359,7 +395,11 @@ export async function proxyQuizDashboardProjects({ method, projectId = null, pay
     const timer = setTimeout(() => controller.abort(), config.timeoutMs);
     try {
       const basicAuth = Buffer.from(`${config.username}:${config.password}`, "utf8").toString("base64");
-      const upstreamPayload = method === "POST" ? buildUpstreamProvisionPayload(payload) : null;
+      const upstreamPayload = method === "POST"
+        ? buildUpstreamProvisionPayload(payload)
+        : method === "PATCH"
+          ? buildUpstreamDeploymentPayload(payload)
+          : null;
       const response = await fetchImpl(url, {
         method,
         redirect: "manual",
@@ -368,9 +408,9 @@ export async function proxyQuizDashboardProjects({ method, projectId = null, pay
         headers: {
           authorization: `Basic ${basicAuth}`,
           accept: "application/json",
-          ...(method === "POST" ? { "content-type": "application/json" } : {}),
+          ...(method === "POST" || method === "PATCH" ? { "content-type": "application/json" } : {}),
         },
-        ...(method === "POST" ? { body: JSON.stringify(upstreamPayload) } : {}),
+        ...(method === "POST" || method === "PATCH" ? { body: JSON.stringify(upstreamPayload) } : {}),
       });
       if (response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400)) {
         return { ok: false, code: "UNEXPECTED_REDIRECT" };
@@ -391,6 +431,17 @@ export async function proxyQuizDashboardProjects({ method, projectId = null, pay
             projects: body.projects.map(validateProjectSummary),
           },
         };
+      }
+
+      if (method === "PATCH") {
+        const deployment = validateDeploymentResponse(body);
+        if (
+          deployment.project.project_id !== payload.projectId ||
+          deployment.project.final_url !== payload.finalUrl
+        ) {
+          fail("RESPONSE_FILTER_MISMATCH");
+        }
+        return { ok: true, data: deployment };
       }
 
       const detail = validateProjectDetail(body, expectedOrigin);
@@ -421,4 +472,15 @@ function buildUpstreamProvisionPayload(payload) {
     return { label, url: page.url };
   });
   return { schema_version: 2, name: payload.name, format: payload.format, pages };
+}
+
+function buildUpstreamDeploymentPayload(payload) {
+  if (!isPlainObject(payload) || !isProjectId(payload.projectId) || !isHttpsUrl(payload.finalUrl)) {
+    fail("REQUEST_INVALID");
+  }
+  return {
+    schema_version: 1,
+    project_id: payload.projectId,
+    final_url: payload.finalUrl,
+  };
 }

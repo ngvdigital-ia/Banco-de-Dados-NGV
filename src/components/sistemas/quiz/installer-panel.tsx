@@ -37,6 +37,8 @@ export type InstallationPage = {
 
 export type FunnelDetails = FunnelSummary & {
   format?: FunnelFormat;
+  final_url?: string | null;
+  deployed_at?: string | null;
 };
 
 type FunnelResponse = {
@@ -318,6 +320,8 @@ export function InstallerPanel() {
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [confirmingDeployment, setConfirmingDeployment] = useState(false);
+  const [deploymentError, setDeploymentError] = useState<string | null>(null);
 
 
   const loadProjects = async () => {
@@ -398,6 +402,49 @@ export function InstallerPanel() {
     });
   };
 
+  const confirmDeployment = async () => {
+    if (!selected || selected.state !== "awaiting_deploy" || confirmingDeployment) return;
+
+    const projectId = projectKey(selected);
+    const finalUrl = selected.final_url?.trim() ?? "";
+    if (!projectId || !finalUrl) {
+      setDeploymentError("Não foi possível confirmar este funil porque a URL registrada não está disponível. Atualize a página e tente novamente.");
+      return;
+    }
+
+    setConfirmingDeployment(true);
+    setDeploymentError(null);
+    try {
+      const response = await fetch("/api/sistemas/quiz/funis", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ projectId, finalUrl }),
+      });
+      const payload = (await response.json().catch(() => null)) as FunnelResponse | null;
+      if (!response.ok || !payload?.project) {
+        throw new Error(payload?.error || "Não foi possível confirmar a publicação.");
+      }
+
+      const confirmed = {
+        ...selected,
+        ...payload.project,
+      } satisfies FunnelDetails;
+      setSelected(confirmed);
+      setProjects((current) => current.map((project) => (
+        projectKey(project) === projectId ? { ...project, ...payload.project } : project
+      )));
+      toast.success("Páginas confirmadas. O funil agora está instalado.");
+    } catch (error) {
+      setDeploymentError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível confirmar a publicação. Confira se os trechos já estão publicados e tente novamente.",
+      );
+    } finally {
+      setConfirmingDeployment(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <Card className="gap-5 p-5">
@@ -450,6 +497,22 @@ export function InstallerPanel() {
               <StatusBadge variant={stateVariant(selected.state)}>{stateLabel(selected.state)}</StatusBadge>
               <StatusBadge variant="neutral">{formatLabel(selected.format)}</StatusBadge>
             </div>
+
+            {selected.state === "awaiting_deploy" ? (
+              <div className="space-y-3 rounded-md border border-warning/40 bg-warning-muted p-3">
+                <p className="text-sm text-muted-foreground">
+                  Publique os trechos copiados nas páginas abaixo. Quando as páginas estiverem no ar, confirme aqui para liberar o acompanhamento do funil.
+                </p>
+                {deploymentError ? <p className="text-xs text-danger" role="alert">{deploymentError}</p> : null}
+                <Button type="button" onClick={confirmDeployment} disabled={confirmingDeployment}>
+                  {confirmingDeployment ? "Confirmando páginas…" : "Confirmar páginas publicadas"}
+                </Button>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground" aria-live="polite">
+                Situação atual: {stateLabel(selected.state)}.
+              </p>
+            )}
 
             <FunnelInstallationSnippets pages={installationPages} />
           </div>

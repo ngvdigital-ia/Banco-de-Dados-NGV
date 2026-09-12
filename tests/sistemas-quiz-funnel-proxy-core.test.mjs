@@ -115,6 +115,8 @@ test("criação fixa schema_version e constrói snippet canônico por página", 
   assert.equal(result.ok, true);
   assert.equal(upstreamBody.schema_version, 2);
   assert.equal(upstreamBody.name, "Round Popcorn");
+  assert.equal(upstreamBody.project_id, undefined, "criação V2 não recebe ID técnico manual");
+  assert.equal(upstreamBody.final_url, undefined, "criação V2 deriva a página final a partir do caminho");
   assert.deepEqual(upstreamBody.pages, [
     { label: "Presell", url: "https://round-popcorn.example.test/" },
     { label: "VSL", url: "https://round-popcorn.example.test/vsl" },
@@ -124,6 +126,90 @@ test("criação fixa schema_version e constrói snippet canônico por página", 
   assert.match(result.data.installation.pages[0].snippet, new RegExp(`${ORIGIN}/assets/tracker\\.js`));
   assert.match(result.data.installation.pages[0].snippet, /data-nga-public-key="pk_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"/);
   assert.doesNotMatch(result.data.installation.pages[0].snippet, /evil|onload|malicious/);
+});
+
+test("confirmação PATCH só encaminha projeto e URL final registrados, em schema próprio", async () => {
+  let captured;
+  const result = await proxyQuizDashboardProjects({
+    method: "PATCH",
+    payload: {
+      projectId: "round-popcorn",
+      finalUrl: "https://round-popcorn.example.test/vsl",
+    },
+  }, {
+    ...CONFIG,
+    fetchImpl: async (url, init) => {
+      captured = { url, init };
+      return json({
+        ok: true,
+        project: {
+          project_id: "round-popcorn",
+          state: "installed",
+          final_url: "https://round-popcorn.example.test/vsl",
+          deployed_at: "2026-09-12T08:00:00.000Z",
+        },
+      });
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(captured.url.pathname, QUIZ_DASHBOARD_PROJECTS_PATH);
+  assert.equal(captured.init.method, "PATCH");
+  assert.equal(captured.init.headers.authorization, `Basic ${Buffer.from("dashboard:secret").toString("base64")}`);
+  assert.equal(captured.init.headers["content-type"], "application/json");
+  assert.deepEqual(JSON.parse(captured.init.body), {
+    schema_version: 1,
+    project_id: "round-popcorn",
+    final_url: "https://round-popcorn.example.test/vsl",
+  });
+  assert.deepEqual(result.data, {
+    project: {
+      project_id: "round-popcorn",
+      state: "installed",
+      final_url: "https://round-popcorn.example.test/vsl",
+      deployed_at: "2026-09-12T08:00:00.000Z",
+    },
+  });
+  assert.equal(result.data.project.public_key, undefined, "a resposta de confirmação não amplia o contrato com segredo de instalação");
+});
+
+test("confirmação PATCH falha fechada para payload inválido, conflito upstream e readback divergente", async () => {
+  let calls = 0;
+  const invalid = await proxyQuizDashboardProjects({
+    method: "PATCH",
+    payload: { projectId: "round-popcorn", finalUrl: "http://round-popcorn.example.test/vsl" },
+  }, {
+    ...CONFIG,
+    fetchImpl: async () => { calls += 1; return json({}); },
+  });
+  assert.deepEqual(invalid, { ok: false, code: "REQUEST_INVALID" });
+  assert.equal(calls, 0, "payload inválido não chama o upstream");
+
+  const conflict = await proxyQuizDashboardProjects({
+    method: "PATCH",
+    payload: { projectId: "round-popcorn", finalUrl: "https://round-popcorn.example.test/vsl" },
+  }, {
+    ...CONFIG,
+    fetchImpl: async () => new Response(JSON.stringify({ ok: false }), { status: 409 }),
+  });
+  assert.deepEqual(conflict, { ok: false, code: "UPSTREAM_CONFLICT" });
+
+  const mismatch = await proxyQuizDashboardProjects({
+    method: "PATCH",
+    payload: { projectId: "round-popcorn", finalUrl: "https://round-popcorn.example.test/vsl" },
+  }, {
+    ...CONFIG,
+    fetchImpl: async () => json({
+      ok: true,
+      project: {
+        project_id: "round-popcorn",
+        state: "installed",
+        final_url: "https://other.example.test/vsl",
+        deployed_at: null,
+      },
+    }),
+  });
+  assert.deepEqual(mismatch, { ok: false, code: "RESPONSE_FILTER_MISMATCH" });
 });
 
 test("quiz com três URLs gera e preserva um trecho canônico para cada página", async () => {
