@@ -57,7 +57,7 @@ export async function POST(request: Request) {
   try {
     // Detect platform
     const isPerfectPay = body.sale_status_enum !== undefined || body.sale_amount !== undefined || (typeof body.code === "string" && String(body.code).startsWith("PPC"));
-    const platform = detectPlatform(body);
+    const platform = detectPlatform(body, request.headers);
 
     let sale;
 
@@ -148,6 +148,10 @@ function parseHotmart(body: Record<string, unknown>) {
   const product = data?.product as Record<string, unknown> | undefined;
   const buyer = data?.buyer as Record<string, unknown> | undefined;
   const commissions = data?.commissions as Record<string, unknown> | undefined;
+  // NOTE: o shape `data.purchase.origin` (sck/src/xcod) vem da doc publica do
+  // Hotmart Webhook 2.0 e NAO foi verificado contra payload real deste projeto —
+  // se a conta estiver em outro shape, o fallback em parseGeneric cobre.
+  const origin = purchase?.origin as Record<string, unknown> | undefined;
 
   const rawStatus = purchase?.status;
   const rawPrice = commissions?.total_value;
@@ -162,6 +166,10 @@ function parseHotmart(body: Record<string, unknown>) {
     transactionId: purchase?.transaction ? String(purchase.transaction) : null,
     // Dados do comprador — sem expor email diretamente no log (mantém padrão pós-auditoria)
     customerEmail: buyer?.email ? String(buyer.email) : null,
+    // Campos de origem/rastreio — ver docs/referencia (dono de cada campo: sck livre, src=VTurb, xcod=UTMify)
+    sck: origin?.sck ? String(origin.sck) : null,
+    src: origin?.src ? String(origin.src) : null,
+    xcod: origin?.xcod ? String(origin.xcod) : null,
   };
 }
 
@@ -179,6 +187,12 @@ function parseGeneric(body: Record<string, unknown>) {
     utmSource: extractField(body, ["utm_source", "metadata.utm_source"]),
     utmCampaign: extractField(body, ["utm_campaign", "metadata.utm_campaign"]),
     transactionId: extractField(body, ["transaction_id", "code", "order_id", "id"]),
+    // Cinto e suspensório: detectPlatform pode errar o branch (ex.: Hotmart 2.0 não
+    // reconhecida) — capturamos sck/src/xcod aqui também, raiz e aninhado, pra não
+    // depender só do parser específico da plataforma.
+    sck: extractField(body, ["sck", "data.purchase.origin.sck", "purchase.origin.sck"]),
+    src: extractField(body, ["src", "data.purchase.origin.src", "purchase.origin.src"]),
+    xcod: extractField(body, ["xcod", "data.purchase.origin.xcod", "purchase.origin.xcod"]),
   };
 }
 
@@ -204,8 +218,21 @@ function extractNumber(obj: Record<string, unknown>, paths: string[]): number | 
   return isNaN(num) ? null : num;
 }
 
-function detectPlatform(body: Record<string, unknown>): string {
+function detectPlatform(body: Record<string, unknown>, headers?: Headers): string {
+  // Hotmart 1.x: hottok/hotmart_id no corpo.
   if (body.hottok || body.hotmart_id) return "Hotmart";
+  // Hotmart 2.0: hottok vai no header X-HOTMART-HOTTOK, corpo tem envelope
+  // { event, version, data: { purchase: {...} } }. Aditivo — não substitui a 1.x.
+  if (headers?.get("x-hotmart-hottok")) return "Hotmart";
+  const data = body.data as Record<string, unknown> | undefined;
+  if (
+    data &&
+    typeof data === "object" &&
+    "purchase" in data &&
+    (body.event !== undefined || body.version !== undefined)
+  ) {
+    return "Hotmart";
+  }
   if (body.cartpanda_id || body.store_id) return "Cartpanda";
   if (body.sale_status_enum !== undefined) return "PerfectPay";
   if (body.monetizze_id) return "Monetizze";
