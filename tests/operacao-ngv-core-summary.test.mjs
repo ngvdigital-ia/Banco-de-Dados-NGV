@@ -250,3 +250,97 @@ test("contrato inválido, ausência de writer e erro de rede falham fechados", a
   assert.equal((await fetchNgvCoreOperationalSummary({ config: { enabled: true, writerKey: "" } })).code, "WRITER_KEY_MISSING");
   assert.equal((await fetchNgvCoreOperationalSummary({ config: { enabled: true, writerKey: "writer" }, fetchImpl: async () => { throw new Error("network"); } })).kind, "unavailable");
 });
+
+// domains_expired entra no Core DEPOIS do deploy do Banco (o validador é de forma exata:
+// chave nova sem tolerância derruba o cockpit inteiro com RESPONSE_SCHEMA_INVALID).
+// O Banco tem que aceitar os dois estados — e só esses dois.
+const v4WithMonitoramento = (extra) => ({
+  ok: true,
+  summary: {
+    ...body.summary,
+    schema_version: 4,
+    sources: {
+      ...body.summary.sources,
+      monitoramento_ngv: source("monitoramento-ngv", {
+        projects_total: 30,
+        projects_active: 25,
+        projects_attention: 0,
+        domains_total: 44,
+        domains_expiring_30d: 0,
+        domains_pending_decision: 44,
+        subscriptions_active: 3,
+        infra_resources_total: 4,
+        infra_resources_attention: 2,
+        ...extra,
+      }),
+    },
+    rolling_migration: {
+      apps_ofertas_linked_identities: 2,
+      apps_ofertas_active_accesses: 3,
+      plataforma_cursos_linked_identities: 5,
+      plataforma_cursos_active_accesses: 7,
+      nexfy_linked_identities: 11,
+      nexfy_active_entitlements: 13,
+      nexfy_entitlement_exceptions: 0,
+    },
+    freshness: {
+      all_fresh: false,
+      by_source: {
+        spy: { is_stale: false, age_hours: 1, generated_at: timestamp },
+        nexfy: { is_stale: false, age_hours: 1, generated_at: timestamp },
+        banco_ngv: { is_stale: false, age_hours: 1, generated_at: timestamp },
+        quiz_analytics: { is_stale: false, age_hours: 1, generated_at: timestamp },
+        apps_ofertas: { is_stale: false, age_hours: 1, generated_at: timestamp },
+        plataforma_cursos: { is_stale: false, age_hours: 0, generated_at: timestamp },
+        monitoramento_ngv: { is_stale: true, age_hours: 1872.4, generated_at: timestamp },
+      },
+      queried_at: timestamp,
+      sources_stale: 1,
+      sources_total: 7,
+      stale_sources: ["monitoramento_ngv"],
+      stale_threshold_hours: 26,
+      oldest_source_age_hours: 1872.4,
+    },
+    generated_at_meaning: "hora observada do dado",
+  },
+});
+
+test("domains_expired é opcional em Monitoramento e não abre a porta para chave desconhecida", () => {
+  // 1. o Core de HOJE, sem a chave → tem que continuar aceito (o Banco vai a produção antes)
+  const semChave = normalizeNgvCoreOperationalSummary(v4WithMonitoramento());
+  assert.equal(semChave.kind, "success");
+  assert.equal(Object.hasOwn(semChave.sources.monitoramento_ngv, "domains_expired"), false);
+
+  // 2. o Core de DEPOIS, com a chave → aceito e o valor preservado
+  const comChave = normalizeNgvCoreOperationalSummary(v4WithMonitoramento({ domains_expired: 4 }));
+  assert.equal(comChave.kind, "success");
+  assert.equal(comChave.sources.monitoramento_ngv.domains_expired, 4);
+
+  // 3. zero é um valor legítimo, não "ausente"
+  const zero = normalizeNgvCoreOperationalSummary(v4WithMonitoramento({ domains_expired: 0 }));
+  assert.equal(zero.sources.monitoramento_ngv.domains_expired, 0);
+
+  // 4. opcional não significa sem tipo
+  for (const invalido of ["4", -1, 1.5, null, true]) {
+    assert.throws(
+      () => normalizeNgvCoreOperationalSummary(v4WithMonitoramento({ domains_expired: invalido })),
+      { message: "RESPONSE_SCHEMA_INVALID" },
+      `domains_expired=${JSON.stringify(invalido)} devia reprovar`,
+    );
+  }
+
+  // 5. a guarda que importa: tolerar UMA chave conhecida não pode virar tolerar qualquer chave
+  assert.throws(
+    () => normalizeNgvCoreOperationalSummary(v4WithMonitoramento({ foo: 1 })),
+    { message: "RESPONSE_SCHEMA_INVALID" },
+  );
+  assert.throws(
+    () => normalizeNgvCoreOperationalSummary(v4WithMonitoramento({ domains_expired: 4, foo: 1 })),
+    { message: "RESPONSE_SCHEMA_INVALID" },
+  );
+
+  // 6. chave obrigatória ausente continua reprovando mesmo com a opcional presente
+  const faltando = v4WithMonitoramento({ domains_expired: 4 });
+  delete faltando.summary.sources.monitoramento_ngv.domains_total;
+  assert.throws(() => normalizeNgvCoreOperationalSummary(faltando), { message: "RESPONSE_SCHEMA_INVALID" });
+});

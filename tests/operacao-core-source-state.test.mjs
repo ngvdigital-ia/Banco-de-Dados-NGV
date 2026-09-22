@@ -60,3 +60,32 @@ test("Core indisponível aparece uma vez e nunca inventa estado por fonte", () =
   assert.deepEqual(states.map((item) => item.id), ["ngv-core"]);
   assert.equal(states[0].state, "UNAVAILABLE");
 });
+
+test("Cursos é leitura ao vivo: rótulo não promete frescor que ninguém mediu", () => {
+  const states = coreSourceStates(summary(), { enabled: true });
+  const cursos = states.find((item) => item.id === "core-cursos");
+  const banco = states.find((item) => item.id === "core-banco-ngv");
+
+  // O defeito: o Core lê cursos.* direto, então age_hours é 0-por-construção.
+  // Exibir "(2 h)" ali faz o operador ler frescor verificado onde não há medição.
+  assert.equal(cursos.detail, "Leitura ao vivo (frescor da origem não verificado).");
+  assert.equal(cursos.detail.includes(" h)"), false);
+  assert.equal(cursos.detail.includes("Leitura recente"), false);
+  assert.equal(cursos.state, "OPERANT");
+
+  // Falsificação: a mudança não pode vazar para as outras seis fontes.
+  assert.equal(banco.detail, "Leitura recente do resumo agregado no Core (2 h).");
+  assert.equal(
+    states.filter((item) => item.detail === "Leitura ao vivo (frescor da origem não verificado).").length,
+    1,
+  );
+});
+
+test("liveRead não engole o stale: fonte antiga continua dizendo a idade", () => {
+  const base = summary();
+  base.freshness.by_source.plataforma_cursos = { is_stale: true, age_hours: 41, generated_at: generatedAt };
+  const cursos = coreSourceStates(base, { enabled: true }).find((item) => item.id === "core-cursos");
+
+  assert.equal(cursos.state, "DEGRADED");
+  assert.equal(cursos.detail, "Resumo agregado do Core antigo (41 h).");
+});

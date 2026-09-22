@@ -11,7 +11,10 @@ export const CORE_OPERATION_SOURCES = Object.freeze([
   { key: "banco_ngv", id: "core-banco-ngv", label: "Banco NGV · Core" },
   { key: "quiz_analytics", id: "core-quiz", label: "Quiz · Core" },
   { key: "apps_ofertas", id: "core-apps", label: "Apps Ofertas · Core" },
-  { key: "plataforma_cursos", id: "core-cursos", label: "Cursos · Core" },
+  // liveRead: o Core lê cursos.* direto, no próprio banco. Não existe pipeline de
+  // ingestão que possa parar, então a idade é 0 por construção — e exibi-la como
+  // "leitura recente" faz o operador ler frescor onde só há hora da consulta.
+  { key: "plataforma_cursos", id: "core-cursos", label: "Cursos · Core", liveRead: true },
   { key: "monitoramento_ngv", id: "core-monitoramento-ngv", label: "Monitoramento · Core" },
 ]);
 
@@ -42,7 +45,7 @@ export function coreSourceStates(summary, { enabled = false } = {}) {
   if (enabled !== true) return [];
   if (summary?.kind !== "success") return [disabledOrUnavailable(summary)];
 
-  return CORE_OPERATION_SOURCES.map(({ key, id, label }) => {
+  return CORE_OPERATION_SOURCES.map(({ key, id, label, liveRead = false }) => {
     const source = summary.sources?.[key] ?? null;
     const freshness = summary.freshness?.by_source?.[key] ?? null;
     if (!source) {
@@ -72,7 +75,9 @@ export function coreSourceStates(summary, { enabled = false } = {}) {
       coverage: "Core · resumo agregado",
       detail: freshness.is_stale
         ? `Resumo agregado do Core antigo (${freshness.age_hours} h).`
-        : `Leitura recente do resumo agregado no Core (${freshness.age_hours} h).`,
+        : liveRead
+          ? "Leitura ao vivo (frescor da origem não verificado)."
+          : `Leitura recente do resumo agregado no Core (${freshness.age_hours} h).`,
       last_read_at: freshness.generated_at ?? source.generated_at ?? null,
     };
   });

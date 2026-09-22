@@ -60,9 +60,13 @@ async function readResponse(response) {
   return new TextDecoder().decode(bytes);
 }
 
-function source(value, keys, expectedSource) {
+function source(value, keys, expectedSource, optionalKeys = []) {
   if (value === null) return null;
-  if (!isObject(value) || Object.keys(value).length !== keys.length || !keys.every((key) => Object.hasOwn(value, key))) fail("RESPONSE_SCHEMA_INVALID");
+  const actualKeys = isObject(value) ? Object.keys(value) : [];
+  if (!isObject(value)
+    || actualKeys.length < keys.length || actualKeys.length > keys.length + optionalKeys.length
+    || !keys.every((key) => Object.hasOwn(value, key))
+    || !actualKeys.every((key) => keys.includes(key) || optionalKeys.includes(key))) fail("RESPONSE_SCHEMA_INVALID");
   if (value.schema_version !== 1 || value.source !== expectedSource || value.status !== "ready" || !isIso(value.generated_at)) fail("RESPONSE_SCHEMA_INVALID");
   return value;
 }
@@ -90,7 +94,7 @@ export function normalizeNgvCoreOperationalSummary(body) {
   const appsOfertas = source(sources.apps_ofertas, ["schema_version", "source", "status", "generated_at", "offers_configured", "modules_configured", "lessons_configured", "purchases_total", "access_active", "access_revoked", "access_refunded", "access_chargeback", "product_grants_active", "latest_purchase_at"], "apps-ofertas");
   const plataformaCursos = source(sources.plataforma_cursos, ["schema_version", "source", "status", "generated_at", "courses_total", "entitlements_total", "entitlements_active", "entitlements_refunded", "entitlements_cancelled", "progress_total", "progress_completed", "latest_entitlement_at", "latest_progress_at"], "plataforma-cursos");
   const monitoramentoNgv = isV4
-    ? source(sources.monitoramento_ngv, ["schema_version", "source", "status", "generated_at", "projects_total", "projects_active", "projects_attention", "domains_total", "domains_expiring_30d", "domains_pending_decision", "subscriptions_active", "infra_resources_total", "infra_resources_attention"], "monitoramento-ngv")
+    ? source(sources.monitoramento_ngv, ["schema_version", "source", "status", "generated_at", "projects_total", "projects_active", "projects_attention", "domains_total", "domains_expiring_30d", "domains_pending_decision", "subscriptions_active", "infra_resources_total", "infra_resources_attention"], "monitoramento-ngv", ["domains_expired"])
     : null;
 
   const invalidSpy = spy && (spy.window_days !== 30 || !isCount(spy.offers_observed) || !isCount(spy.readings_observed) || !isCount(spy.distinct_reading_days) || !isCount(spy.ready_to_model));
@@ -104,7 +108,8 @@ export function normalizeNgvCoreOperationalSummary(body) {
   const invalidPlataformaCursos = plataformaCursos && (![plataformaCursos.courses_total, plataformaCursos.entitlements_total, plataformaCursos.entitlements_active, plataformaCursos.entitlements_refunded, plataformaCursos.entitlements_cancelled, plataformaCursos.progress_total, plataformaCursos.progress_completed].every(isCount)
     || !(plataformaCursos.latest_entitlement_at === null || isIso(plataformaCursos.latest_entitlement_at))
     || !(plataformaCursos.latest_progress_at === null || isIso(plataformaCursos.latest_progress_at)));
-  const invalidMonitoramentoNgv = monitoramentoNgv && ![monitoramentoNgv.projects_total, monitoramentoNgv.projects_active, monitoramentoNgv.projects_attention, monitoramentoNgv.domains_total, monitoramentoNgv.domains_expiring_30d, monitoramentoNgv.domains_pending_decision, monitoramentoNgv.subscriptions_active, monitoramentoNgv.infra_resources_total, monitoramentoNgv.infra_resources_attention].every(isCount);
+  const invalidMonitoramentoNgv = monitoramentoNgv && (![monitoramentoNgv.projects_total, monitoramentoNgv.projects_active, monitoramentoNgv.projects_attention, monitoramentoNgv.domains_total, monitoramentoNgv.domains_expiring_30d, monitoramentoNgv.domains_pending_decision, monitoramentoNgv.subscriptions_active, monitoramentoNgv.infra_resources_total, monitoramentoNgv.infra_resources_attention].every(isCount)
+    || (Object.hasOwn(monitoramentoNgv, "domains_expired") && !isCount(monitoramentoNgv.domains_expired)));
   const rolling = hasRollingMigration ? summary.rolling_migration : null;
   const rollingKeys = [3, 4].includes(schemaVersion)
     ? ["apps_ofertas_linked_identities", "apps_ofertas_active_accesses", "plataforma_cursos_linked_identities", "plataforma_cursos_active_accesses", "nexfy_linked_identities", "nexfy_active_entitlements", "nexfy_entitlement_exceptions"]

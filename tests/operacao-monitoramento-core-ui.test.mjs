@@ -18,6 +18,10 @@ const ALLOWED_MONITORAMENTO_FIELDS = new Set([
   "projects_attention",
   "domains_total",
   "domains_expiring_30d",
+  // Agregado, mesma classe de "domains_expiring_30d": contagem de domínios com a
+  // data de expiração no passado. Não carrega nome, URL nem custo — o assert de
+  // identificador logo abaixo continua valendo.
+  "domains_expired",
   "domains_pending_decision",
   "subscriptions_active",
   "infra_resources_total",

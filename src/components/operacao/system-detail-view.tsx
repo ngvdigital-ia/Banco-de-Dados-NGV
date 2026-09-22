@@ -96,6 +96,7 @@ function metricsFor(system: SystemId, summary: NgvCoreOperationalSummary): { met
           { label: "Projetos cadastrados", value: source?.projects_total ?? null, description: "Projetos registrados no Monitoramento. Projetos e domínios não têm relação 1:1." },
           { label: "Domínios monitorados", value: source?.domains_total ?? null, description: "Domínios incluídos na leitura agregada do Monitoramento." },
           { label: "Vencem em 30 dias", value: source?.domains_expiring_30d ?? null, description: "Domínios cuja renovação entra na janela dos próximos 30 dias." },
+          { label: "Já vencidos", value: source?.domains_expired ?? null, description: "Domínios com a data de expiração no passado. Saem da janela dos 30 dias e por isso não aparecem no item acima." },
           { label: "Serviços com cobrança ativa", value: source?.subscriptions_active ?? null, description: "Assinaturas com cobrança ativa registradas no Monitoramento." },
           { label: "Recursos que pedem revisão", value: source?.infra_resources_attention ?? null, description: "Recursos de infraestrutura sinalizados para revisão. Este resumo não traz nomes ou URLs." },
         ],
