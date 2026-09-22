@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
+import { getDbCampaignOfferIds, resolveOfferTrackingId } from "@/lib/offer-mappings";
 
 /**
  * Webhook de vendas — PerfectPay + outras plataformas.
@@ -69,11 +70,27 @@ export async function POST(request: Request) {
       sale = parseGeneric(body);
     }
 
+    // Atribuição de venda -> oferta (M8)
+    let offerTrackingId: number | null = null;
+    let offerResolution: "db" | "unresolved" | "error" = "unresolved";
+
+    try {
+      const campaignOfferIds = await getDbCampaignOfferIds();
+      const campaignName = (sale as Record<string, unknown>).utmCampaign as string | null | undefined;
+      const resolution = resolveOfferTrackingId(campaignName, campaignOfferIds);
+      offerTrackingId = resolution.id;
+      offerResolution = resolution.resolution;
+    } catch (attributionErr) {
+      console.error("[Sales Webhook] Offer attribution failed:", attributionErr);
+      offerTrackingId = null;
+      offerResolution = "error";
+    }
+
     // Save to metrics_snapshots
     await db.insert(metricsSnapshots).values({
       date: new Date(),
       entityType: "sale",
-      entityId: 0,
+      entityId: offerTrackingId ?? 0,
       source: "manual",
       revenue: sale.price ? String(sale.price) : null,
       extraData: {
@@ -86,6 +103,8 @@ export async function POST(request: Request) {
           return safe;
         })(),
         receivedAt: new Date().toISOString(),
+        offerTrackingId,
+        offerResolution,
       },
     });
 

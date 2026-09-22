@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { externalMappings, offerTracking } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { extractOfferFromCampaignName } from "@/lib/utmify";
 
 // Constantes re-exportadas do modulo CLIENT-SAFE (ver offer-mappings-shared.ts).
@@ -54,3 +54,42 @@ export function resolveOfferFromCampaign(
   if (dbMap[key]) return dbMap[key];
   return extractOfferFromCampaignName(campaignName);
 }
+
+/**
+ * Busca todos os mapeamentos de campanha do banco e retorna um mapa normalizado:
+ * { [externalId lowercase trim]: offerId }
+ *
+ * Defensivo: se a query falhar (DB indisponível, tabela vazia etc.),
+ * retorna {} sem derrubar o webhook.
+ */
+export async function getDbCampaignOfferIds(): Promise<Record<string, number>> {
+  try {
+    const rows = await db
+      .select({
+        externalId: externalMappings.externalId,
+        offerId: offerTracking.id,
+      })
+      .from(externalMappings)
+      .innerJoin(
+        offerTracking,
+        eq(externalMappings.entityId, offerTracking.id),
+      )
+      .where(and(
+        eq(externalMappings.entityType, "offer"),
+        eq(externalMappings.platform, PLATFORM_UTMIFY_CAMPAIGN),
+      ))
+      .limit(2000);
+
+    const map: Record<string, number> = {};
+    for (const row of rows) {
+      map[row.externalId.toLowerCase().trim()] = row.offerId;
+    }
+    return map;
+  } catch (err) {
+    console.error("[offer-mappings] getDbCampaignOfferIds failed:", err);
+    return {};
+  }
+}
+
+export { resolveOfferTrackingId } from "./offer-attribution.mjs";
+
