@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
-import { getDbCampaignOfferIds, resolveOfferTrackingId } from "@/lib/offer-mappings";
+import {
+  getDbProductOfferIds,
+  getDbCampaignIdOfferIds,
+  resolveOfferAttribution,
+} from "@/lib/offer-mappings";
 
 /**
  * Webhook de vendas — PerfectPay + outras plataformas.
@@ -72,12 +76,20 @@ export async function POST(request: Request) {
 
     // Atribuição de venda -> oferta (M8)
     let offerTrackingId: number | null = null;
-    let offerResolution: "db" | "unresolved" | "error" = "unresolved";
+    let offerResolution: "product" | "campaign_id" | "unresolved" | "error" = "unresolved";
 
     try {
-      const campaignOfferIds = await getDbCampaignOfferIds();
-      const campaignName = (sale as Record<string, unknown>).utmCampaign as string | null | undefined;
-      const resolution = resolveOfferTrackingId(campaignName, campaignOfferIds);
+      const [byProduct, byCampaignId] = await Promise.all([
+        getDbProductOfferIds(),
+        getDbCampaignIdOfferIds(),
+      ]);
+      const saleRecord = sale as Record<string, unknown>;
+      const productCode = (saleRecord.productCode ?? saleRecord.productId) as string | null | undefined;
+      const utmCampaign = saleRecord.utmCampaign as string | null | undefined;
+      const resolution = resolveOfferAttribution(
+        { productCode, utmCampaign },
+        { byProduct, byCampaignId },
+      );
       offerTrackingId = resolution.id;
       offerResolution = resolution.resolution;
     } catch (attributionErr) {
