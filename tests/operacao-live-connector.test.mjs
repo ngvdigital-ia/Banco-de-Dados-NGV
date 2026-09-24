@@ -38,7 +38,7 @@ const bumbumflixManifest = {
 
 const liveEnv = {
   CLICKUP_API_TOKEN: "test-clickup-token",
-  N8N_BASE_URL: "https://n8n-production-d5ef.up.railway.app",
+  N8N_BASE_URL: "https://n8n.ngvmembers.site",
   N8N_API_KEY: "test-n8n-key",
   N8N_OPERATION_WORKFLOW_ID: "F8GWU4QxWg9hBAVQ",
 };
@@ -108,7 +108,7 @@ test("coleta somente referências exatas do manifesto e respeita os parâmetros 
   assert.equal(artifact.n8n_executions[0].event, "n8n_execution_observed");
   assert.equal(artifact.n8n_executions[0].last_node, "Normalizar evento");
   assert.equal(mock.calls.filter((call) => call.hostname === "api.clickup.com").length, 3);
-  const n8n = mock.calls.find((call) => call.hostname === "n8n-production-d5ef.up.railway.app");
+  const n8n = mock.calls.find((call) => call.hostname === "n8n.ngvmembers.site");
   assert.equal(n8n.pathname, "/api/v1/executions");
   assert.equal(n8n.searchParams.get("workflowId"), "F8GWU4QxWg9hBAVQ");
   assert.equal(n8n.searchParams.get("limit"), "20");
@@ -228,7 +228,7 @@ test("status aberto da variante FR mantém Calistenia em movimento", () => {
 });
 
 test("rejeita URL n8n fora da origem permitida antes da rede", async () => {
-  for (const baseUrl of ["http://n8n-production-d5ef.up.railway.app", "https://n8n.test", "https://n8n-production-d5ef.up.railway.app/api"]) {
+  for (const baseUrl of ["http://n8n.ngvmembers.site", "https://n8n.test", "https://n8n.ngvmembers.site/api"]) {
     let calls = 0;
     await assert.rejects(collectLiveOperation([manifest], {
       env: { ...liveEnv, N8N_BASE_URL: baseUrl },
