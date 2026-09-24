@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod/v4";
 import { logChange } from "@/lib/changelog";
+import { requireOperationOperator } from "@/lib/operacao/authz";
 
 const teamMemberSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -21,6 +22,8 @@ export async function getTeamMembers() {
 }
 
 export async function createTeamMember(data: TeamMemberFormData) {
+  await requireOperationOperator();
+
   const parsed = teamMemberSchema.parse(data);
   const [result] = await db.insert(teamMembers).values(parsed).returning({ id: teamMembers.id });
   await logChange("team_member", result.id, "create", parsed);
@@ -29,6 +32,8 @@ export async function createTeamMember(data: TeamMemberFormData) {
 }
 
 export async function updateTeamMember(id: number, data: TeamMemberFormData) {
+  await requireOperationOperator();
+
   const parsed = teamMemberSchema.parse(data);
   await db
     .update(teamMembers)
@@ -40,6 +45,8 @@ export async function updateTeamMember(id: number, data: TeamMemberFormData) {
 }
 
 export async function deleteTeamMember(id: number) {
+  await requireOperationOperator();
+
   await db.delete(teamMembers).where(eq(teamMembers.id, id));
   await logChange("team_member", id, "delete");
   revalidatePath("/team");

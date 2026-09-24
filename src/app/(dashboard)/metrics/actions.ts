@@ -5,6 +5,7 @@ import { metricsSnapshots, projects, creatives, campaigns } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
+import { requireOperationOperator } from "@/lib/operacao/authz";
 
 const metricsSchema = z.object({
   date: z.string(),
@@ -37,6 +38,8 @@ const metricsSchema = z.object({
 export type MetricsFormData = z.infer<typeof metricsSchema>;
 
 export async function createMetricsSnapshot(data: MetricsFormData) {
+  await requireOperationOperator();
+
   const parsed = metricsSchema.parse(data);
   await db.insert(metricsSnapshots).values({
     date: new Date(parsed.date),

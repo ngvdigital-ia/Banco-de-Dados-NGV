@@ -5,6 +5,7 @@ import { tags, entityTags } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
+import { requireOperationOperator } from "@/lib/operacao/authz";
 
 const tagSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -18,12 +19,16 @@ export async function getTags() {
 }
 
 export async function createTag(data: TagFormData) {
+  await requireOperationOperator();
+
   const parsed = tagSchema.parse(data);
   await db.insert(tags).values(parsed);
   revalidatePath("/tags");
 }
 
 export async function deleteTag(id: number) {
+  await requireOperationOperator();
+
   await db.delete(entityTags).where(eq(entityTags.tagId, id));
   await db.delete(tags).where(eq(tags.id, id));
   revalidatePath("/tags");
@@ -38,9 +43,13 @@ export async function getEntityTags(entityType: string, entityId: number) {
 }
 
 export async function addTagToEntity(tagId: number, entityType: string, entityId: number) {
+  await requireOperationOperator();
+
   await db.insert(entityTags).values({ tagId, entityType, entityId });
 }
 
 export async function removeTagFromEntity(id: number) {
+  await requireOperationOperator();
+
   await db.delete(entityTags).where(eq(entityTags.id, id));
 }

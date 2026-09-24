@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { logChange } from "@/lib/changelog";
+import { requireOperationOperator } from "@/lib/operacao/authz";
 
 const funnelSchema = z.object({
   projectId: z.number(),
@@ -54,6 +55,8 @@ export async function getOrderBumps(funnelId: number) {
 }
 
 export async function createFunnel(data: FunnelFormData) {
+  await requireOperationOperator();
+
   const parsed = funnelSchema.parse(data);
   const [result] = await db.insert(funnels).values(parsed).returning({ id: funnels.id });
   await logChange("funnel", result.id, "create", parsed);
@@ -61,12 +64,16 @@ export async function createFunnel(data: FunnelFormData) {
 }
 
 export async function updateFunnel(id: number, data: FunnelFormData) {
+  await requireOperationOperator();
+
   const parsed = funnelSchema.parse(data);
   await db.update(funnels).set({ ...parsed, updatedAt: new Date() }).where(eq(funnels.id, id));
   revalidatePath(`/projects/${data.projectId}`);
 }
 
 export async function deleteFunnel(id: number, projectId: number) {
+  await requireOperationOperator();
+
   await db.delete(funnelNodes).where(eq(funnelNodes.funnelId, id));
   await db.delete(orderBumps).where(eq(orderBumps.funnelId, id));
   await db.delete(funnels).where(eq(funnels.id, id));
@@ -75,19 +82,27 @@ export async function deleteFunnel(id: number, projectId: number) {
 }
 
 export async function createFunnelNode(data: FunnelNodeFormData) {
+  await requireOperationOperator();
+
   const parsed = funnelNodeSchema.parse(data);
   await db.insert(funnelNodes).values(parsed);
 }
 
 export async function deleteFunnelNode(id: number) {
+  await requireOperationOperator();
+
   await db.delete(funnelNodes).where(eq(funnelNodes.id, id));
 }
 
 export async function createOrderBump(data: OrderBumpFormData) {
+  await requireOperationOperator();
+
   const parsed = orderBumpSchema.parse(data);
   await db.insert(orderBumps).values(parsed);
 }
 
 export async function deleteOrderBump(id: number) {
+  await requireOperationOperator();
+
   await db.delete(orderBumps).where(eq(orderBumps.id, id));
 }

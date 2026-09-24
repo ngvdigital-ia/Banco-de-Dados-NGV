@@ -6,6 +6,7 @@ import { fieldContainsMember, fieldMatchesMember, getMemberAliases } from "@/lib
 import { extractOfferFromCampaignName } from "@/lib/utmify";
 import { eq, sql, desc, and, inArray, gte, lte } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
+import { requireOperationOperator } from "@/lib/operacao/authz";
 
 // ========== TYPES ==========
 
@@ -911,6 +912,8 @@ export type CampaignInput = {
  * Automatically extracts offer name from campaign name.
  */
 export async function saveUtmifyCampaignData(campaignList: CampaignInput[]) {
+  await requireOperationOperator();
+
   const now = new Date();
 
   // Clear old campaign data before inserting fresh

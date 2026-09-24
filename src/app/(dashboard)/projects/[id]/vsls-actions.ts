@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { logChange } from "@/lib/changelog";
+import { requireOperationOperator } from "@/lib/operacao/authz";
 
 const vslSchema = z.object({
   projectId: z.number(),
@@ -42,6 +43,8 @@ export async function getVsls(projectId: number) {
 }
 
 export async function createVsl(data: VslFormData) {
+  await requireOperationOperator();
+
   const parsed = vslSchema.parse(data);
   const [result] = await db.insert(vsls).values(parsed).returning({ id: vsls.id });
   await logChange("vsl", result.id, "create", parsed);
@@ -49,6 +52,8 @@ export async function createVsl(data: VslFormData) {
 }
 
 export async function updateVsl(id: number, data: VslFormData) {
+  await requireOperationOperator();
+
   const parsed = vslSchema.parse(data);
   await db
     .update(vsls)
@@ -59,6 +64,8 @@ export async function updateVsl(id: number, data: VslFormData) {
 }
 
 export async function deleteVsl(id: number, projectId: number) {
+  await requireOperationOperator();
+
   await db.delete(vsls).where(eq(vsls.id, id));
   await logChange("vsl", id, "delete");
   revalidatePath(`/projects/${projectId}`);

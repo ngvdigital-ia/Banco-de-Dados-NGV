@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { abTests, abTestVariants } from "@/db/schema";
 import { eq, desc, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { requireOperationOperator } from "@/lib/operacao/authz";
 
 export async function getAbTests() {
   try {
@@ -43,6 +44,8 @@ export async function createAbTest(data: {
   startDate: string;
   variants: { name: string; description: string }[];
 }) {
+  await requireOperationOperator();
+
   const [test] = await db
     .insert(abTests)
     .values({
@@ -64,6 +67,8 @@ export async function createAbTest(data: {
 }
 
 export async function completeAbTest(id: number, winnerId: number | null) {
+  await requireOperationOperator();
+
   await db
     .update(abTests)
     .set({ status: "completed", winnerId, endDate: new Date() })
@@ -72,6 +77,8 @@ export async function completeAbTest(id: number, winnerId: number | null) {
 }
 
 export async function deleteAbTest(id: number) {
+  await requireOperationOperator();
+
   await db.delete(abTestVariants).where(eq(abTestVariants.abTestId, id));
   await db.delete(abTests).where(eq(abTests.id, id));
   revalidatePath("/ab-tests");
@@ -81,6 +88,8 @@ export async function updateVariantMetrics(
   variantId: number,
   metrics: Record<string, unknown>
 ) {
+  await requireOperationOperator();
+
   await db
     .update(abTestVariants)
     .set({ metricsJson: metrics })

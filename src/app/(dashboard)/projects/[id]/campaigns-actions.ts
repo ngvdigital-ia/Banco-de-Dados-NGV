@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
 import { logChange } from "@/lib/changelog";
+import { requireOperationOperator } from "@/lib/operacao/authz";
 
 const campaignSchema = z.object({
   projectId: z.number(),
@@ -40,6 +41,8 @@ export async function getCampaigns(projectId: number) {
 }
 
 export async function createCampaign(data: CampaignFormData) {
+  await requireOperationOperator();
+
   const parsed = campaignSchema.parse(data);
   const [result] = await db.insert(campaigns).values(parsed).returning({ id: campaigns.id });
   await logChange("campaign", result.id, "create", parsed);
@@ -47,6 +50,8 @@ export async function createCampaign(data: CampaignFormData) {
 }
 
 export async function updateCampaign(id: number, data: CampaignFormData) {
+  await requireOperationOperator();
+
   const parsed = campaignSchema.parse(data);
   await db.update(campaigns).set({ ...parsed, updatedAt: new Date() }).where(eq(campaigns.id, id));
   await logChange("campaign", id, "update", parsed);
@@ -54,6 +59,8 @@ export async function updateCampaign(id: number, data: CampaignFormData) {
 }
 
 export async function deleteCampaign(id: number, projectId: number) {
+  await requireOperationOperator();
+
   await db.delete(campaigns).where(eq(campaigns.id, id));
   await logChange("campaign", id, "delete");
   revalidatePath(`/projects/${projectId}`);

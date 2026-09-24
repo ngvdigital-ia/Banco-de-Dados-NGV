@@ -7,7 +7,6 @@ import {
 
 const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
-  "/sign-up(.*)",
   "/api/cron(.*)",
   "/api/webhooks(.*)",
   "/api/admin(.*)",

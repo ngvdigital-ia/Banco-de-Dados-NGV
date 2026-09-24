@@ -13,6 +13,7 @@ import {
   type AlertOperator,
 } from "@/lib/alerts-config";
 import { computeMetricValue, alertTriggers } from "@/lib/alerts-eval";
+import { requireOperationOperator } from "@/lib/operacao/authz";
 
 const metricKeys = ALERT_METRICS.map((m) => m.key) as [string, ...string[]];
 const operatorKeys = ALERT_OPERATORS.map((o) => o.key) as [string, ...string[]];
@@ -94,6 +95,8 @@ export async function getRecentAlertHistory(limit = 30): Promise<AlertHistoryRow
 }
 
 export async function createAlert(formData: FormData) {
+  await requireOperationOperator();
+
   const parsed = alertSchema.parse({
     name: formData.get("name"),
     metric: formData.get("metric"),
@@ -120,6 +123,8 @@ export async function createAlert(formData: FormData) {
 }
 
 export async function updateAlert(formData: FormData) {
+  await requireOperationOperator();
+
   const id = Number(formData.get("id"));
   if (!id) throw new Error("id obrigatório");
   const parsed = alertSchema.parse({
@@ -151,6 +156,8 @@ export async function updateAlert(formData: FormData) {
 }
 
 export async function toggleAlert(formData: FormData) {
+  await requireOperationOperator();
+
   const id = Number(formData.get("id"));
   const active = formData.get("active") === "true";
   if (!id) throw new Error("id obrigatório");
@@ -164,6 +171,8 @@ export async function toggleAlert(formData: FormData) {
 }
 
 export async function deleteAlert(formData: FormData) {
+  await requireOperationOperator();
+
   const id = Number(formData.get("id"));
   if (!id) throw new Error("id obrigatório");
   try {
