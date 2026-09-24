@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import type { BatchItem } from "drizzle-orm/batch";
 import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { shouldReplaceSnapshots } from "@/lib/cron/sync-clickup-guards.mjs";
+import { shouldReplaceSnapshots, isCompleteSync } from "@/lib/cron/sync-clickup-guards.mjs";
 import { isAuthorizedBearer } from "@/lib/auth-bearer.mjs";
 
 export const maxDuration = 300;
@@ -231,13 +232,17 @@ export async function GET(request: Request) {
     }
   }
 
-  // Replace per-task snapshots atomically: delete old clickup_task rows, then insert fresh.
-  // Fail-closed: só apaga se pelo menos 1 lista desta passada teve sucesso — senão uma
-  // falha sistêmica (chave revogada, ClickUp fora do ar) apagaria dado bom sem repor nada.
+  // Replace per-task snapshots atomically: delete + insert num único db.batch (transação
+  // não-interativa do neon-http) — falha no meio não deixa a tabela vazia.
+  // Fail-closed: só troca se TODAS as listas desta passada responderam e veio ao menos 1
+  // task — passada parcial apagaria as tasks das listas que falharam sem repor nada.
+  // doneSyncOk (any-ok) continua só alimentando o `success` da resposta.
   const doneSyncOk = shouldReplaceSnapshots(results);
 
-  if (doneSyncOk) {
-    await db.delete(metricsSnapshots).where(eq(metricsSnapshots.entityType, "clickup_task"));
+  if (isCompleteSync(results)) {
+    const doneStatements: BatchItem<"pg">[] = [
+      db.delete(metricsSnapshots).where(eq(metricsSnapshots.entityType, "clickup_task")),
+    ];
 
     if (taskRows.length > 0) {
       const rowsToInsert = taskRows.map((r) => ({
@@ -261,9 +266,11 @@ export async function GET(request: Request) {
       // Insert in chunks to avoid Postgres parameter limits
       const CHUNK = 500;
       for (let i = 0; i < rowsToInsert.length; i += CHUNK) {
-        await db.insert(metricsSnapshots).values(rowsToInsert.slice(i, i + CHUNK));
+        doneStatements.push(db.insert(metricsSnapshots).values(rowsToInsert.slice(i, i + CHUNK)));
       }
     }
+
+    await db.batch(doneStatements as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
   }
 
   // Save monthly aggregate snapshot per member (backward compatibility)
@@ -386,12 +393,14 @@ export async function GET(request: Request) {
     }
   }
 
-  // Replace atômico: apaga todos os clickup_open_task e insere os novos.
-  // Mesmo fail-closed do passo anterior: só apaga se pelo menos 1 lista teve sucesso.
+  // Replace atômico: apaga todos os clickup_open_task e insere os novos num único db.batch.
+  // Mesmo fail-closed do passo anterior: só troca se TODAS as listas responderam.
   const openSyncOk = shouldReplaceSnapshots(openResults);
 
-  if (openSyncOk) {
-    await db.delete(metricsSnapshots).where(eq(metricsSnapshots.entityType, "clickup_open_task"));
+  if (isCompleteSync(openResults)) {
+    const openStatements: BatchItem<"pg">[] = [
+      db.delete(metricsSnapshots).where(eq(metricsSnapshots.entityType, "clickup_open_task")),
+    ];
 
     if (openTaskRows.length > 0) {
       const openRowsToInsert = openTaskRows.map((r) => ({
@@ -415,9 +424,11 @@ export async function GET(request: Request) {
       }));
       const CHUNK = 500;
       for (let i = 0; i < openRowsToInsert.length; i += CHUNK) {
-        await db.insert(metricsSnapshots).values(openRowsToInsert.slice(i, i + CHUNK));
+        openStatements.push(db.insert(metricsSnapshots).values(openRowsToInsert.slice(i, i + CHUNK)));
       }
     }
+
+    await db.batch(openStatements as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
   }
 
   return NextResponse.json({

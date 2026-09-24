@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { shouldReplaceSnapshots } from "../src/lib/cron/sync-clickup-guards.mjs";
+import {
+  shouldReplaceSnapshots,
+  isCompleteSync,
+} from "../src/lib/cron/sync-clickup-guards.mjs";
 
 test("0 sucessos entre N listas -> não apaga (false)", () => {
   const results = [
@@ -75,3 +78,45 @@ test("array só com itens nulos/malformados -> protege (false), sem lançar", ()
   assert.doesNotThrow(() => shouldReplaceSnapshots([null, undefined, {}]));
   assert.equal(shouldReplaceSnapshots([null, undefined, {}]), false);
 });
+
+// --- isCompleteSync: troca por diff só com passada COMPLETA e NÃO-VAZIA ---
+
+test("isCompleteSync: todas as listas ok e >=1 task -> true", () => {
+  assert.equal(
+    isCompleteSync([
+      { status: "ok", tasksFound: 5 },
+      { status: "ok", tasksFound: 0 },
+    ]),
+    true,
+  );
+});
+
+test("isCompleteSync: qualquer lista com erro (parcial) -> false", () => {
+  assert.equal(
+    isCompleteSync([
+      { status: "ok", tasksFound: 5 },
+      { status: "error", tasksFound: 0 },
+    ]),
+    false,
+  );
+});
+
+test("isCompleteSync: todas ok mas vazio (0 tasks) -> false", () => {
+  assert.equal(
+    isCompleteSync([
+      { status: "ok", tasksFound: 0 },
+      { status: "ok", tasksFound: 0 },
+    ]),
+    false,
+  );
+});
+
+test("isCompleteSync: lista vazia / null / undefined -> false, sem lançar", () => {
+  assert.equal(isCompleteSync([]), false);
+  assert.doesNotThrow(() => isCompleteSync(null));
+  assert.equal(isCompleteSync(null), false);
+  assert.doesNotThrow(() => isCompleteSync(undefined));
+  assert.equal(isCompleteSync(undefined), false);
+});
+
+// --- snapshotKey: par (taskId, memberId) estável ---

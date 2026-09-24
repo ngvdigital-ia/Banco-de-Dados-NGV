@@ -1,12 +1,15 @@
 /**
- * Decisão pura de proteção do replace atômico (delete + insert) do sync-clickup.
+ * Decisões puras (sem I/O) do sync-clickup — testáveis sem chamar a rota de verdade.
  *
- * Um replace (delete de tudo + insert do que veio da API) só é seguro quando pelo
- * menos uma lista da passada respondeu com sucesso. Se todas as listas falharem
- * (chave revogada, ClickUp fora do ar), o delete NUNCA deve rodar — senão o cron
- * apaga dado bom e não tem nada de novo pra repor.
+ * shouldReplaceSnapshots: "pelo menos uma lista respondeu com sucesso". Era a guarda do
+ * replace; hoje a rota a usa só pro campo `success` da resposta — quem libera o delete é
+ * isCompleteSync.
  *
- * Extraída como função pura (sem I/O) para ser testável sem chamar a rota de verdade.
+ * isCompleteSync: guarda ESTRITA da troca (delete + insert). Exige que TODAS as listas
+ * responderam "ok" E que pelo menos uma task foi encontrada. Passada parcial (alguma
+ * lista errou) ou vazia (nenhuma task) retorna false — nunca apagar nada com um
+ * conjunto de entrada incompleto (senão o delete apagaria linhas que ainda existem no
+ * ClickUp mas não vieram nesta passada).
  */
 
 /**
@@ -30,4 +33,19 @@
 export function shouldReplaceSnapshots(results) {
   if (!Array.isArray(results)) return false;
   return results.some((r) => r?.status === "ok");
+}
+
+/**
+ * Guarda estrita da troca: a passada só pode substituir o conjunto quando
+ * TODAS as listas responderam "ok" e há pelo menos 1 task encontrada. Fail-closed
+ * em entrada inesperada (nunca lança): não-array, array vazio, item malformado ou
+ * lista com erro -> false.
+ *
+ * @param {{ status: string, tasksFound?: number }[]} results
+ * @returns {boolean} true só quando a passada é COMPLETA e NÃO-VAZIA
+ */
+export function isCompleteSync(results) {
+  if (!Array.isArray(results) || results.length === 0) return false;
+  if (!results.every((r) => r?.status === "ok")) return false;
+  return results.some((r) => (r?.tasksFound ?? 0) > 0);
 }
