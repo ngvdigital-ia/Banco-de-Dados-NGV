@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { metricsSnapshots } from "@/db/schema";
 import {
@@ -99,12 +100,24 @@ export async function POST(request: Request) {
     }
 
     // Save to metrics_snapshots
+    // Idempotência (0013): a chave do evento é (plataforma, id da transação, status).
+    // PerfectPay usa `transactionCode`; Hotmart/generic usam `transactionId` — normaliza
+    // para uma única coluna. Reenvio do mesmo evento cai no ON CONFLICT DO NOTHING.
+    // Sem id (PerfectPay manda "" quando falta `code`) vira NULL: o índice único não
+    // compara NULL, então evento sem id nunca é descartado como duplicata.
+    const saleRecordForKey = sale as Record<string, unknown>;
+    const saleTransactionId =
+      String(saleRecordForKey.transactionCode ?? saleRecordForKey.transactionId ?? "").trim() || null;
+
     await db.insert(metricsSnapshots).values({
       date: new Date(),
       entityType: "sale",
       entityId: offerTrackingId ?? 0,
       source: "manual",
       revenue: sale.price ? String(sale.price) : null,
+      salePlatform: sale.platform ?? null,
+      saleTransactionId,
+      saleStatus: sale.status ?? null,
       extraData: {
         // LGPD: nao persistir PII do comprador. entityType='sale' nao e lido em
         // lugar nenhum hoje e o futuro painel de vendas usara so agregados.
@@ -118,6 +131,13 @@ export async function POST(request: Request) {
         offerTrackingId,
         offerResolution,
       },
+    }).onConflictDoNothing({
+      target: [
+        metricsSnapshots.salePlatform,
+        metricsSnapshots.saleTransactionId,
+        metricsSnapshots.saleStatus,
+      ],
+      where: sql`${metricsSnapshots.entityType} = 'sale'`,
     });
 
     return NextResponse.json({

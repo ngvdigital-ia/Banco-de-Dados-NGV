@@ -92,6 +92,13 @@
       "when": 1787882134083,
       "tag": "0012_operation_offer_build_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790259365658,
+      "tag": "0013_add_sale_idempotency",
+      "breakpoints": true
     }
   ]
 }

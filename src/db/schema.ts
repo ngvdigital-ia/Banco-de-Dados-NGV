@@ -454,6 +454,12 @@ export const metricsSnapshots = pgTable("metrics_snapshots", {
   // NULL para todos os outros entityTypes — o índice parcial só cobre as linhas UTMify.
   utmifyCampaignId: text("utmify_campaign_id"),
   utmifyDashboardId: text("utmify_dashboard_id"),
+  // Colunas de idempotência do webhook de vendas (0013).
+  // Chave do evento de venda: plataforma + id da transação + status/tipo do evento.
+  // NULL para todos os outros entityTypes — o índice parcial só cobre entity_type='sale'.
+  salePlatform: text("sale_platform"),
+  saleTransactionId: text("sale_transaction_id"),
+  saleStatus: text("sale_status"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   index("metrics_snapshots_entity_type_idx").on(t.entityType),
@@ -466,6 +472,11 @@ export const metricsSnapshots = pgTable("metrics_snapshots", {
   uniqueIndex("metrics_snapshots_utmify_dashboard_uniq")
     .on(t.date, t.utmifyDashboardId)
     .where(sql`entity_type = 'dashboard'`),
+  // Índice parcial de idempotência de venda: reenvio do mesmo evento (mesma plataforma +
+  // transação + status) cai no ON CONFLICT DO NOTHING do webhook de vendas.
+  uniqueIndex("metrics_snapshots_sale_event_uniq")
+    .on(t.salePlatform, t.saleTransactionId, t.saleStatus)
+    .where(sql`entity_type = 'sale'`),
 ]);
 
 // ============================================================
